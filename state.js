@@ -222,10 +222,10 @@ const WARP_CORE = {
 };
 
 // ============================================================
-// ABLATIVE ARMOUR — Defiant-class unique system
+// ABLATIVE ARMOUR — Defiant-class special feature
 // ============================================================
 const ABLATIVE_ARMOUR = {
-  maxLayers: 6,                 // 6 layers (up from 5) — Defiant's hull is reinforced
+  maxLayers: 5,                 // 5 discrete layers, each absorbs one hit
   layerAbsorption: 0.60,        // Each layer absorbs 60% of incoming hull damage
   regenCooldown: 45000,         // 45 s before a consumed layer starts regenerating
   regenTime: 30000,             // 30 s to regenerate one layer fully
@@ -255,10 +255,10 @@ const G = {
 
   // Ablative armour state
   ablative: {
-    layers: 6,                  // current intact layers
-    layerHealth: [100,100,100,100,100,100], // % health of each layer
-    regenTimers: [0,0,0,0,0,0],   // ms remaining before each consumed layer begins regen
-    regenProgress: [0,0,0,0,0,0], // ms of active regen progress
+    layers: 5,                  // current intact layers
+    layerHealth: [100,100,100,100,100], // % health of each layer (100 = full, 0 = consumed)
+    regenTimers: [0,0,0,0,0],   // ms remaining before each consumed layer begins regen
+    regenProgress: [0,0,0,0,0], // ms of active regen progress
   },
 
   // Enemy
@@ -302,14 +302,9 @@ const G = {
   shieldFreqCooldown:0,          // ms before can rotate again
   shieldFreqWeaponType:null,     // weapon type being countered ('disruptors'|'phasers'|'polaron'|'plasma')
 
-  // EPS thermal buildup (item 4) — sustained fire heats conduits
-  epsHeat:0,            // 0-100; above 70 reduces capacitor recharge rate
-  epsHeatCoolRate:8,    // per second when not firing
-  shieldTransferInProgress:false, // item 8 — shield equalisation delay
-  lastPlayerFireTime:0, // item 9 — timestamp of last weapon fire (for regen advisory)
-  evasiveCooldown:0,
-  evasiveDuration:8000,    // 8s of reduced enemy lock build rate
-  evasiveCooldownTime:20000, // 20s cooldown
+  // Burst-fire cannon mechanic (Defiant pulse cannon salvo)
+  burstFireReady:true,
+  burstFireCooldown:0,           // ms before next burst available
 
   // Player
   player:{

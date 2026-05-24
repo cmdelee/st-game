@@ -221,17 +221,13 @@ function calculateFinalScore(victory, escaped) {
   const warpPen   = escaped ? 500 : 0;
   const vicBonus  = victory && !escaped ? Math.round(1500 * diffMult) : 0;
   const crewPen   = Object.values(CREW_STATIONS).reduce((a, c) => a + c.casualties * 100, 0);
-  // Item 6: hull integrity bonus — rewards clean, efficient engagements
-  const hullPct      = G.player.hull / G.player.maxHull;
-  const integrityBonus = victory && !escaped ? Math.round(hullPct * 800 * diffMult) : 0;
-  const total     = Math.max(0, Math.round(timeBonus + dmgBonus + sysBonus + repBonus + integrityBonus - hullPen - warpPen - crewPen + vicBonus));
+  const total     = Math.max(0, Math.round(timeBonus + dmgBonus + sysBonus + repBonus - hullPen - warpPen - crewPen + vicBonus));
   return {
     rows: [
       { label:`Time survived [${currentDifficulty}×${diffMult}]`, value:`${Math.round(s.timeSurvived)}s`,     score:`+${timeBonus}` },
       { label:'Damage dealt',                                        value:`${Math.round(s.totalDmgDealt)}MW`,  score:`+${dmgBonus}` },
       { label:'Enemy systems destroyed',                             value:s.systemsDestroyed,                  score:`+${Math.round(sysBonus)}` },
       { label:'Repairs completed',                                   value:s.repairsCompleted,                  score:`+${repBonus}` },
-      { label:`Hull integrity [${Math.round(hullPct*100)}%]`,       value:victory&&!escaped?'YES':'N/A',        score:`+${integrityBonus}` },
       { label:'Hull breaches sustained',                             value:s.hullBreaches,                      score:`-${hullPen}` },
       { label:'Crew casualties',                                     value:Object.values(CREW_STATIONS).reduce((a,c) => a + c.casualties, 0), score:`-${crewPen}` },
       { label:'Emergency warp penalty',                              value:escaped ? 'YES' : 'NO',              score:escaped ? `-${warpPen}` : '0' },

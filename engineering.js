@@ -100,9 +100,8 @@ function applyAblativeArmour(rawHullDmg) {
   const absorbed = rawHullDmg * ABLATIVE_ARMOUR.layerAbsorption;
   const residual = rawHullDmg - absorbed;
 
-  // Reduced layer cost — Defiant's reinforced hull means layers withstand more hits
-  // Old: (absorbed/30)*20. New: (absorbed/40)*20 — layers last ~33% longer
-  const layerCost = (absorbed / 40) * 20;
+  // Degrade the layer (each 10 points of absorbed damage costs 10% layer health)
+  const layerCost = (absorbed / 30) * 20; // rough scaling: heavy hit drains layer faster
   ab.layerHealth[layerIdx] = Math.max(0, ab.layerHealth[layerIdx] - layerCost);
 
   if (ab.layerHealth[layerIdx] <= 0) {
@@ -166,25 +165,8 @@ function processRepairQueues(dt) {
       G.score.repairsCompleted++;
       if (r.sysKey === 'warp_core') {
         G.batteryActive = false;
-        postLogEvent("Warp core restart sequence initiated — power coming online over 12s.", 'warn');
-        // Item 5: gradual warp core restart — ramp health from current to repaired over 12s
-        const targetHealth = sys.health;
-        const startHealth  = Math.max(5, targetHealth - 60); // start low, ramp up
-        sys.health = startHealth;
-        let elapsed = 0;
-        const rampInterval = setInterval(() => {
-          if (G.dead || !G.running) { clearInterval(rampInterval); return; }
-          elapsed += 500;
-          const progress = Math.min(1, elapsed / 12000);
-          sys.health = Math.min(targetHealth, startHealth + (targetHealth - startHealth) * progress);
-          recalculateShieldRegenRate();
-          if (progress >= 1) {
-            clearInterval(rampInterval);
-            postLogEvent("Warp core fully online — EPS output restored.", 'good');
-            updateWarpAvailability();
-          }
-        }, 500);
         recalculateShieldRegenRate();
+        postLogEvent("Warp core back online. Full power restored.", 'good');
         updateWarpAvailability();
       }
       refreshEngineeringPanelGraphics();
@@ -483,15 +465,6 @@ function computeConduitConduction(dt) {
   const sc = dt / 1000;
   const warpOut = getWarpOutput();
 
-  // Item 4: EPS thermal management — cool down over time; hot conduits reduce cap recharge
-  if (G.epsHeat > 0) {
-    G.epsHeat = Math.max(0, G.epsHeat - G.epsHeatCoolRate * sc);
-    if (G.epsHeat > 70 && Math.floor(G.epsHeat) % 10 === 0 && Math.random() < 0.02) {
-      postLogEvent(`EPS conduits at ${Math.round(G.epsHeat)}% thermal — sustained fire degrading recharge rate.`, 'warn');
-    }
-  }
-  const heatPenalty = G.epsHeat > 70 ? 1 - ((G.epsHeat - 70) / 100) : 1.0; // up to 30% cap recharge reduction
-
   Object.keys(G.systems).forEach(key => {
     const sys = G.systems[key];
     if (sys.tripped) {
@@ -512,9 +485,9 @@ function computeConduitConduction(dt) {
     } else if (sys.stress > 0) {
       sys.stress = Math.max(0, sys.stress - (1.8 * sc));
     }
-    // Capacitor charging — reduced by EPS heat penalty
+    // Capacitor charging
     if (sys.cap < 100) {
-      const ls = (sys.allocatedPower * 0.6) * (sys.health / 100) * heatPenalty;
+      const ls = (sys.allocatedPower * 0.6) * (sys.health / 100);
       sys.cap = Math.min(100, sys.cap + ls * sc);
     }
   });
@@ -588,17 +561,8 @@ function pumpShieldSector(sector) {
 
 function rebalanceShieldArrays() {
   if (G.cloaked) { postLogEvent("Shields offline while cloaked.", 'warn'); return; }
-  if (G.shieldTransferInProgress) { postLogEvent("Shield transfer already in progress.", 'warn'); return; }
   const total = G.player.shields.fore + G.player.shields.port + G.player.shields.starboard + G.player.shields.aft;
   const even  = total / 4;
-  // Item 8: 2s transfer window — shields briefly dip to 80% during EPS conduit switching
-  G.shieldTransferInProgress = true;
-  ['fore','port','starboard','aft'].forEach(s => { G.player.shields[s] *= 0.80; });
-  postLogEvent("Shield equalisation in progress — EPS conduits switching (2s).", 'info');
-  setTimeout(() => {
-    if (G.dead) return;
-    ['fore','port','starboard','aft'].forEach(s => { G.player.shields[s] = Math.min(G.player.shields.maxSectorValue, even); });
-    G.shieldTransferInProgress = false;
-    postLogEvent("Shields equalised.", 'good');
-  }, 2000);
+  ['fore','port','starboard','aft'].forEach(s => { G.player.shields[s] = even; });
+  postLogEvent("Shields equalised.", 'info');
 }

@@ -135,8 +135,8 @@ function initiateVesselSimulation(station) {
   G.player.maxTorpedoes = 18;
   G.player.shields      = { fore:320, port:260, starboard:260, aft:200, maxSectorValue:320 };
 
-  // Reset ablative armour — 6 layers
-  G.ablative = { layers:6, layerHealth:[100,100,100,100,100,100], regenTimers:[0,0,0,0,0,0], regenProgress:[0,0,0,0,0,0] };
+  // Reset ablative armour
+  G.ablative = { layers:5, layerHealth:[100,100,100,100,100], regenTimers:[0,0,0,0,0], regenProgress:[0,0,0,0,0] };
 
   // Reset new mechanic states
   G.enemyRangeBracket        = 'long';
@@ -151,61 +151,11 @@ function initiateVesselSimulation(station) {
   G.shieldFreqWeaponType     = null;
   G.burstFireReady           = true;
   G.burstFireCooldown        = 0;
-  G.evasiveActive            = false;
-  G.evasiveCooldown          = 0;
-  G.epsHeat                  = 0;
-  G.shieldTransferInProgress = false;
-  G.lastPlayerFireTime       = 0;
   G.enemyAdaptiveResist      = { cannon_pu:0, cannon_pl:0, cannon_su:0, cannon_sl:0, nose_beam:0, torpedoes:0 };
   G.enemyAdaptiveHits        = 0;
 
-  // Item 1 — Full state reset between games (crew, score, queues, timers, misc)
-  Object.keys(CREW_STATIONS).forEach(k => {
-    CREW_STATIONS[k].status = 'nominal';
-    CREW_STATIONS[k].casualties = 0;
-  });
-  G.score              = { totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false };
-  G.repairQueue        = [];
-  G.enemyRepairQueue   = [];
-  G.batteryCharge      = 100;
-  G.batteryActive      = false;
-  G.inFlightTorpedoes  = [];
-  G.renderedBeamsVector = [];
-  G.lockProgress       = 0;
-  G.enemyLockProgress  = 0;
-  G.weaponsDisrupted   = false;
-  G.weaponsDisruptedTimer = 0;
-  G.scanBonus          = null;
-  G.activeScanProfile  = null;
-  G.scanAnalysisProgress = 0;
-  G.sensorGhostActive  = false;
-  G.sensorGhostTimer   = 0;
-  G.enemyTractorActive = false;
-  G.cloaked            = false;
-  G.cloakCooldown      = 0;
-  G.cloakVulnTimer     = 0;
-  G.cloakPowerReserve  = 100;
-  G.enemyCloaked       = false;
-  G.enemyCloakCooldown = 0;
-  G.enemyCloakVulnTimer = 0;
-  G.enemyCloakPower    = 100;
-  G.enemyManeuverState = 'neutral';
-  G.enemyManeuverTimer = 0;
-  G.enemyManeuverThreshold = 9000;
-  G.enemyPreferredSector = 'fore';
-  G.threatCycleTimer   = 0;
-  G.shieldUnderAttackTimer = 0;
-  G.historicalLogTracks = [];
-  // Reset all player systems to full health
-  Object.keys(G.systems).forEach(k => {
-    G.systems[k].health = 100;
-    G.systems[k].stress = 0;
-    G.systems[k].tripped = false;
-    G.systems[k].cap = 100;
-  });
-  // Restore default EPS allocations
-  const defaultPower = { cannon_pu:8, cannon_pl:8, cannon_su:8, cannon_sl:6, nose_beam:10, torpedoes:10, shields:28, sensors:16, engines:10, cloak_dev:0, warp_core:10 };
-  Object.keys(defaultPower).forEach(k => { if (G.systems[k]) G.systems[k].allocatedPower = defaultPower[k]; });
+  // Hide overlay
+  document.getElementById('overlay').style.display = 'none';
   G.running = true;
   G.lastFrameTimestamp = performance.now();
 
