@@ -307,6 +307,8 @@ const G = {
   epsHeatCoolRate:8,    // per second when not firing
   shieldTransferInProgress:false, // item 8 — shield equalisation delay
   lastPlayerFireTime:0, // item 9 — timestamp of last weapon fire (for regen advisory)
+  // Evasive manoeuvres
+  evasiveActive:false,
   evasiveCooldown:0,
   evasiveDuration:8000,    // 8s of reduced enemy lock build rate
   evasiveCooldownTime:20000, // 20s cooldown
