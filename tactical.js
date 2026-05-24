@@ -1,6 +1,38 @@
 'use strict';
 
 // ============================================================
+// EVASIVE MANOEUVRES — Pattern Delta (DS9 canon)
+// Reduces enemy lock build rate by 60% for 8s; burns impulse power
+// ============================================================
+function executeEvasivePattern() {
+  if (!G.running || G.dead) return;
+  if (G.evasiveActive) { postLogEvent("Evasive pattern already active.", 'info'); return; }
+  if (G.evasiveCooldown > 0) { postLogEvent(`Evasive pattern cooldown: ${Math.ceil(G.evasiveCooldown/1000)}s.`, 'warn'); return; }
+  if (G.systems.engines.health < 20 || G.systems.engines.tripped) { postLogEvent("Impulse engines too damaged for evasive action.", 'crit'); return; }
+  // Burns impulse power — stresses engines
+  G.systems.engines.stress = Math.min(100, G.systems.engines.stress + 25);
+  G.evasiveActive   = true;
+  G.evasiveCooldown = G.evasiveDuration; // used as countdown while active
+  postLogEvent("EVASIVE PATTERN DELTA — enemy lock rate −60% for 8s.", 'good');
+  postTacticalAdvisory("Executing evasive pattern — hard about on all thrusters.");
+  updateEvasiveButton();
+}
+
+function updateEvasiveButton() {
+  const btn = document.getElementById('btn-evasive'); if (!btn) return;
+  if (G.evasiveActive) {
+    btn.textContent = `◈ EVADING ${Math.ceil(G.evasiveCooldown/1000)}s`;
+    btn.style.background = 'var(--green)'; btn.style.color = '#000';
+  } else if (G.evasiveCooldown > 0) {
+    btn.textContent = `◈ EVASIVE CD ${Math.ceil(G.evasiveCooldown/1000)}s`;
+    btn.style.background = 'var(--dim2)'; btn.style.color = '#aabbcc';
+  } else {
+    btn.textContent = '◈ EVASIVE PATTERN';
+    btn.style.background = ''; btn.style.color = '';
+  }
+}
+
+// ============================================================
 // BURST-FIRE PULSE CANNON SALVO — Defiant's defining tactic
 // All four cannons fire in a tight 800ms window overwhelming
 // enemy shield regen before it can respond (DS9 canon behaviour)
@@ -85,7 +117,7 @@ function postTacticalAdvisory(msg) {
 }
 
 // ============================================================
-// CREW CASUALTIES
+// CREW CASUALTIES & ROLE EFFECTS
 // ============================================================
 function inflictCrewCasualty() {
   const stations = Object.keys(CREW_STATIONS);
@@ -94,11 +126,33 @@ function inflictCrewCasualty() {
   if (crew.status === 'nominal')       { crew.status = 'wounded';       crew.casualties++; postLogEvent(`CASUALTY: ${crew.name} (${crew.role}) wounded.`, 'crit'); }
   else if (crew.status === 'wounded')  { crew.status = 'incapacitated'; crew.casualties++; postLogEvent(`CREW LOSS: ${crew.name} incapacitated.`, 'crit'); }
   updateCrewStatusDisplay();
+  // Item 10: role-specific consequences on incapacitation
+  if (crew.status === 'incapacitated') {
+    if (station === 'medical')    postLogEvent("Dr. Bashir incapacitated — crew casualty rate will increase.", 'crit');
+    if (station === 'helm')       postLogEvent("Ensign Nog incapacitated — evasive pattern effectiveness reduced.", 'crit');
+    if (station === 'tactical')   postLogEvent("Lt. Cmdr Worf incapacitated — targeting accuracy severely degraded.", 'crit');
+    if (station === 'engineering') postLogEvent("Chief O'Brien incapacitated — repair speed critically reduced.", 'crit');
+  }
 }
 
 function getCrewEfficiency(station) {
   const c = CREW_STATIONS[station]; if (!c) return 1.0;
   return c.status === 'nominal' ? 1.0 : c.status === 'wounded' ? 0.65 : 0.30;
+}
+
+// Item 10: medical crew affects how quickly further casualties occur
+// When Dr. Bashir is down, breach damage casualty threshold is halved
+function getMedicalEfficiency() {
+  const med = CREW_STATIONS.medical;
+  return med.status === 'nominal' ? 1.0 : med.status === 'wounded' ? 0.7 : 0.4;
+}
+
+// Item 10: helm crew affects evasive pattern effectiveness
+function getHelmEvasiveModifier() {
+  const helm = CREW_STATIONS.helm;
+  if (helm.status === 'nominal')      return 0.40; // full 60% lock reduction
+  if (helm.status === 'wounded')      return 0.60; // reduced to 40% lock reduction
+  return 0.80;                                      // incapacitated — only 20% reduction
 }
 
 function updateCrewStatusDisplay() {
@@ -226,6 +280,12 @@ function fireSelectedArray(weaponKey) {
   if (weapon) {
     parentSys.stress = Math.min(100, parentSys.stress + weapon.cost * 0.18);
     G.renderedBeamsVector.push({ type: weapon.parentSystem, trackingStartTime: performance.now(), duration: 300 });
+    // Item 4: EPS thermal buildup from weapons fire
+    if (parentSys.isWeapon) {
+      G.epsHeat = Math.min(100, G.epsHeat + weapon.cost * 0.12);
+    }
+    // Item 9: track last fire time for hull regen advisory
+    G.lastPlayerFireTime = performance.now();
   }
 }
 
@@ -386,6 +446,7 @@ function commitScanProfile() {
     shields: { type:'shields', value:1.25, duration:25000, msg:"+25% weapon yield vs shields for 25s." },
     hull:    { type:'hull',    value:1.35, duration:20000, msg:"+35% all damage for 20s." },
     weapons: { type:'weapons', value:1.0,  duration:30000, msg:"Enemy weapons disrupted for 30s." },
+    tetryon: { type:'tetryon', value:0.3,  duration:15000, msg:"Tetryon pulse — false warp signature. Enemy lock rate −70% for 15s." },
   };
   const b = bonuses[G.activeScanProfile];
   G.scanBonus = { type:b.type, value:b.value, expiry:performance.now() + b.duration };
@@ -546,6 +607,27 @@ function processEnemySensorGhosts(dt) {
 function processNewMechanicsTimers(dt) {
   const sc = dt / 1000;
 
+  // Evasive manoeuvre countdown
+  if (G.evasiveActive) {
+    G.evasiveCooldown = Math.max(0, G.evasiveCooldown - dt);
+    if (G.evasiveCooldown <= 0) {
+      G.evasiveActive   = false;
+      G.evasiveCooldown = G.evasiveCooldownTime; // now enters actual cooldown
+      postLogEvent("Evasive pattern complete — resuming attack vector.", 'info');
+      updateEvasiveButton();
+    } else {
+      updateEvasiveButton();
+    }
+  } else if (G.evasiveCooldown > 0) {
+    G.evasiveCooldown = Math.max(0, G.evasiveCooldown - dt);
+    if (G.evasiveCooldown <= 0) {
+      postLogEvent("Evasive pattern recharged.", 'good');
+      updateEvasiveButton();
+    } else {
+      updateEvasiveButton();
+    }
+  }
+
   // Burst-fire cooldown
   if (!G.burstFireReady) {
     G.burstFireCooldown = Math.max(0, G.burstFireCooldown - dt);
@@ -677,9 +759,12 @@ function processEnemyAI(dt) {
     }
   }
 
-  // Lock rate — sensor health modifier
-  const eSens = G.enemySystems.sensors; const sMod = eSens ? eSens.health / 100 : 1;
-  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * sc);
+  // Lock rate — sensor health modifier; evasive pattern and tetryon ECM both reduce it
+  const eSens      = G.enemySystems.sensors;
+  const sMod       = eSens ? eSens.health / 100 : 1;
+  const evasiveMod = G.evasiveActive ? getHelmEvasiveModifier() : 1.0;
+  const tetryonMod = (G.scanBonus && G.scanBonus.type === 'tetryon' && performance.now() < G.scanBonus.expiry) ? G.scanBonus.value : 1.0;
+  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * sc);
 
   // Jem'Hadar — check for ramming opportunity (below 20% hull)
   if (cfg.canRam && !G.enemyRammingRun) {
@@ -740,6 +825,15 @@ function processEnemyAI(dt) {
       "Enemy shields failing — concentrate fire on weakest sector.",
     ];
     postTacticalAdvisory(advisories[Math.floor(Math.random() * advisories.length)]);
+  }
+
+  // Item 9: hull regen advisory — warn if player pauses fire for >10s and enemy is recovering
+  if (G.lastPlayerFireTime > 0 && (performance.now() - G.lastPlayerFireTime) > 10000) {
+    const enemyHullPct = G.threat.hull / G.threat.maxHull;
+    if (enemyHullPct < 0.9 && Math.random() < 0.003 * sc * 60) {
+      postTacticalAdvisory(`Enemy registering hull repairs — maintain fire! Hull at ${Math.round(enemyHullPct*100)}%.`);
+      G.lastPlayerFireTime = performance.now() - 7000; // reset to prevent spam
+    }
   }
 
   const ll = document.getElementById('txt-enemy-lock-left'); if (ll) ll.textContent = `${Math.round(G.enemyLockProgress)}%`;
@@ -914,7 +1008,11 @@ function executeThreatCounterVolley() {
     G.systems[hitKey].health = Math.max(0, G.systems[hitKey].health - hitDmg);
     postLogEvent(`Internal damage: [${G.systems[hitKey].label}] −${hitDmg}%.`, 'crit');
     checkSystemDegradationThresholds(hitKey);
-    if (leak > 35) inflictCrewCasualty();
+    // Item 10: medical crew status affects how easily further casualties occur
+    // Dr. Bashir down = crew take casualties at lower breach damage threshold
+    const medEff = getMedicalEfficiency();
+    const casualtyThreshold = 35 * medEff; // normal: >35 dmg; Bashir down: >14-24 dmg
+    if (leak > casualtyThreshold) inflictCrewCasualty();
   }
 
   if (G.player.hull <= 0) concludeSimulationRun(false, "Vessel destroyed.", false);
