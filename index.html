@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LCARS Dual-Deck Tactical Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="lcars.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     STARTUP OVERLAY / MODAL
+════════════════════════════════════════════════════════════ -->
+<div id="overlay">
+  <div class="modal-frame-box">
+    <div id="modal-title">STATION DELEGATION ARCHITECTURE</div>
+    <p id="modal-desc" style="color:#7799dd; font-size:13px; margin-top:8px;">
+      Select your operational assignment. The alternative deck matrix will automatically delegate tasks to computer subroutines.
+    </p>
+
+    <!-- Difficulty selector -->
+    <div style="display:flex; gap:12px; justify-content:center; margin-bottom:14px;">
+      <button class="pill-action-btn" id="diff-btn-normal" style="font-size:11px; padding:6px 14px; background:var(--green); color:#000;" onclick="setDifficulty('normal')">● NORMAL</button>
+      <button class="pill-action-btn" id="diff-btn-hard"   style="font-size:11px; padding:6px 14px; background:var(--dim2);  color:#aabbcc;" onclick="setDifficulty('hard')">◎ HARD</button>
+      <button class="pill-action-btn" id="diff-btn-elite"  style="font-size:11px; padding:6px 14px; background:var(--dim2);  color:#aabbcc;" onclick="setDifficulty('elite')">◆ ELITE</button>
+    </div>
+    <div id="diff-desc" style="font-size:11px; color:#7799dd; margin-bottom:10px; min-height:32px;">Standard engagement. Enemy fires at hull sectors only.</div>
+
+    <!-- Station buttons -->
+    <div class="setup-buttons-flex" id="setup-controls-anchor">
+      <button class="pill-action-btn" style="width:220px; padding:14px; background:var(--o);" onclick="initiateVesselSimulation('tactical')">COMMAND TACTICAL</button>
+      <button class="pill-action-btn" style="width:220px; padding:14px; background:var(--p);" onclick="initiateVesselSimulation('engineering')">CONTROL ENGINEERING</button>
+    </div>
+
+    <!-- End-game score display (hidden until game over) -->
+    <div id="score-display" style="display:none; margin:12px 0; padding:12px; background:#060c18; border:1px solid var(--b); border-radius:8px; text-align:left;">
+      <div style="font-family:'Antonio'; color:var(--o); font-size:16px; margin-bottom:8px; text-align:center;">BATTLE ASSESSMENT</div>
+      <div id="score-breakdown" style="font-size:11px; color:#aabbcc; line-height:1.8;"></div>
+      <div style="font-family:'Antonio'; font-size:22px; color:var(--green); text-align:center; margin-top:8px;" id="score-total">SCORE: 0</div>
+    </div>
+
+    <div id="terminal-transcript-box" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HUD OVERLAYS (always-on, fullscreen, pointer-events:none)
+════════════════════════════════════════════════════════════ -->
+<!-- Sensor ghost false-contact alert (Romulan) -->
+<div id="sensor-ghost-overlay">⚠ FALSE CONTACT DETECTED</div>
+
+<!-- Cloak vulnerability flash (full-screen tint) -->
+<div id="cloak-vuln-overlay">
+  <div>⚠ CLOAK TRANSITION — NO SHIELDS ⚠</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════════════════ -->
+<header>
+  <div class="brand">LCARS Co-Delegated Control Array</div>
+  <div class="sys-ref">BRIDGE COMMAND CONSOLE // STABLE ENGINE MATRIX</div>
+  <div class="header-accent-line"></div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN VIEWPORT
+════════════════════════════════════════════════════════════ -->
+<div class="main-viewport">
+
+  <!-- ── LEFT ANCHOR PANEL ── -->
+  <div class="left-anchor-panel">
+    <div class="lcars-elbow"><span class="lcars-elbow-text">SYS-CON</span></div>
+    <div class="nav-pill-btn active" id="tab-tactical"    onclick="toggleActiveDeck('tactical')">Tactical Systems</div>
+    <div class="nav-pill-btn"        id="tab-engineering" onclick="toggleActiveDeck('engineering')">Engineering</div>
+
+    <div class="nav-spacer-block">
+      <!-- EPS load -->
+      <div>
+        <div class="side-static-label">EPS Load</div>
+        <div class="side-static-val" id="lbl-left-eps" style="font-size:14px;">100 / 100 MW</div>
+      </div>
+      <!-- Alert condition -->
+      <div>
+        <div class="side-static-label">Condition</div>
+        <div class="side-static-val" id="lbl-left-alert" style="font-size:13px; color:var(--green);">CONDITION GREEN</div>
+      </div>
+
+      <!-- Enemy readouts -->
+      <div style="border-top:1px solid var(--dim2); padding-top:6px; margin-top:4px;">
+        <div class="side-static-label" style="color:var(--red);">Enemy Vessel</div>
+        <div class="side-static-val"   style="font-size:11px; color:var(--red);" id="lbl-ai-archetype">—</div>
+      </div>
+      <div>
+        <div class="side-static-label">Enemy Hull</div>
+        <div style="display:flex; align-items:center; gap:4px;">
+          <div class="bar-rail" style="height:10px; flex:1; margin-bottom:0;"><div class="bar-fill" id="bar-threat-hull-left" style="color:var(--red);"></div></div>
+          <span style="font-size:10px; font-weight:bold; color:var(--red); min-width:28px; text-align:right;" id="txt-threat-hull-left">—</span>
+        </div>
+      </div>
+      <div>
+        <div class="side-static-label">Enemy Lock</div>
+        <div style="display:flex; align-items:center; gap:4px;">
+          <div class="bar-rail" style="height:10px; flex:1; margin-bottom:0;"><div class="bar-fill" id="bar-enemy-lock-left" style="color:var(--warn);"></div></div>
+          <span style="font-size:10px; font-weight:bold; color:var(--warn); min-width:28px; text-align:right;" id="txt-enemy-lock-left">0%</span>
+        </div>
+      </div>
+
+      <!-- Enemy shield sectors -->
+      <div>
+        <div class="side-static-label">Enemy Shields</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px; margin-top:2px;">
+          <div style="font-size:8px; color:#aabbcc; display:flex; align-items:center; gap:2px;">
+            <span style="font-size:8px; color:#888;">F</span>
+            <div class="bar-rail" style="height:6px; flex:1; margin-bottom:0;"><div class="bar-fill" id="bar-enem-sh-fore"      style="color:var(--green);"></div></div>
+            <span style="font-size:8px; min-width:20px; text-align:right;" id="txt-enem-sh-fore">—</span>
+          </div>
+          <div style="font-size:8px; color:#aabbcc; display:flex; align-items:center; gap:2px;">
+            <span style="font-size:8px; color:#888;">P</span>
+            <div class="bar-rail" style="height:6px; flex:1; margin-bottom:0;"><div class="bar-fill" id="bar-enem-sh-port"      style="color:var(--green);"></div></div>
+            <span style="font-size:8px; min-width:20px; text-align:right;" id="txt-enem-sh-port">—</span>
+          </div>
+          <div style="font-size:8px; color:#aabbcc; display:flex; align-items:center; gap:2px;">
+            <span style="font-size:8px; color:#888;">S</span>
+            <div class="bar-rail" style="height:6px; flex:1; margin-bottom:0;"><div class="bar-fill" id="bar-enem-sh-starboard" style="color:var(--green);"></div></div>
+            <span style="font-size:8px; min-width:20px; text-align:right;" id="txt-enem-sh-starboard">—</span>
+          </div>
+          <div style="font-size:8px; color:#aabbcc; display:flex; align-items:center; gap:2px;">
+            <span style="font-size:8px; color:#888;">A</span>
+            <div class="bar-rail" style="height:6px; flex:1; margin-bottom:0;"><div class="bar-fill" id="bar-enem-sh-aft"       style="color:var(--green);"></div></div>
+            <span style="font-size:8px; min-width:20px; text-align:right;" id="txt-enem-sh-aft">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="lbl-enemy-state-left" style="font-size:10px; color:#aabbcc; line-height:1.3; min-height:28px;">Awaiting...</div>
+      <!-- Cloak status -->
+      <div id="lbl-cloak-left" style="display:none; font-size:10px; color:var(--p); background:rgba(153,102,204,0.1); border:1px solid rgba(153,102,204,0.4); border-radius:4px; padding:3px 5px; text-align:center; font-family:'Antonio'; letter-spacing:1px;"></div>
+      <!-- Our sensor lock -->
+      <div>
+        <div class="side-static-label">Our Lock</div>
+        <div style="display:flex; align-items:center; gap:4px;">
+          <div class="bar-rail" style="height:10px; flex:1; margin-bottom:0;"><div class="bar-fill" id="bar-sensor-lock-left" style="color:var(--warn);"></div></div>
+          <span style="font-size:10px; font-weight:bold; color:var(--warn); min-width:28px; text-align:right;" id="txt-sensor-lock-left">0%</span>
+        </div>
+      </div>
+    </div>
+  </div><!-- /left-anchor-panel -->
+
+  <!-- ── CENTRE OPERATIONS DECK ── -->
+  <div class="center-operations-deck">
+
+    <!-- Monitor row (top) -->
+    <div class="top-monitor-row">
+      <div class="monitor-frame active-monitor view-tactical">
+        <div class="monitor-title">Spatial Intercept Coordinates Grid</div>
+        <div class="canvas-container"><canvas id="canvas-spatial-view"></canvas></div>
+      </div>
+      <div class="monitor-frame active-monitor view-tactical">
+        <div class="monitor-title">Enemy Vessel Tactical Assessment</div>
+        <div class="canvas-container"><canvas id="canvas-enemy-schematic"></canvas></div>
+      </div>
+      <div class="monitor-frame view-engineering">
+        <div class="monitor-title">Defiant Structural Hull Diagnostic Profile</div>
+        <div class="canvas-container"><canvas id="canvas-hull-schematic"></canvas></div>
+      </div>
+      <div class="monitor-frame view-engineering">
+        <div class="monitor-title">EPS Power Distribution</div>
+        <div class="canvas-container"><canvas id="canvas-power-dist"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Engineering utility strip (visible in engineering mode only) -->
+    <div id="eng-utility-panel" class="view-engineering" style="display:none; flex-direction:row; gap:8px; flex-shrink:0; padding:6px 0;">
+
+      <!-- Emergency Battery -->
+      <div style="background:#070d1a; border:1px solid var(--o); padding:7px; border-radius:4px; flex:1; min-width:0;">
+        <div style="font-family:'Antonio'; color:var(--o); font-size:11px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+          EMRG BATTERY <span id="txt-battery-charge" style="color:var(--o); font-weight:bold;">100%</span>
+        </div>
+        <div class="bar-rail" style="height:8px; margin-bottom:5px;"><div class="bar-fill" id="bar-battery-charge" style="color:var(--o); width:100%;"></div></div>
+        <div style="font-size:8px; color:#aabbcc; margin-bottom:3px;" id="lbl-battery-status">Standby — activates on warp core trip</div>
+        <button class="pill-action-btn warn-btn" style="font-size:9px; padding:4px; width:100%;" onclick="activateEmergencyBattery()">⚡ ACTIVATE BATTERY</button>
+      </div>
+
+      <!-- Cloaking device -->
+      <div style="background:#070d1a; border:1px solid var(--p); padding:7px; border-radius:4px; flex:1; min-width:0;">
+        <div style="font-family:'Antonio'; color:var(--p); font-size:11px; margin-bottom:3px;">CLOAKING DEVICE</div>
+        <div style="font-size:9px; color:#aabbcc; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="lbl-cloak-eng-status">Ready</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+          <button class="pill-action-btn p-btn" style="font-size:9px; padding:4px;" id="btn-cloak-eng" onclick="toggleCloakingDevice()">◉ Cloak</button>
+          <button class="pill-action-btn"        style="font-size:9px; padding:4px;" onclick="repairCloakingDevice()">🔧 Repair</button>
+        </div>
+      </div>
+
+      <!-- Shield regen -->
+      <div style="background:#070d1a; border:1px solid var(--b); padding:7px; border-radius:4px; flex:1; min-width:0;">
+        <div style="font-family:'Antonio'; color:var(--b); font-size:11px; margin-bottom:3px;">SHIELD REGEN <span id="txt-shield-regen-rate" style="color:var(--green); font-size:10px;">+2.0/s</span></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:4px;">
+          <button class="pill-action-btn" style="font-size:9px; padding:4px;" onclick="adjustShieldRegenMode('boost')">⬆ Boost</button>
+          <button class="pill-action-btn" style="font-size:9px; padding:4px;" onclick="adjustShieldRegenMode('normal')">= Normal</button>
+        </div>
+      </div>
+
+      <!-- Damage control -->
+      <div style="background:#070d1a; border:1px solid var(--o); padding:7px; border-radius:4px; flex:1; min-width:0;">
+        <div style="font-family:'Antonio'; color:var(--o); font-size:11px; margin-bottom:4px;">DAMAGE CONTROL</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+          <button class="pill-action-btn warn-btn" style="font-size:9px; padding:4px;" onclick="emergencyRepairWeapons()">🔧 Weapons</button>
+          <button class="pill-action-btn warn-btn" style="font-size:9px; padding:4px;" onclick="emergencyRepairSystems()">🔧 Systems</button>
+          <button class="pill-action-btn red-btn"  style="font-size:9px; padding:4px; grid-column:span 2;" onclick="masterConduitFlush()">⚡ FLUSH ALL</button>
+        </div>
+      </div>
+
+      <!-- Ablative status -->
+      <div style="background:#070d1a; border:1px solid rgba(0,204,102,0.4); padding:7px; border-radius:4px; flex:1; min-width:0;">
+        <div style="font-family:'Antonio'; color:var(--green); font-size:11px; margin-bottom:4px;">ABLATIVE ARMOUR</div>
+        <div id="lbl-ablative-status" style="font-size:12px; letter-spacing:2px; line-height:1.6;">▊▊▊▊▊</div>
+        <div style="font-size:8px; color:#aabbcc; margin-top:3px;">Auto-regenerates between hits</div>
+      </div>
+
+      <!-- Repair queue -->
+      <div style="background:#070d1a; border:1px solid var(--dim2); padding:7px; border-radius:4px; flex:1.4; min-width:0;">
+        <div style="font-family:'Antonio'; color:var(--t); font-size:11px; margin-bottom:3px;">REPAIR QUEUE</div>
+        <div id="lbl-repair-queue" style="font-size:9px; color:#aabbcc; line-height:1.5; max-height:58px; overflow:hidden;">No systems queued.</div>
+      </div>
+
+      <!-- Auto-tactical summary -->
+      <div style="background:#070d1a; border:1px solid var(--dim2); padding:7px; border-radius:4px; flex:1.4; min-width:0;">
+        <div style="font-family:'Antonio'; color:var(--t); font-size:11px; margin-bottom:3px;">AUTO-TACTICAL</div>
+        <div id="lbl-autotac-summary" style="font-size:9px; color:#aabbcc; line-height:1.5; max-height:58px; overflow:hidden;">Computer delegating...</div>
+      </div>
+
+    </div><!-- /eng-utility-panel -->
+
+    <!-- ══ TACTICAL DECK ══ -->
+    <div class="control-deck-plate active-deck" id="deck-tactical">
+      <div class="section-header">
+        <span>Asymmetric Forward Weapon Capacitor Charging Banks</span>
+        <span id="badge-tactical" class="delegation-badge">Syncing Status...</span>
+      </div>
+
+      <!-- Weapon capacitor bars -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:8px;">
+        <div>
+          <div class="bar-row"><span class="bar-label">Pulse Cannon P/U</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-cpu" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-cpu">100%</span></div>
+          <div class="bar-row"><span class="bar-label">Pulse Cannon P/L</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-cpl" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-cpl">100%</span></div>
+          <div class="bar-row"><span class="bar-label">Pulse Cannon S/U</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-csu" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-csu">100%</span></div>
+        </div>
+        <div>
+          <div class="bar-row"><span class="bar-label">Pulse Cannon S/L</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-csl" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-csl">100%</span></div>
+          <div class="bar-row"><span class="bar-label">Nose Beam Array</span> <div class="bar-rail"><div class="bar-fill" id="bar-cap-emn" style="color:var(--p);"></div></div><span class="bar-val" id="txt-cap-emn">100%</span></div>
+          <div class="bar-row"><span class="bar-label">Torpedo Tube Cap</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-tff" style="color:var(--t);"></div></div><span class="bar-val" id="txt-cap-tff">100%</span></div>
+        </div>
+      </div>
+
+      <!-- Ablative armour strip -->
+      <div id="ablative-armour-strip"></div>
+
+      <!-- Weapon system health strip -->
+      <div id="weapon-health-strip" style="display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;"></div>
+
+      <!-- Cloak status bar -->
+      <div id="cloak-status-bar"><span id="cloak-status-text"></span><span id="cloak-power-drain" style="font-size:10px; color:#cc99ff;"></span></div>
+
+      <!-- Fire buttons -->
+      <div class="button-matrix-grid">
+        <button class="pill-action-btn" style="grid-column:span 2;"  onclick="firePulseCannons()">⚡ All Pulse Cannons ×4</button>
+        <button class="pill-action-btn p-btn"                        onclick="fireSelectedArray('emitter_nose')">Nose Beam <span style="font-size:9px;">[FWD]</span></button>
+        <button class="pill-action-btn p-btn"                        onclick="fireSelectedArray('torpedo_fore')">Quantum Torpedo <span style="font-size:9px;">[FWD/AFT]</span></button>
+        <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-burst-fire" onclick="executeBurstFireSalvo()">⚡⚡ BURST SALVO — 4-CANNON BARRAGE</button>
+        <button class="pill-action-btn warn-btn" id="btn-cloak"      onclick="toggleCloakingDevice()">◉ ENGAGE CLOAK</button>
+        <button class="pill-action-btn"         id="btn-shield-freq" onclick="rotateShieldFrequency()">🛡 ROTATE FREQ</button>
+        <button class="pill-action-btn red-btn"  style="grid-column:span 2;" onclick="executeAlphaSalvoFire()">ALPHA SALVO — ALL WEAPONS</button>
+      </div>
+
+      <!-- Enemy subsystem targeting -->
+      <div style="margin-top:4px;">
+        <div style="font-family:'Antonio'; font-size:11px; color:var(--t); text-transform:uppercase; border-bottom:1px solid var(--dim2); margin-bottom:4px; padding-bottom:2px;">Target Enemy Subsystem</div>
+        <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:4px;" id="enemy-subsystem-target-grid"></div>
+        <div style="font-size:9px; color:#6688aa; margin-top:2px;">
+          Target: <span id="txt-current-target" style="color:var(--warn);">HULL</span> — <span id="txt-firing-arc" style="color:#aabbcc;">All arcs</span>
+        </div>
+      </div>
+
+      <!-- Sensor sweep + Crew status -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px;">
+        <div>
+          <div class="section-header" style="font-size:11px; margin-bottom:3px;">
+            <span>Sensor Sweep Profile</span>
+            <span id="lbl-scan-bonus" class="scan-bonus-badge" style="background:rgba(255,170,0,0.1); color:var(--warn); border:1px solid var(--warn); font-size:9px;">No Profile</span>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:3px; margin-bottom:4px;">
+            <button class="scan-profile-btn" style="font-size:9px; padding:4px;" id="scan-btn-shields" onclick="activateScanProfile('shields')">🛡 Shields<br><span style="font-size:8px; color:#88aaff;">+25% yield</span></button>
+            <button class="scan-profile-btn" style="font-size:9px; padding:4px;" id="scan-btn-hull"    onclick="activateScanProfile('hull')">💥 Fissures<br><span style="font-size:8px; color:#88aaff;">+35% dmg</span></button>
+            <button class="scan-profile-btn" style="font-size:9px; padding:4px;" id="scan-btn-weapons" onclick="activateScanProfile('weapons')">⚡ Disrupt<br><span style="font-size:8px; color:#88aaff;">-50% fire</span></button>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <div class="bar-rail" style="height:10px; flex:1;"><div class="bar-fill" id="bar-scan-analysis" style="color:var(--p);"></div></div>
+            <span style="font-size:9px; font-weight:bold; color:var(--p); min-width:28px;" id="txt-scan-analysis">0%</span>
+            <button class="pill-action-btn" style="font-size:9px; padding:3px 8px;" onclick="commitScanProfile()">COMMIT</button>
+          </div>
+        </div>
+        <div>
+          <div class="section-header" style="font-size:11px; margin-bottom:3px;">
+            <span>Crew Status</span>
+            <span id="lbl-warp-avail" style="font-size:9px; color:var(--green);">WARP READY</span>
+          </div>
+          <div id="crew-casualties-display" style="font-size:9px; color:#aabbcc; line-height:1.5;">All stations nominal.</div>
+          <div style="margin-top:4px; display:grid; grid-template-columns:1fr 1fr; gap:3px;">
+            <button class="pill-action-btn warn-btn" style="font-size:9px; padding:3px;" onclick="attemptEmergencyWarp()">⚡ EMERGENCY WARP</button>
+            <button class="pill-action-btn"          style="font-size:9px; padding:3px;" onclick="toggleActiveSensorSystems()" id="btn-active-scanner-toggle-tac">Passive Scan</button>
+          </div>
+        </div>
+      </div>
+    </div><!-- /deck-tactical -->
+
+    <!-- ══ ENGINEERING DECK ══ -->
+    <div class="control-deck-plate" id="deck-engineering">
+      <div class="section-header">
+        <span>Zero-Sum Power Allocation Matrix &amp; Conduit Stress</span>
+        <span id="badge-engineering" class="delegation-badge">Syncing Status...</span>
+      </div>
+      <div class="eng-layout-split">
+        <div>
+          <table class="eng-table-display">
+            <thead>
+              <tr>
+                <th>Sub-Grid Network</th>
+                <th style="width:60px;">Power MW</th>
+                <th>Distribution Control</th>
+                <th style="width:44px; text-align:right;">Stress</th>
+                <th style="width:44px; text-align:right;">Health</th>
+                <th style="width:52px; text-align:right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="engineering-matrix-rows"></tbody>
+          </table>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="background:#070d1a; border:1px solid var(--dim2); padding:10px; flex:1; border-radius:4px;">
+            <div style="font-family:'Antonio'; color:var(--o); font-size:12px; margin-bottom:6px; border-bottom:1px solid var(--dim2); padding-bottom:2px;">EPS Conduit Breakers</div>
+            <div style="display:flex; flex-direction:column; gap:4px;" id="breaker-grid-mount"></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /deck-engineering -->
+
+  </div><!-- /center-operations-deck -->
+
+  <!-- ── RIGHT TELEMETRY TOWER ── -->
+  <div class="right-telemetry-tower">
+    <div class="crew-status-card">
+      <div class="crew-avatar">📡</div>
+      <div>
+        <div style="font-family:'Antonio'; font-size:12px; color:var(--o);">DELEGATION STATUS</div>
+        <div style="font-size:10px; color:#88aaff;" id="lbl-automation-status">UNASSIGNED</div>
+      </div>
+    </div>
+
+    <div class="section-header" style="font-size:12px;">Vessel Hull</div>
+    <div class="bar-row" style="margin-bottom:3px;">
+      <div class="bar-rail"><div class="bar-fill" id="bar-player-hull" style="color:var(--green);"></div></div>
+      <span class="bar-val" id="txt-player-hull">500</span>
+    </div>
+    <div class="bar-row" style="margin-bottom:3px;">
+      <span style="font-size:10px; color:#aabbcc; text-transform:uppercase; width:55px;">Torpedoes</span>
+      <div class="bar-rail" style="height:10px;"><div class="bar-fill" id="bar-player-torps" style="color:var(--t);"></div></div>
+      <span class="bar-val" id="txt-player-torps">30</span>
+    </div>
+
+    <div class="section-header" style="font-size:12px;">Shield Sectors
+      <span id="lbl-shield-regen" style="font-size:9px; color:var(--green); font-family:'Roboto Mono';">↑ REGEN</span>
+    </div>
+    <div class="bar-row" style="margin-bottom:2px;"><span class="bar-label" style="width:45px; font-size:10px;">Fore</span>     <div class="bar-rail" style="height:11px;"><div class="bar-fill" id="bar-shield-fore"      style="color:var(--green);"></div></div><span class="bar-val" style="font-size:10px;" id="txt-shield-fore">150</span></div>
+    <div class="bar-row" style="margin-bottom:2px;"><span class="bar-label" style="width:45px; font-size:10px;">Port</span>     <div class="bar-rail" style="height:11px;"><div class="bar-fill" id="bar-shield-port"      style="color:var(--green);"></div></div><span class="bar-val" style="font-size:10px;" id="txt-shield-port">150</span></div>
+    <div class="bar-row" style="margin-bottom:2px;"><span class="bar-label" style="width:45px; font-size:10px;">Stbd</span>     <div class="bar-rail" style="height:11px;"><div class="bar-fill" id="bar-shield-starboard" style="color:var(--green);"></div></div><span class="bar-val" style="font-size:10px;" id="txt-shield-starboard">150</span></div>
+    <div class="bar-row" style="margin-bottom:4px;"><span class="bar-label" style="width:45px; font-size:10px;">Aft</span>      <div class="bar-rail" style="height:11px;"><div class="bar-fill" id="bar-shield-aft"       style="color:var(--green);"></div></div><span class="bar-val" style="font-size:10px;" id="txt-shield-aft">150</span></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:4px;">
+      <button class="pill-action-btn" style="font-size:10px; padding:4px;" onclick="pumpShieldSector('fore')">Reinforce Fore</button>
+      <button class="pill-action-btn" style="font-size:10px; padding:4px;" onclick="rebalanceShieldArrays()">Equalise</button>
+    </div>
+
+    <div class="section-header" style="font-size:12px;">System Health</div>
+    <div id="sys-health-display" style="display:flex; flex-direction:column; gap:2px;"></div>
+
+    <!-- Warp core / cloak power footer -->
+    <div style="background:#060c17; border:1px solid var(--dim2); padding:6px; border-radius:4px; margin-top:auto;">
+      <div style="font-size:9px; color:var(--o); font-weight:bold; margin-bottom:3px; text-transform:uppercase;">Warp Core Output</div>
+      <div class="bar-rail" style="height:8px; margin-bottom:2px;"><div class="bar-fill" id="bar-warp-output" style="color:var(--o); width:100%;"></div></div>
+      <div style="display:flex; justify-content:space-between; font-size:9px; color:#aabbcc; margin-bottom:4px;">
+        <span>Used: <span id="txt-warp-used" style="color:#fff;">0</span>MW</span>
+        <span>Max:  <span id="txt-warp-max"  style="color:var(--o);">120</span>MW</span>
+      </div>
+      <div style="font-size:9px; color:var(--p); font-weight:bold; margin-top:2px; text-transform:uppercase;">Cloak Power</div>
+      <div class="bar-rail" style="height:6px; margin-bottom:2px;"><div class="bar-fill" id="bar-cloak-power" style="color:var(--p); width:100%;"></div></div>
+      <div style="font-size:9px; color:#aabbcc;" id="txt-cloak-power-status">Ready</div>
+    </div>
+  </div><!-- /right-telemetry-tower -->
+
+</div><!-- /main-viewport -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCRIPTS — load order matters: state → engineering → tactical → canvas → ui → main
+════════════════════════════════════════════════════════════ -->
+<script src="state.js"></script>
+<script src="engineering.js"></script>
+<script src="tactical.js"></script>
+<script src="canvas.js"></script>
+<script src="ui.js"></script>
+<script src="main.js"></script>
+
+</body>
+</html>

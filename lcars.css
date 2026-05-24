@@ -1,0 +1,350 @@
+/* ============================================================
+   LCARS DUAL-DECK TACTICAL SUITE — STYLESHEET
+   ============================================================ */
+
+:root {
+  --b:    #4477ff;
+  --o:    #ff9900;
+  --t:    #cc6699;
+  --p:    #9966cc;
+  --red:  #ff3333;
+  --warn: #ffaa00;
+  --green:#00cc66;
+  --dim:  #0a1122;
+  --dim2: #1a2640;
+  --bg:   #000000;
+  --lcars-radius: 28px;
+}
+
+/* ── Reset ── */
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+/* ── Body ── */
+body {
+  background: var(--bg);
+  color: #fff;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+
+/* ── Header ── */
+header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 45px;
+  position: relative;
+  margin-bottom: 12px;
+  padding-right: 16px;
+}
+.brand    { font-family: 'Antonio', sans-serif; font-size: 28px; font-weight: bold; color: var(--o); letter-spacing: 3px; text-transform: uppercase; }
+.sys-ref  { font-family: 'Antonio', sans-serif; font-size: 14px; color: var(--b); letter-spacing: 1px; }
+.header-accent-line { position: absolute; bottom: -4px; left: 160px; right: 0; height: 4px; background: linear-gradient(90deg, var(--o) 0%, var(--p) 30%, var(--b) 70%, var(--t) 100%); }
+
+/* ── Layout ── */
+.main-viewport       { display: flex; flex: 1; gap: 16px; overflow: hidden; }
+.left-anchor-panel   { width: 192px; display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+.center-operations-deck { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.right-telemetry-tower  { width: 230px; background: #010204; border-left: 2.5px solid var(--dim2); padding: 8px 0 8px 14px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; overflow: hidden; }
+
+/* ── LCARS Left Panel ── */
+.lcars-elbow {
+  height: 45px;
+  background: var(--b);
+  border-radius: var(--lcars-radius) 0 0 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 12px;
+}
+.lcars-elbow::after { content: ''; position: absolute; bottom: -5px; right: 0; width: 40px; height: 5px; background: #000; }
+.lcars-elbow-text   { font-family: 'Antonio'; font-size: 12px; color: #000; font-weight: bold; }
+
+.nav-pill-btn {
+  padding: 12px 14px;
+  font-family: 'Antonio', sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+  color: #000;
+  background: var(--b);
+  text-align: right;
+  text-transform: uppercase;
+  border-radius: var(--lcars-radius) 0 0 var(--lcars-radius);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
+}
+.nav-pill-btn:hover  { filter: brightness(1.2); }
+.nav-pill-btn.active { background: #fff !important; color: #000 !important; box-shadow: -5px 0 15px rgba(255,255,255,0.3); }
+
+.nav-spacer-block {
+  flex: 1;
+  background: var(--dim);
+  border-radius: 0 0 0 var(--lcars-radius);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  overflow: hidden;
+}
+
+.side-static-label { font-size: 10px; color: var(--t); font-weight: bold; text-transform: uppercase; }
+.side-static-val   { font-family: 'Antonio'; font-size: 18px; color: #fff; margin-bottom: 8px; }
+
+/* ── Monitors ── */
+.top-monitor-row { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; height: 38%; min-height: 230px; }
+.monitor-frame   { background: #010205; border: 1.5px solid var(--dim2); border-radius: 6px; position: relative; overflow: hidden; display: none; }
+.monitor-frame.active-monitor { display: block; }
+.monitor-title   { position: absolute; top: 6px; left: 10px; font-family: 'Antonio'; font-size: 13px; color: var(--o); z-index: 10; letter-spacing: 1px; }
+.canvas-container { position: absolute; inset: 0; width: 100%; height: 100%; }
+canvas { width: 100%; height: 100%; display: block; }
+
+/* ── Control Deck Plates ── */
+.control-deck-plate {
+  flex: 1;
+  background: #020409;
+  border: 1px solid var(--dim2);
+  border-radius: 6px;
+  padding: 12px;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+.control-deck-plate.active-deck { display: flex; }
+
+/* ── Section headers ── */
+.section-header {
+  font-family: 'Antonio';
+  font-size: 13px;
+  color: var(--t);
+  text-transform: uppercase;
+  border-bottom: 1.5px solid var(--dim2);
+  padding-bottom: 3px;
+  margin-bottom: 3px;
+  letter-spacing: 1px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.delegation-badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-family: 'Roboto Mono', monospace; font-weight: normal; }
+
+/* ── Bars ── */
+.bar-row   { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.bar-label { width: 130px; font-size: 11px; color: #aabbcc; text-transform: uppercase; }
+.bar-rail  { flex: 1; height: 18px; background: #050a14; border: 1px solid #14223d; position: relative; border-radius: 2px; overflow: hidden; }
+.bar-fill  { height: 100%; width: 0%; background-image: linear-gradient(90deg, transparent 0px, transparent 2px, currentColor 2px, currentColor 8px); background-size: 8px 100%; transition: width 0.2s ease; }
+.bar-val   { width: 50px; text-align: right; font-size: 11px; font-weight: bold; }
+
+/* ── Action Buttons ── */
+.pill-action-btn {
+  background: var(--b);
+  color: #000;
+  font-family: 'Antonio', sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  border: none;
+  padding: 8px;
+  text-align: center;
+  border-radius: 14px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.1s ease;
+}
+.pill-action-btn:hover  { filter: brightness(1.25); }
+.pill-action-btn:active { transform: scale(0.98); }
+.pill-action-btn.active { background: #fff; color: #000; }
+.pill-action-btn.red-btn   { background: var(--red);   color: #fff; }
+.pill-action-btn.warn-btn  { background: var(--warn);  color: #000; }
+.pill-action-btn.p-btn     { background: var(--t);     color: #000; }
+.pill-action-btn.green-btn { background: var(--green); color: #000; }
+
+/* ── Button Matrix ── */
+.button-matrix-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+
+/* ── Engineering Table ── */
+.eng-layout-split { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 12px; flex: 1; min-height: 0; }
+.eng-table-display { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }
+.eng-table-display th { font-family: 'Antonio'; color: var(--b); padding: 3px 4px; text-transform: uppercase; }
+.eng-table-display td { padding: 4px; border-bottom: 1px solid var(--dim2); }
+.mini-btn { background: var(--dim2); border: 1px solid var(--b); color: #fff; padding: 1px 6px; cursor: pointer; font-weight: bold; border-radius: 2px; }
+.mini-btn:hover { background: var(--b); color: #000; }
+
+/* ── Crew Card ── */
+.crew-status-card { display: flex; gap: 10px; background: #050914; border: 1px solid var(--dim2); padding: 6px; align-items: center; border-radius: 4px; }
+.crew-avatar      { width: 42px; height: 42px; background: linear-gradient(135deg, #14223d 0%, #020408 100%); border: 1px solid var(--b); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+
+/* ── Overlay / Modal ── */
+#overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.95);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+.modal-frame-box {
+  background: #030612;
+  border: 2px solid var(--b);
+  padding: 30px;
+  border-radius: 16px;
+  text-align: center;
+  width: 620px;
+  box-shadow: 0 0 35px rgba(68,119,255,0.25);
+}
+#modal-title { font-family: 'Antonio'; font-size: 26px; color: var(--o); margin-bottom: 10px; }
+#terminal-transcript-box {
+  background: #000205;
+  border: 1px solid var(--dim2);
+  height: 110px;
+  overflow-y: auto;
+  text-align: left;
+  padding: 8px;
+  font-size: 10px;
+  color: #7799dd;
+  margin-top: 8px;
+  line-height: 1.4;
+  border-radius: 4px;
+}
+.setup-buttons-flex { display: flex; gap: 12px; justify-content: center; margin-top: 15px; }
+
+/* ── Score Display ── */
+.score-row { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #1a2640; }
+.score-row:last-child { border-bottom: none; font-weight: bold; color: #fff; }
+
+/* ── Scan Profile Buttons ── */
+.scan-profile-btn {
+  background: #0a1530;
+  border: 1px solid var(--b);
+  color: var(--b);
+  font-family: 'Antonio', sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 6px 4px;
+  cursor: pointer;
+  text-align: center;
+  text-transform: uppercase;
+  transition: all 0.15s;
+}
+.scan-profile-btn:hover    { background: rgba(68,119,255,0.2); }
+.scan-profile-btn.active-scan { background: rgba(68,119,255,0.3); border-color: #88aaff; color: #fff; box-shadow: 0 0 8px rgba(68,119,255,0.4); }
+.scan-bonus-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 2px; font-family: 'Roboto Mono', monospace; }
+
+/* ── Casualty Display ── */
+.casualty-line { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.casualty-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Cloak Overlays ── */
+#cloak-status-bar {
+  display: none;
+  background: rgba(153,102,204,0.12);
+  border: 1px solid var(--p);
+  color: var(--p);
+  font-family: 'Antonio';
+  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  letter-spacing: 1px;
+}
+
+@keyframes cloak-vuln-flash { from { border-color: rgba(153,102,204,0.3); } to { border-color: rgba(153,102,204,0.9); } }
+@keyframes cloak-pulse      { 0%,100% { box-shadow: 0 0 6px rgba(153,102,204,0.4); } 50% { box-shadow: 0 0 18px rgba(153,102,204,0.9); } }
+
+#cloak-vuln-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(153,102,204,0.18);
+  border: 3px solid rgba(153,102,204,0.6);
+  z-index: 5000;
+  pointer-events: none;
+  animation: cloak-vuln-flash 0.3s infinite alternate;
+}
+#cloak-vuln-overlay > div {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-family: 'Antonio';
+  font-size: 22px;
+  color: rgba(153,102,204,0.9);
+  text-align: center;
+  letter-spacing: 2px;
+}
+#btn-cloak.green-btn { animation: cloak-pulse 1.5s infinite; }
+
+/* ── Sensor Ghost Overlay ── */
+@keyframes sensor-ghost-flash { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
+#sensor-ghost-overlay {
+  display: none;
+  position: fixed;
+  top: 8px; right: 8px;
+  background: rgba(255,170,0,0.15);
+  border: 2px solid var(--warn);
+  border-radius: 6px;
+  padding: 8px 14px;
+  z-index: 4000;
+  pointer-events: none;
+  font-family: 'Antonio';
+  font-size: 13px;
+  color: var(--warn);
+  letter-spacing: 1px;
+  animation: sensor-ghost-flash 0.6s infinite;
+}
+
+/* ── Breaker / Trip Animations ── */
+@keyframes conduit-flash { from { opacity: 0.3; } to { opacity: 1.0; } }
+.tripped-relay-alert { animation: conduit-flash 0.3s infinite alternate; background: var(--red) !important; color: #fff !important; }
+
+/* ── Repair Animation ── */
+@keyframes repair-pulse { 0%,100% { color: var(--warn); } 50% { color: #fff; } }
+
+/* ── Battery Drain ── */
+@keyframes battery-drain { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+.battery-active { animation: battery-drain 1s infinite; }
+
+/* ── Power Overload ── */
+@keyframes power-overload { 0%,100%{background:rgba(255,51,51,0.05);} 50%{background:rgba(255,51,51,0.15);} }
+.power-overload-row { animation: power-overload 0.5s infinite; }
+
+/* ── Warp Availability ── */
+#lbl-warp-avail.warp-blocked { color: var(--red) !important; }
+
+/* ── Difficulty buttons (modal) ── */
+.diff-active { background: var(--warn) !important; color: #000 !important; box-shadow: 0 0 8px rgba(255,170,0,0.5); }
+
+/* ── System degradation warning badge ── */
+.sys-degraded-warn {
+  font-size: 9px;
+  color: var(--red);
+  font-weight: bold;
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: rgba(255,51,51,0.1);
+  border: 1px solid rgba(255,51,51,0.3);
+  display: inline-block;
+  margin-left: 2px;
+  white-space: nowrap;
+}
+
+/* ── Ablative Armour Strip ── */
+#ablative-armour-strip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  padding: 3px 6px;
+  background: rgba(0,204,102,0.05);
+  border: 1px solid rgba(0,204,102,0.2);
+  border-radius: 4px;
+  margin-bottom: 4px;
+  letter-spacing: 2px;
+}

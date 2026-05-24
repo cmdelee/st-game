@@ -1,0 +1,80 @@
+LCARS Dual-Deck Tactical Suite — Improvement Suggestions
+Core Combat & Tactical Depth
+Add encounter phases for each faction (stalking, escalation, desperation, retreat).
+Implement spatial positioning:
+heading
+maneuvering
+attack vectors
+firing arcs
+drift/inertia
+Make damage create emergencies instead of only reducing numbers:
+plasma fires
+coolant leaks
+decompression
+EPS cascades
+Expand command-level decisions:
+pursue vs disengage
+rescue civilians
+sacrifice systems
+tactical retreats
+Add persistent crew/officers with injuries, deaths, and special bonuses.
+Expand sensors into a full gameplay layer:
+electronic warfare
+stealth signatures
+signal masking
+decoys
+Improve faction AI personality:
+Klingon aggression
+Romulan deception
+Borg adaptation
+Dominion sacrifice tactics
+Add campaign/meta progression between battles.
+Systems & Engineering Improvements
+Add bridge drama/UI events:
+officer reports
+emergencies
+tactical advisories
+interruption events
+Expand EPS stress into full heat/strain mechanics.
+Improve visual readability:
+shield flashes
+incoming vectors
+damage indicators
+subsystem sparks
+Give every faction signature mechanics.
+Add engineering power-routing presets:
+attack mode
+silent running
+evasive
+damage control
+Add boarding actions:
+security response
+sealed bulkheads
+internal forcefields
+Add internal ship topology:
+engineering section
+bow
+port/starboard spine
+dorsal/ventral regions
+Add unidentified/unknown contacts before combat.
+Mission Variety & Replayability
+Give enemies objectives besides destroying the player.
+Add reinforcements and multi-ship encounters.
+Expand procedural tactical dialogue.
+Make the delegated AI station feel like a real character.
+Add sensor delay and information lag.
+Add critical hit visual moments/cinematics.
+Add Defiant refits and ship variants.
+Add “last stand” mechanics during critical hull states.
+Add chain-reaction system failures.
+Advanced Tactical Features
+Add cloak-combat fog-of-war mechanics.
+Add persistent campaign consequences.
+Add command reputation systems.
+Add overload weapon modes:
+unsafe overcharge
+unstable torpedoes
+emergency power dumps
+Add command-pressure moments with difficult timed decisions.
+Add dynamic mission briefings with hidden information.
+Add post-battle debriefs and combat analysis reports.
