@@ -206,6 +206,20 @@ function initiateVesselSimulation(station) {
   // Restore default EPS allocations
   const defaultPower = { cannon_pu:8, cannon_pl:8, cannon_su:8, cannon_sl:6, nose_beam:10, torpedoes:10, shields:28, sensors:16, engines:10, cloak_dev:0, warp_core:10 };
   Object.keys(defaultPower).forEach(k => { if (G.systems[k]) G.systems[k].allocatedPower = defaultPower[k]; });
+
+  G.autoTacticalFireClock    = 0;         // Bug 1: reset auto-fire clock
+  G.gameSessionId            = (G.gameSessionId || 0) + 1; // Bug 2: guard async intervals
+
+  // Bug 4: clear transcript box for fresh game
+  const txBox = document.getElementById('terminal-transcript-box');
+  if (txBox) { txBox.innerHTML = ''; txBox.style.display = 'none'; }
+  // Also restore score display visibility for future games
+  const scoreDiv = document.getElementById('score-display');
+  if (scoreDiv) scoreDiv.style.display = 'none';
+
+  // Hide the startup overlay — this was missing and caused the load screen to persist
+  document.getElementById('overlay').style.display = 'none';
+
   G.running = true;
   G.lastFrameTimestamp = performance.now();
 
