@@ -207,8 +207,11 @@ function initiateVesselSimulation(station) {
   const defaultPower = { cannon_pu:8, cannon_pl:8, cannon_su:8, cannon_sl:6, nose_beam:10, torpedoes:10, shields:28, sensors:16, engines:10, cloak_dev:0, warp_core:10 };
   Object.keys(defaultPower).forEach(k => { if (G.systems[k]) G.systems[k].allocatedPower = defaultPower[k]; });
 
-  G.autoTacticalFireClock    = 0;         // Bug 1: reset auto-fire clock
-  G.gameSessionId            = (G.gameSessionId || 0) + 1; // Bug 2: guard async intervals
+  G.dead               = false;   // latent fix: ensures G.dead cleared if play-again ever added
+  G.running            = false;   // will be set true after overlay hidden
+  G.lastFrameTimestamp = 0;
+  G.autoTacticalFireClock = 0;
+  G.gameSessionId      = (G.gameSessionId || 0) + 1; // guards async intervals from prior game
 
   // Bug 4: clear transcript box for fresh game
   const txBox = document.getElementById('terminal-transcript-box');

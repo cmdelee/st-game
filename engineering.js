@@ -167,13 +167,14 @@ function processRepairQueues(dt) {
       if (r.sysKey === 'warp_core') {
         G.batteryActive = false;
         postLogEvent("Warp core restart sequence initiated — power coming online over 12s.", 'warn');
-        // Item 5: gradual warp core restart — ramp health from current to repaired over 12s
-        const targetHealth = sys.health;
-        const startHealth  = Math.max(5, targetHealth - 60); // start low, ramp up
+        // Bug 2 fix: capture session ID; cancel ramp if a new game starts mid-ramp
+        const rampSessionId = G.gameSessionId;
+        const targetHealth  = sys.health;
+        const startHealth   = Math.max(5, targetHealth - 60);
         sys.health = startHealth;
         let elapsed = 0;
         const rampInterval = setInterval(() => {
-          if (G.dead || !G.running) { clearInterval(rampInterval); return; }
+          if (G.dead || !G.running || G.gameSessionId !== rampSessionId) { clearInterval(rampInterval); return; }
           elapsed += 500;
           const progress = Math.min(1, elapsed / 12000);
           sys.health = Math.min(targetHealth, startHealth + (targetHealth - startHealth) * progress);
@@ -591,12 +592,13 @@ function rebalanceShieldArrays() {
   if (G.shieldTransferInProgress) { postLogEvent("Shield transfer already in progress.", 'warn'); return; }
   const total = G.player.shields.fore + G.player.shields.port + G.player.shields.starboard + G.player.shields.aft;
   const even  = total / 4;
-  // Item 8: 2s transfer window — shields briefly dip to 80% during EPS conduit switching
+  // Bug 3 fix: capture session ID; cancel if new game starts during 2s transfer
+  const transferSessionId = G.gameSessionId;
   G.shieldTransferInProgress = true;
   ['fore','port','starboard','aft'].forEach(s => { G.player.shields[s] *= 0.80; });
   postLogEvent("Shield equalisation in progress — EPS conduits switching (2s).", 'info');
   setTimeout(() => {
-    if (G.dead) return;
+    if (G.dead || G.gameSessionId !== transferSessionId) { G.shieldTransferInProgress = false; return; }
     ['fore','port','starboard','aft'].forEach(s => { G.player.shields[s] = Math.min(G.player.shields.maxSectorValue, even); });
     G.shieldTransferInProgress = false;
     postLogEvent("Shields equalised.", 'good');

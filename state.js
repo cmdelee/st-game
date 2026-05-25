@@ -242,6 +242,7 @@ const G = {
   lockProgress:0,
   activeScanningProfile:false,
   headingDegrees:180, velocitySpeedRating:65,
+  gameSessionId:0,        // incremented each game start; guards async intervals
 
   // Scan
   activeScanProfile:null, scanAnalysisProgress:0, scanBonus:null,
