@@ -59,7 +59,48 @@ function renderSpatialViewCanvas() {
     ctx.fillStyle = '#0a1224'; ctx.fill();
     ctx.strokeStyle = C.b; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(px+16,py); ctx.lineTo(px+28,py-6); ctx.lineTo(px+28,py+6); ctx.closePath(); ctx.stroke();
-    // Ablative armour ring (green when healthy, fading as layers depleted)
+
+    // Feature 3: Firing arc sector visualisation
+    // Each arc is drawn as a faint wedge at arc radius 48px
+    const arcDefs = [
+      { label:'FORE',  startAngle:-Math.PI*0.35, endAngle:Math.PI*0.35,   systems:['cannon_pu','cannon_su','nose_beam','torpedoes'] },
+      { label:'PORT',  startAngle:-Math.PI*0.90, endAngle:-Math.PI*0.35,  systems:['cannon_pu','cannon_pl'] },
+      { label:'STBD',  startAngle: Math.PI*0.35, endAngle: Math.PI*0.85,  systems:['cannon_su','cannon_sl'] },
+      { label:'AFT',   startAngle: Math.PI*1.00, endAngle: Math.PI*1.40,  systems:['cannon_pl','cannon_sl'] },
+    ];
+    // Check if any recently fired weapon matches each arc
+    const now = performance.now();
+    arcDefs.forEach(arc => {
+      const recentFire = G.renderedBeamsVector.find(b =>
+        b.type !== 'burst_flash' && arc.systems.includes(b.type) &&
+        now - b.trackingStartTime < b.duration
+      );
+      const allOffline = arc.systems.every(k => G.systems[k] && (G.systems[k].tripped || G.systems[k].health < 10));
+      const alpha = recentFire ? 0.45 : allOffline ? 0.06 : 0.14;
+      const col   = recentFire ? C.b : allOffline ? C.red : 'rgba(68,119,255,0.6)';
+
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.arc(px, py, 48, arc.startAngle, arc.endAngle);
+      ctx.closePath();
+      ctx.fillStyle = recentFire
+        ? `rgba(68,119,255,${alpha})`
+        : allOffline ? `rgba(255,51,51,${alpha})` : `rgba(68,119,255,${alpha})`;
+      ctx.fill();
+      if (recentFire) {
+        ctx.strokeStyle = C.b; ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+      // Arc label
+      const midAngle = (arc.startAngle + arc.endAngle) / 2;
+      const lx = px + Math.cos(midAngle) * 58;
+      const ly = py + Math.sin(midAngle) * 58;
+      ctx.fillStyle = recentFire ? C.b : allOffline ? C.red : 'rgba(68,119,255,0.5)';
+      ctx.font = 'bold 7px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(arc.label, lx, ly);
+    });
+
+    // Ablative armour ring
     const ab = G.ablative; const layerPct = ab.layers / ABLATIVE_ARMOUR.maxLayers;
     if (layerPct > 0) {
       ctx.strokeStyle = `rgba(0,204,102,${0.15 + layerPct * 0.45})`; ctx.lineWidth = 4;
@@ -378,7 +419,7 @@ function renderHullSchematicCanvas() {
     const r   = sys.tripped ? 7 : 4;
     ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx+sp.x, cy+sp.y, r, 0, Math.PI*2); ctx.fill();
     if (h2 < 70 || sys.tripped) { ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx+sp.x, cy+sp.y, r+3, 0, Math.PI*2); ctx.stroke(); }
-    if (G.repairQueue.find(rr => rr.sysKey === sp.k)) {
+    if (G.repairTeams.some(t => t.sysKey === sp.k)) {
       ctx.fillStyle = C.warn; ctx.font = '8px Antonio'; ctx.textAlign = 'center'; ctx.fillText('🔧', cx+sp.x, cy+sp.y-10);
     }
   });
@@ -439,7 +480,7 @@ function renderHullSchematicCanvas() {
     dHdr('KEY SYSTEMS');
     [{k:'cloak_dev',l:'CLOAK'},{k:'sensors',l:'SENSORS'},{k:'engines',l:'ENGINES'}].forEach(sd => {
       const sys = G.systems[sd.k]; const sh = Math.round(sys.health); const c = sh > 70 ? C.green : sh > 35 ? C.warn : C.red;
-      const rp  = G.repairQueue.find(r => r.sysKey === sd.k);
+      const rp  = G.repairTeams.some(t => t.sysKey === sd.k);
       dRow(sd.l, sys.tripped ? 'OFFLINE' : rp ? `${sh}% 🔧` : `${sh}%`, sys.tripped ? C.red : c, sys.tripped ? 'rgba(255,51,51,0.08)' : null);
     });
   }

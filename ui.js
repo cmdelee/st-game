@@ -160,7 +160,7 @@ function synchronizeGlobalInterfaceDisplays() {
       const sys = G.systems[w.k]; const h = Math.round(sys.health);
       const col = sys.tripped ? '#ff3333' : h > 70 ? '#00cc66' : h > 35 ? '#ffaa00' : '#ff3333';
       const bg  = sys.tripped ? 'rgba(255,51,51,0.2)' : h < 35 ? 'rgba(255,51,51,0.1)' : 'rgba(10,20,40,0.8)';
-      const rep = G.repairQueue.find(r => r.sysKey === w.k);
+      const rep = G.repairTeams.some(t => t.sysKey === w.k);
       return `<div style="background:${bg};border:1px solid ${sys.tripped ? '#ff3333' : h < 70 ? col : '#1a2640'};border-radius:5px;padding:2px 5px;text-align:center;flex:1;min-width:36px;">
         <div style="font-family:'Antonio';font-size:8px;color:#aabbcc;">${w.l}</div>
         <div style="font-size:10px;font-weight:bold;color:${col};">${sys.tripped ? 'OFF' : h + '%'}</div>
@@ -177,7 +177,7 @@ function synchronizeGlobalInterfaceDisplays() {
       const sys = G.systems[key]; const h = Math.round(sys.health);
       const col = sys.tripped ? C.red : h > 70 ? C.green : h > 35 ? C.warn : C.red;
       const ab  = { cannon_pu:'P/U', cannon_pl:'P/L', cannon_su:'S/U', cannon_sl:'S/L', nose_beam:'NSE', torpedoes:'TRP', cloak_dev:'CLK', warp_core:'WRP', shields:'SHD', sensors:'SEN', engines:'ENG' }[key];
-      const rep = G.repairQueue.find(r => r.sysKey === key);
+      const rep = G.repairTeams.some(t => t.sysKey === key);
       return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:1px;">
         <span style="width:22px;font-size:9px;color:#6688aa;font-family:'Roboto Mono';">${ab}</span>
         <div class="bar-rail" style="height:7px;flex:1;margin-bottom:0;"><div class="bar-fill" style="color:${col};width:${sys.tripped ? 0 : h}%;"></div></div>

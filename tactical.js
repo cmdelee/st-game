@@ -1018,11 +1018,9 @@ function executeThreatCounterVolley() {
   if (G.player.hull <= 0) concludeSimulationRun(false, "Vessel destroyed.", false);
 }
 
-// ============================================================
-// AUTO-DELEGATION
-// ============================================================
 function processAutomatedDelegation(dt) {
   if (G.playerChosenStation === 'tactical') {
+    // Auto-engineering: re-latch tripped breakers
     const ce = getCrewEfficiency('engineering');
     Object.keys(G.systems).forEach(key => {
       const sys = G.systems[key];
@@ -1035,8 +1033,27 @@ function processAutomatedDelegation(dt) {
         refreshEngineeringPanelGraphics();
       }
     });
+    // Auto-assign repair teams to damaged systems (tactical player only)
+    const damaged = Object.keys(G.systems)
+      .filter(k => (G.systems[k].health < 70 || G.systems[k].tripped) &&
+                   !G.repairTeams.some(t => t.sysKey === k))
+      .sort((a, b) => G.systems[a].health - G.systems[b].health); // worst first
+    G.repairTeams.forEach((team, idx) => {
+      if (!team.sysKey && damaged.length > idx) {
+        const target = damaged[idx];
+        const sys    = G.systems[target];
+        const damage = Math.max(1, 100 - sys.health + (sys.tripped ? 20 : 0));
+        const repairTime = Math.max(5000, (damage / 10) * 5000);
+        team.sysKey    = target;
+        team.label     = sys.label;
+        team.totalTime = repairTime;
+        team.remaining = repairTime;
+        postLogEvent(`Computer: repair team dispatched to [${sys.label}].`, 'info');
+      }
+    });
 
   } else {
+    // Auto-tactical: engineering player — fire weapons on a clock
     G.autoTacticalFireClock += dt;
     if (G.autoTacticalFireClock > 2400) {
       G.autoTacticalFireClock = 0;

@@ -356,6 +356,13 @@ const G = {
   repairQueue:[],
   autoTacticalFireClock:0,
 
+  // Repair teams — 2 independent teams (feature 7)
+  repairTeams:[
+    { sysKey:null, label:'', totalTime:0, remaining:0 },
+    { sysKey:null, label:'', totalTime:0, remaining:0 },
+  ],
+  repairQueue:[],  // kept for enemy repair tracking
+
   // Scoring
   score:{ totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false },
 

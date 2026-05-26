@@ -134,40 +134,65 @@ function recalculateShieldRegenRate() {
 }
 
 // ============================================================
-// REPAIR SYSTEM
+// REPAIR TEAMS — 2 independent teams, manually assigned (feature 7)
+// O'Brien dispatches specific teams to specific locations, per DS9 canon
 // ============================================================
-function queueSystemRepair(sysKey) {
+function assignRepairTeam(sysKey, teamIdx) {
   if (G.playerChosenStation !== 'engineering') { postLogEvent("Repair requires Engineering station.", 'warn'); return; }
   const sys = G.systems[sysKey]; if (!sys) return;
-  if (sys.health >= 100 && !sys.tripped) { postLogEvent(`${sys.label} is at full integrity.`, 'info'); return; }
-  if (G.repairQueue.find(r => r.sysKey === sysKey)) { postLogEvent(`${sys.label} already queued.`, 'warn'); return; }
-  const damage = 100 - sys.health;
-  // Base repair time only — repairSpeedMult is applied in processRepairQueues drain rate (not here too)
+  if (sys.health >= 100 && !sys.tripped) { postLogEvent(`${sys.label} at full integrity.`, 'info'); return; }
+
+  const team = G.repairTeams[teamIdx];
+  // Check the other team isn't already on this system
+  const otherTeam = G.repairTeams[1 - teamIdx];
+  if (otherTeam.sysKey === sysKey) { postLogEvent(`Team ${2 - teamIdx} already repairing ${sys.label}.`, 'warn'); return; }
+
+  const damage    = Math.max(1, 100 - sys.health + (sys.tripped ? 20 : 0));
   const repairTime = Math.max(5000, (damage / 10) * 5000);
-  G.repairQueue.push({ sysKey, label: sys.label, totalTime: repairTime, remaining: repairTime });
-  postLogEvent(`Repair team dispatched: ${sys.label}. ETA: ${Math.ceil(repairTime / 1000 / DIFFICULTY[currentDifficulty].repairSpeedMult)}s.`, 'good');
-  // Refresh panel WITHOUT rebuilding the whole table (preserves button state)
+  const wasOn     = team.sysKey;
+  team.sysKey     = sysKey;
+  team.label      = sys.label;
+  team.totalTime  = repairTime;
+  team.remaining  = repairTime;
+
+  const teamName = teamIdx === 0 ? "Alpha Team" : "Beta Team";
+  const eta      = Math.ceil(repairTime / 1000 / DIFFICULTY[currentDifficulty].repairSpeedMult);
+  if (wasOn) postLogEvent(`${teamName} redirected from ${wasOn} → ${sys.label}. ETA ${eta}s.`, 'warn');
+  else       postLogEvent(`${teamName} dispatched to ${sys.label}. ETA ${eta}s.`, 'good');
   refreshEngineeringPanelGraphics();
+}
+
+// Legacy wrapper — used by auto-delegation (tactical player)
+function queueSystemRepair(sysKey) {
+  if (G.playerChosenStation !== 'engineering') { return; }
+  // Auto-assign to whichest team is free, else team with most progress
+  const freeIdx = G.repairTeams.findIndex(t => !t.sysKey);
+  const teamIdx = freeIdx >= 0 ? freeIdx : (G.repairTeams[0].remaining > G.repairTeams[1].remaining ? 1 : 0);
+  assignRepairTeam(sysKey, teamIdx);
 }
 
 function processRepairQueues(dt) {
   const crewEff = getCrewEfficiency('engineering');
-  const diff = DIFFICULTY[currentDifficulty];
-  G.repairQueue = G.repairQueue.filter(r => {
-    r.remaining -= dt * crewEff * diff.repairSpeedMult;
-    const sys = G.systems[r.sysKey];
-    if (r.remaining <= 0) {
-      if (sys) {
-        sys.health = Math.min(100, sys.health + (100 - sys.health) * 0.80);
-        sys.tripped = false;
-        sys.stress = 0;
-      }
-      postLogEvent(`Repair complete: ${r.label} → ${Math.round(sys ? sys.health : 100)}%.`, 'good');
+  const diff    = DIFFICULTY[currentDifficulty];
+
+  // Process both repair teams independently
+  G.repairTeams.forEach((team, idx) => {
+    if (!team.sysKey) return;
+    const sys = G.systems[team.sysKey];
+    if (!sys) { team.sysKey = null; return; }
+
+    team.remaining -= dt * crewEff * diff.repairSpeedMult;
+
+    if (team.remaining <= 0) {
+      sys.health  = Math.min(100, sys.health + (100 - sys.health) * 0.80);
+      sys.tripped = false;
+      sys.stress  = 0;
+      postLogEvent(`${idx === 0 ? 'Alpha' : 'Beta'} Team: ${team.label} → ${Math.round(sys.health)}%.`, 'good');
       G.score.repairsCompleted++;
-      if (r.sysKey === 'warp_core') {
+
+      if (team.sysKey === 'warp_core') {
         G.batteryActive = false;
         postLogEvent("Warp core restart sequence initiated — power coming online over 12s.", 'warn');
-        // Bug 2 fix: capture session ID; cancel ramp if a new game starts mid-ramp
         const rampSessionId = G.gameSessionId;
         const targetHealth  = sys.health;
         const startHealth   = Math.max(5, targetHealth - 60);
@@ -188,10 +213,13 @@ function processRepairQueues(dt) {
         recalculateShieldRegenRate();
         updateWarpAvailability();
       }
+
+      team.sysKey    = null;
+      team.label     = '';
+      team.totalTime = 0;
+      team.remaining = 0;
       refreshEngineeringPanelGraphics();
-      return false;
     }
-    return true;
   });
 
   // Enemy repairs — faster while cloaked
@@ -267,22 +295,37 @@ function refreshEngineeringPanelGraphics() {
     if (sl) { sl.textContent = `${Math.round(sys.stress)}%`; sl.style.color = sys.stress > 70 ? 'var(--red)' : sys.stress > 40 ? 'var(--warn)' : 'var(--t)'; }
     if (hl) { const h = Math.round(sys.health); const c = h > 70 ? 'var(--green)' : h > 35 ? 'var(--warn)' : 'var(--red)'; hl.innerHTML = `<span style="color:${c};font-weight:bold;">${h}%</span>`; }
 
-    // BUG FIX: repair cell — only replace content when the state changes, 
-    // not on every frame. Track last rendered state via data attribute.
+    // Repair cell — show team assignment state
     if (rl) {
-      const qi = G.repairQueue.find(r => r.sysKey === key);
-      if (qi) {
-        const p = Math.round((1 - qi.remaining / qi.totalTime) * 100);
-        const newContent = `<span style="color:var(--warn);font-size:8px;">🔧${p}%</span>`;
-        if (rl.dataset.mode !== 'progress' || parseInt(rl.dataset.pct) !== p) {
+      const teamA = G.repairTeams[0].sysKey === key;
+      const teamB = G.repairTeams[1].sysKey === key;
+      if (teamA || teamB) {
+        const team   = teamA ? G.repairTeams[0] : G.repairTeams[1];
+        const p      = Math.round((1 - team.remaining / team.totalTime) * 100);
+        const label  = teamA ? '🔧A' : '🔧B';
+        const newContent = `<span style="color:var(--warn);font-size:8px;">${label}${p}%</span>`;
+        if (rl.dataset.mode !== 'progress' || parseInt(rl.dataset.pct) !== p || rl.dataset.team !== (teamA?'A':'B')) {
           rl.innerHTML = newContent;
           rl.dataset.mode = 'progress';
-          rl.dataset.pct = p;
+          rl.dataset.pct  = p;
+          rl.dataset.team = teamA ? 'A' : 'B';
         }
       } else if (sys.health < 100 || sys.tripped) {
-        if (rl.dataset.mode !== 'btn') {
-          rl.innerHTML = `<button onclick="queueSystemRepair('${key}')" style="font-size:8px;padding:1px 4px;background:rgba(255,170,0,0.2);border:1px solid var(--warn);color:var(--warn);border-radius:3px;cursor:pointer;">REPAIR</button>`;
+        // Show assign buttons — A and B team
+        const aFree = !G.repairTeams[0].sysKey;
+        const bFree = !G.repairTeams[1].sysKey;
+        const btnStyle = 'font-size:7px;padding:1px 3px;border-radius:2px;cursor:pointer;border:none;font-weight:bold;';
+        const aStyle   = `${btnStyle}background:${aFree ? 'rgba(68,119,255,0.3)' : 'rgba(255,170,0,0.2)'};color:${aFree ? '#88aaff' : '#ffaa00'};`;
+        const bStyle   = `${btnStyle}background:${bFree ? 'rgba(68,119,255,0.3)' : 'rgba(255,170,0,0.2)'};color:${bFree ? '#88aaff' : '#ffaa00'};`;
+        const newContent = `<span style="display:flex;gap:2px;">
+          <button onclick="assignRepairTeam('${key}',0)" style="${aStyle}" title="${aFree ? 'Alpha Team free' : 'Redirect Alpha Team'}">A</button>
+          <button onclick="assignRepairTeam('${key}',1)" style="${bStyle}" title="${bFree ? 'Beta Team free' : 'Redirect Beta Team'}">B</button>
+        </span>`;
+        const sig = `btn-${aFree}-${bFree}`;
+        if (rl.dataset.mode !== 'btn' || rl.dataset.sig !== sig) {
+          rl.innerHTML = newContent;
           rl.dataset.mode = 'btn';
+          rl.dataset.sig  = sig;
         }
       } else {
         if (rl.dataset.mode !== 'ok') { rl.innerHTML = ''; rl.dataset.mode = 'ok'; }
@@ -436,24 +479,26 @@ function updateEngUtilityPanel() {
   const rl = document.getElementById('txt-shield-regen-rate');
   if (rl) rl.textContent = G.cloaked ? 'OFFLINE' : `+${G.shieldRegenRate.toFixed(1)}/s`;
 
-  // Repair queue display
+  // Repair team status display
   const rq = document.getElementById('lbl-repair-queue');
   if (rq) {
-    if (G.repairQueue.length === 0) {
-      rq.innerHTML = 'No repairs queued.';
-    } else {
-      rq.innerHTML = G.repairQueue.map(r => {
-        const p = Math.round((1 - r.remaining / r.totalTime) * 100);
-        const s = Math.ceil(r.remaining / 1000);
-        return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px;">
-          <span style="color:var(--warn);font-size:9px;flex:1;">🔧 ${r.label}</span>
-          <div style="width:40px;height:5px;background:#050a14;border:1px solid #1a2640;overflow:hidden;">
-            <div style="width:${p}%;height:100%;background:var(--warn);"></div>
-          </div>
-          <span style="color:#aabbcc;font-size:9px;min-width:20px;">${s}s</span>
-        </div>`;
-      }).join('');
-    }
+    const teamLines = G.repairTeams.map((team, idx) => {
+      const name = idx === 0 ? 'Alpha' : 'Beta';
+      if (!team.sysKey) {
+        return `<div style="color:#556677;font-size:9px;">👤 ${name} Team — standby</div>`;
+      }
+      const p = Math.round((1 - team.remaining / team.totalTime) * 100);
+      const s = Math.ceil(team.remaining / 1000);
+      return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px;">
+        <span style="color:var(--b);font-size:9px;min-width:38px;">👤 ${name}</span>
+        <span style="color:var(--warn);font-size:9px;flex:1;">${team.label}</span>
+        <div style="width:35px;height:5px;background:#050a14;border:1px solid #1a2640;overflow:hidden;">
+          <div style="width:${p}%;height:100%;background:var(--warn);"></div>
+        </div>
+        <span style="color:#aabbcc;font-size:9px;min-width:18px;">${s}s</span>
+      </div>`;
+    });
+    rq.innerHTML = teamLines.join('');
   }
 
   // Auto-tactical summary (engineering mode only)
@@ -461,7 +506,9 @@ function updateEngUtilityPanel() {
   if (as && G.playerChosenStation === 'engineering') {
     const healthy = ['cannon_pu','cannon_pl','cannon_su','cannon_sl'].filter(k => !G.systems[k].tripped && G.systems[k].health >= 15).length;
     const torpsOk = !G.systems.torpedoes.tripped && G.systems.torpedoes.health >= 15 && G.player.torpedoes > 0;
-    as.textContent = `${healthy}/4 cannons · Torps:${torpsOk ? 'READY' : 'NO'} · ${G.cloaked ? '[CLOAKED — fire suspended]' : 'Auto-cycling.'} ${G.batteryActive ? '[BATTERY ACTIVE]' : ''}`;
+    const teamA   = G.repairTeams[0].sysKey ? `A:${G.repairTeams[0].label.split(' ').slice(-1)[0]}` : 'A:idle';
+    const teamB   = G.repairTeams[1].sysKey ? `B:${G.repairTeams[1].label.split(' ').slice(-1)[0]}` : 'B:idle';
+    as.textContent = `${healthy}/4 cannons · Torps:${torpsOk ? 'RDY' : 'NO'} · ${teamA} · ${teamB} · ${G.cloaked ? '[CLOAKED]' : 'Firing.'}`;
   }
 
   // Ablative armour status (engineering view)
