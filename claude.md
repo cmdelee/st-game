@@ -183,9 +183,9 @@ G.score = { totalDmgDealt, volleysFired, hullBreaches, systemsDestroyed,
 
 | Setting | Enemy Hull | Enemy Dmg | Enemy Lock | Enemy Fire | Player Hull | Targets Systems | Repair Speed |
 |---|---|---|---|---|---|---|---|
-| Normal | ×1.0 | ×1.0 | ×1.0 | ×1.0 | ×1.0 | No | ×1.0 |
-| Hard | ×1.3 | ×1.25 | ×1.4 | ×0.8 | ×0.8 | Yes (25%) | ×0.8 |
-| Elite | ×1.6 | ×1.5 | ×1.8 | ×0.65 | ×0.65 | Yes (45%) | ×0.6 |
+| Normal | ×1.0  | ×1.0  | ×1.0 | ×1.0  | ×1.0  | No        | ×1.0  |
+| Hard   | ×1.2  | ×1.15 | ×1.3 | ×0.85 | ×0.85 | Yes (20%) | ×0.85 |
+| Elite  | ×1.35 | ×1.28 | ×1.5 | ×0.78 | ×0.78 | Yes (30%) | ×0.72 |
 
 ---
 
