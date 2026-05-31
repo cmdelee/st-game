@@ -403,6 +403,11 @@ const G = {
   // Borg escalation counter (item 2)
   borgEscalationLevel:0,   // 0-3; each level adds 15% enemy damage
 
+  // Captain's Chair
+  crewReports:[],
+  captainOrderCooldowns:{},
+  captainPeriodicTimer:0,
+
   // Scoring
   score:{ totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false },
 

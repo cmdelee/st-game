@@ -543,3 +543,95 @@ canvas { width: 100%; height: 100%; display: block; }
   flex-shrink: 0;
 }
 
+/* ══════════════════════════════════════════════════════════
+   CAPTAIN'S CHAIR
+══════════════════════════════════════════════════════════ */
+.captain-overview-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: clamp(4px, 0.6vh, 10px);
+  flex-shrink: 0;
+}
+.captain-mini-panel {
+  background: #030810;
+  border: 1px solid var(--dim2);
+  border-radius: 6px;
+  padding: clamp(4px, 0.6vh, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2px, 0.35vh, 5px);
+}
+.captain-mini-header {
+  font-family: 'Antonio', sans-serif;
+  font-size: clamp(9px, 1vh, 12px);
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--dim2);
+  padding-bottom: clamp(1px, 0.2vh, 3px);
+  margin-bottom: clamp(1px, 0.2vh, 2px);
+}
+.captain-mini-row {
+  display: flex;
+  align-items: center;
+  font-size: clamp(8px, 0.9vh, 10px);
+  color: #aabbcc;
+  gap: 4px;
+}
+.captain-comms-wrap {
+  flex-shrink: 0;
+  background: #020509;
+  border: 1px solid var(--dim2);
+  border-left: 3px solid var(--b);
+  border-radius: 4px;
+  padding: clamp(4px, 0.5vh, 8px);
+}
+.captain-comms-header {
+  font-family: 'Antonio', sans-serif;
+  font-size: clamp(9px, 0.95vh, 11px);
+  color: var(--b);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: clamp(3px, 0.4vh, 6px);
+}
+.captain-comms-feed {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1px, 0.25vh, 3px);
+  overflow: hidden;
+}
+.comms-line {
+  display: flex;
+  gap: 8px;
+  font-size: clamp(9px, 0.95vh, 11px);
+  line-height: 1.3;
+  padding: clamp(1px, 0.2vh, 2px) 0;
+  border-bottom: 1px solid rgba(26,38,64,0.5);
+}
+.comms-speaker {
+  font-family: 'Antonio', sans-serif;
+  font-weight: bold;
+  white-space: nowrap;
+  font-size: clamp(9px, 0.9vh, 11px);
+  flex-shrink: 0;
+}
+.comms-text { color: #aabbcc; flex: 1; }
+.comms-alert .comms-text { color: #ff9966; }
+.comms-good  .comms-text { color: #88ddaa; }
+.captain-orders-group { flex-shrink: 0; }
+.captain-orders-label {
+  font-family: 'Antonio', sans-serif;
+  font-size: clamp(9px, 1vh, 12px);
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--dim2);
+  padding-bottom: clamp(1px, 0.2vh, 3px);
+  margin-bottom: clamp(2px, 0.3vh, 5px);
+}
+.captain-orders-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(3px, 0.4vh, 6px);
+}
+

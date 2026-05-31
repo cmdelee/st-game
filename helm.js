@@ -11,6 +11,7 @@ function processHelmTimers(dt) {
       G.attackRunActive = false;
       G.playerRangeBracket = 'medium'; // return to neutral range after run
       postLogEvent("Attack run complete — range returned to medium. CD 20s.", 'good');
+      crewReportAttackRunComplete();
     }
     if (G.activePanel === 'helm') updateHelmPanel();
   } else if (G.attackRunCooldown > 0) {
@@ -67,6 +68,7 @@ function processHelmTimers(dt) {
         G.player.shields[s] > G.player.shields[best] ? s : best, 'fore');
       G.helmAttackVector = strongest;
       postLogEvent(`Come-about complete — ${strongest.toUpperCase()} shields presented (${Math.round(G.player.shields[strongest])}MW).`, 'good');
+      crewReportComeAboutComplete(strongest);
     }
     if (G.activePanel === 'helm') updateHelmPanel();
   } else if (G.comeAboutCooldown > 0) {

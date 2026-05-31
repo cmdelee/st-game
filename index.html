@@ -69,9 +69,10 @@
 
     <!-- Station buttons -->
     <div class="setup-buttons-flex" id="setup-controls-anchor">
-      <button class="pill-action-btn" style="width:180px; padding:14px; background:var(--o);" onclick="initiateVesselSimulation('tactical')">COMMAND TACTICAL</button>
-      <button class="pill-action-btn" style="width:180px; padding:14px; background:var(--p);" onclick="initiateVesselSimulation('engineering')">CONTROL ENGINEERING</button>
-      <button class="pill-action-btn" style="width:180px; padding:14px; background:var(--t);" onclick="initiateVesselSimulation('helm')">FLY HELM</button>
+      <button class="pill-action-btn" style="width:160px; padding:12px; background:var(--o);" onclick="initiateVesselSimulation('tactical')">COMMAND TACTICAL</button>
+      <button class="pill-action-btn" style="width:160px; padding:12px; background:var(--p);" onclick="initiateVesselSimulation('engineering')">CONTROL ENGINEERING</button>
+      <button class="pill-action-btn" style="width:160px; padding:12px; background:var(--t);" onclick="initiateVesselSimulation('helm')">FLY HELM</button>
+      <button class="pill-action-btn" style="width:160px; padding:12px; background:var(--warn); color:#000;" onclick="initiateVesselSimulation('captain')">⭐ CAPTAIN'S CHAIR</button>
     </div>
 
     <!-- End-game score display (hidden until game over) -->
@@ -122,6 +123,7 @@
     <div class="nav-pill-btn active" id="tab-tactical"    onclick="toggleActiveDeck('tactical')">Tactical Systems</div>
     <div class="nav-pill-btn"        id="tab-engineering" onclick="toggleActiveDeck('engineering')">Engineering</div>
     <div class="nav-pill-btn"        id="tab-helm"        onclick="toggleActiveDeck('helm')">Helm</div>
+    <div class="nav-pill-btn"        id="tab-captain"     onclick="toggleActiveDeck('captain')" style="background:var(--o);">Command Chair</div>
 
     <div class="nav-spacer-block">
       <!-- EPS load -->
@@ -500,6 +502,120 @@
 
     </div><!-- /deck-helm -->
 
+    <!-- ═══════════════════════════════════════════════════════
+         CAPTAIN'S CHAIR DECK
+    ════════════════════════════════════════════════════════ -->
+    <div class="control-deck-plate" id="deck-captain">
+
+      <div class="section-header">
+        <span>⭐ Captain's Chair — USS Defiant NX-74205</span>
+        <span class="delegation-badge" style="background:rgba(255,170,0,0.2); color:var(--warn); border:1px solid var(--warn);">ALL STATIONS AUTO</span>
+      </div>
+
+      <!-- Hull bar -->
+      <div class="bar-row" style="margin-bottom:0;">
+        <span class="bar-label">Hull Integrity</span>
+        <div class="bar-rail"><div class="bar-fill" id="cap-hull-bar" style="color:var(--green);"></div></div>
+        <span class="bar-val" id="cap-hull-val">100%</span>
+      </div>
+
+      <!-- Three mini station panels -->
+      <div class="captain-overview-row">
+
+        <!-- Tactical -->
+        <div class="captain-mini-panel">
+          <div class="captain-mini-header" style="color:var(--o);">⚡ TACTICAL — WORF</div>
+          <div class="captain-mini-row">
+            <span>Lock</span>
+            <div class="bar-rail" style="height:8px; flex:1; margin:0 6px;"><div class="bar-fill" id="cap-tac-lock-bar" style="color:var(--b);"></div></div>
+            <span id="cap-tac-lock" style="min-width:30px; text-align:right;">0%</span>
+          </div>
+          <div class="captain-mini-row">
+            <span>Enemy Hull</span>
+            <div class="bar-rail" style="height:8px; flex:1; margin:0 6px;"><div class="bar-fill" id="cap-tac-enemy-bar" style="color:var(--red);"></div></div>
+            <span id="cap-tac-enemy-hull" style="min-width:30px; text-align:right;">100%</span>
+          </div>
+          <div class="captain-mini-row">
+            <span>Fore Shield</span>
+            <div class="bar-rail" style="height:8px; flex:1; margin:0 6px;"><div class="bar-fill" id="cap-tac-shld-bar" style="color:var(--b);"></div></div>
+            <span id="cap-tac-fore-shld" style="min-width:42px; text-align:right;">320/320</span>
+          </div>
+        </div>
+
+        <!-- Engineering -->
+        <div class="captain-mini-panel">
+          <div class="captain-mini-header" style="color:var(--b);">⚙ ENGINEERING — O'BRIEN</div>
+          <div class="captain-mini-row">
+            <span>EPS Power</span>
+            <div class="bar-rail" style="height:8px; flex:1; margin:0 6px;"><div class="bar-fill" id="cap-eng-power-bar" style="color:var(--p);"></div></div>
+            <span id="cap-eng-power" style="min-width:42px; text-align:right;">114 MW</span>
+          </div>
+          <div class="captain-mini-row"><span>Shld Regen</span><span id="cap-eng-regen" style="color:var(--green); font-weight:bold; margin-left:8px;">—</span></div>
+          <div class="captain-mini-row"><span>Repair Teams</span><span id="cap-eng-repair" style="color:var(--warn); font-weight:bold; margin-left:8px;">IDLE</span></div>
+        </div>
+
+        <!-- Helm -->
+        <div class="captain-mini-panel">
+          <div class="captain-mini-header" style="color:var(--t);">🚀 HELM — NOG</div>
+          <div class="captain-mini-row"><span>Speed</span><span id="cap-helm-speed"    style="color:var(--green); font-weight:bold; margin-left:8px;">HALF IMPULSE</span></div>
+          <div class="captain-mini-row"><span>Range</span><span id="cap-helm-range"    style="color:var(--warn);  font-weight:bold; margin-left:8px;">MEDIUM</span></div>
+          <div class="captain-mini-row"><span>Vector</span><span id="cap-helm-vector"   style="margin-left:8px;">FORE</span></div>
+          <div class="captain-mini-row"><span>Maneuver</span><span id="cap-helm-maneuver" style="color:var(--p); margin-left:8px;">—</span></div>
+        </div>
+
+      </div><!-- /captain-overview-row -->
+
+      <!-- Crew comms feed -->
+      <div class="captain-comms-wrap">
+        <div class="captain-comms-header">▶ BRIDGE COMMS — INCOMING CREW REPORTS</div>
+        <div id="captain-comms-feed" class="captain-comms-feed"></div>
+      </div>
+
+      <!-- Orders: Worf -->
+      <div class="captain-orders-group">
+        <div class="captain-orders-label" style="color:var(--o);">ORDER — LT. CMDR WORF  <span style="font-size:9px; color:#6688aa;">(Tactical)</span></div>
+        <div class="captain-orders-grid">
+          <button class="pill-action-btn"         id="cap-ord-fire_cannons" onclick="capFireCannons()"><span>Fire Cannons</span></button>
+          <button class="pill-action-btn p-btn"   id="cap-ord-fire_quantum" onclick="capFireQuantum()"><span>Quantum Torp</span></button>
+          <button class="pill-action-btn"         id="cap-ord-fire_photon"  onclick="capFirePhoton()"><span>Photon Torp</span></button>
+          <button class="pill-action-btn red-btn" id="cap-ord-fire_burst"   onclick="capFireBurst()"><span>Burst Salvo</span></button>
+          <button class="pill-action-btn red-btn" id="cap-ord-fire_alpha"   onclick="capFireAlpha()"><span>Alpha Salvo</span></button>
+          <button class="pill-action-btn"         id="cap-ord-rotate_freq"  onclick="capRotateFreq()"><span>Rotate Freq</span></button>
+          <button class="pill-action-btn warn-btn"id="cap-ord-evasive"      onclick="capEvasive()"><span>Evasive ◈</span></button>
+          <button class="pill-action-btn warn-btn"id="cap-ord-cloak"        onclick="capCloak()"><span>Engage Cloak</span></button>
+        </div>
+      </div>
+
+      <!-- Orders: O'Brien -->
+      <div class="captain-orders-group">
+        <div class="captain-orders-label" style="color:var(--b);">ORDER — CHIEF O'BRIEN  <span style="font-size:9px; color:#6688aa;">(Engineering)</span></div>
+        <div class="captain-orders-grid">
+          <button class="pill-action-btn"         id="cap-ord-boost_shields" onclick="capBoostShields()"><span>Boost Shields</span></button>
+          <button class="pill-action-btn warn-btn"id="cap-ord-emerg_batt"    onclick="capEmergBatt()"><span>Emerg Battery</span></button>
+          <button class="pill-action-btn"         id="cap-ord-repair_wpn"    onclick="capRepairWpn()"><span>Repair Weapons</span></button>
+          <button class="pill-action-btn"         id="cap-ord-repair_sys"    onclick="capRepairSys()"><span>Repair Systems</span></button>
+          <button class="pill-action-btn"         id="cap-ord-flush_eps"     onclick="capFlushEPS()"><span>Flush EPS</span></button>
+          <button class="pill-action-btn red-btn" id="cap-ord-dmg_ctrl"      onclick="capDmgCtrl()"><span>Damage Control</span></button>
+        </div>
+      </div>
+
+      <!-- Orders: Nog -->
+      <div class="captain-orders-group">
+        <div class="captain-orders-label" style="color:var(--t);">ORDER — ENSIGN NOG  <span style="font-size:9px; color:#6688aa;">(Helm)</span></div>
+        <div class="captain-orders-grid">
+          <button class="pill-action-btn green-btn"id="cap-ord-speed_full"   onclick="capSpeedFull()"><span>Full Impulse</span></button>
+          <button class="pill-action-btn"          id="cap-ord-speed_half"   onclick="capSpeedHalf()"><span>Half Impulse</span></button>
+          <button class="pill-action-btn"          id="cap-ord-speed_stop"   onclick="capSpeedStop()"><span>All Stop</span></button>
+          <button class="pill-action-btn p-btn"    id="cap-ord-attack_run"   onclick="capAttackRun()"><span>Attack Run</span></button>
+          <button class="pill-action-btn"          id="cap-ord-come_about"   onclick="capComeAbout()"><span>Come About</span></button>
+          <button class="pill-action-btn"          id="cap-ord-range_long"   onclick="capRangeLong()"><span>Long Range</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-range_close"  onclick="capRangeClose()"><span>Close Range</span></button>
+          <button class="pill-action-btn red-btn"  id="cap-ord-emerg_warp"   onclick="capEmergWarp()"><span>⚡ Emerg Warp</span></button>
+        </div>
+      </div>
+
+    </div><!-- /deck-captain -->
+
   </div><!-- /center-operations-deck -->
 
   <!-- ── RIGHT TELEMETRY TOWER ── -->
@@ -572,6 +688,7 @@
 <script src="engineering.js?v=8"></script>
 <script src="tactical.js?v=8"></script>
 <script src="helm.js?v=8"></script>
+<script src="command.js?v=1"></script>
 <script src="canvas-three.js?v=8"></script>
 <script src="canvas-2d.js?v=8"></script>
 <script src="ui.js?v=8"></script>

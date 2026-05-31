@@ -593,6 +593,8 @@ function commitScanProfile() {
     // a 2× fi multiplier when G.weaponsDisrupted is true.
   }
   postLogEvent(b.msg, 'good');
+  crewReportScanCommitted(G.activeScanProfile);
+  if (b.type === 'weapons') crewReportWeaponsDisrupted();
   G.activeScanProfile = null;
   G.scanAnalysisProgress = 0;
   document.querySelectorAll('.scan-profile-btn').forEach(b => b.classList.remove('active-scan'));
@@ -700,6 +702,7 @@ function triggerEnemyCloak(cfg) {
     G.enemyCloaked = true; G.enemyCloakVulnTimer = 0; G.enemyCloakPower = 100;
     G.enemyCloakEngagedAt = performance.now();
     postLogEvent(`${cfg.label} CLOAKED — repairing under cloak.`, 'crit');
+    crewReportEnemyCloak();
   }, 1500);
 }
 
@@ -707,6 +710,7 @@ function triggerEnemyDecloak(cfg, reason) {
   G.enemyCloaked = false; G.enemyCloakPower = 0; G.enemyCloakVulnTimer = 1500; G.enemyCloakCooldown = 25000;
   ['fore','port','starboard','aft'].forEach(s => { G.threat.shields[s] = 0; });
   postLogEvent(`${cfg.label} DECLOAKING (${reason}) — shields offline 1.5s! Fire now!`, 'crit');
+  crewReportEnemyDecloak();
   postTacticalAdvisory("Enemy shields down during decloak — maximum yield fire window open!");
   setTimeout(() => {
     if (G.dead) return;
@@ -828,6 +832,7 @@ function processNewMechanicsTimers(dt) {
         close:  `${cfg.label} at CLOSE RANGE — disruptors at full power! Evasive action recommended.`,
       };
       if (msgs[G.enemyRangeBracket]) postTacticalAdvisory(msgs[G.enemyRangeBracket]);
+      if (G.enemyRangeBracket === 'close' || G.enemyRangeBracket === 'medium') crewReportKlingonClosing();
     }
   }
 
@@ -861,6 +866,7 @@ function initiateRammingRun(cfg) {
   G.enemyRammingTimer = 4000; // 4s countdown to impact
   postLogEvent(`ALERT: ${cfg.label} HAS TURNED TO RAM! EVASIVE ACTION!`, 'crit');
   postTacticalAdvisory("Jem'Hadar on suicide run — all power to fore shields now!");
+  crewReportEnemyRamming();
 }
 
 function executeRammingImpact() {
@@ -916,6 +922,7 @@ function processEnemyAI(dt) {
     if (G.weaponsDisruptedTimer <= 0) {
       G.weaponsDisrupted = false;
       G.scanBonus = null;
+      crewReportWeaponsOnline();
       G.threat.fireInterval = Math.round(cfg.fireInterval * diff.enemyFireMult);
       if (G.activeScanningProfile) G.threat.fireInterval = Math.round(G.threat.fireInterval * 0.85);
       postLogEvent("Enemy weapons subroutines restored.", 'warn');
@@ -1169,6 +1176,7 @@ function executeThreatCounterVolley() {
     G.shieldUnderAttackTimer = 3000;
     G.shieldHitFlash.player  = { sector: targetSector, timer: 350 };
     postLogEvent(`${chosenSys.label} — ${targetSector.toUpperCase()} −${Math.round(rawDmg * shieldPenMult)}MW.${chosenSys.isPolaron ? ' [POLARON]' : ''}`, 'warn');
+    crewReportShieldHit(targetSector, rawDmg * shieldPenMult);
   } else {
     const leak     = (rawDmg * shieldPenMult - shieldAbsorb) + hullPassthrough;
     G.player.shields[targetSector] = 0;
@@ -1180,6 +1188,7 @@ function executeThreatCounterVolley() {
     const ablaticNote = (leak - residual) > 1 ? ` Ablative absorbed ${Math.round(leak - residual)}.` : '';
     postLogEvent(`BREACH — ${targetSector.toUpperCase()} down! Hull −${Math.round(residual)}.${ablaticNote}`, 'crit');
     G.damageParticles.push(...spawnParticles('player', 10, C.red));
+    crewReportHullBreach(residual);
 
     const sectorSystemPool = {
       fore:      ['cannon_pu','cannon_su','nose_beam','torpedoes','sensors'],
@@ -1202,8 +1211,8 @@ function executeThreatCounterVolley() {
 }
 
 function processAutomatedDelegation(dt) {
-  const runAutoEng = G.playerChosenStation === 'tactical' || G.playerChosenStation === 'helm';
-  const runAutoTac = G.playerChosenStation === 'engineering' || G.playerChosenStation === 'helm';
+  const runAutoEng = G.playerChosenStation === 'tactical' || G.playerChosenStation === 'helm' || G.playerChosenStation === 'captain';
+  const runAutoTac = G.playerChosenStation === 'engineering' || G.playerChosenStation === 'helm' || G.playerChosenStation === 'captain';
 
   if (runAutoEng) {
     // Auto-engineering: re-latch tripped breakers

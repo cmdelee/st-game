@@ -5,6 +5,7 @@
 // ============================================================
 function handleWarpCoreTrip() {
   postLogEvent("WARP CORE OFFLINE — switching to impulse power. All systems reduced!", 'crit');
+  crewReportWarpCoreTrip();
   const impulseMax = WARP_CORE.impulseOutput;
   const total = getTotalAllocatedPower();
   if (total > impulseMax) {
@@ -23,7 +24,7 @@ function handleWarpCoreTrip() {
 // EMERGENCY BATTERY
 // ============================================================
 function activateEmergencyBattery() {
-  if (G.playerChosenStation !== 'engineering') { postLogEvent("Battery control requires Engineering station.", 'warn'); return; }
+  if (G.playerChosenStation !== 'engineering' && G.playerChosenStation !== 'captain') { postLogEvent("Battery control requires Engineering station.", 'warn'); return; }
   if (G.batteryCharge < 10) { postLogEvent("Emergency battery depleted.", 'crit'); return; }
   if (!G.systems.warp_core.tripped && G.systems.warp_core.health > 20) {
     postLogEvent("Battery reserve not needed — warp core is online.", 'info'); return;
@@ -197,6 +198,7 @@ function processRepairQueues(dt) {
       sys.tripped = false;
       sys.stress  = 0;
       postLogEvent(`${idx === 0 ? 'Alpha' : 'Beta'} Team: ${team.label} → ${Math.round(sys.health)}%.`, 'good');
+      crewReportRepairComplete(team.label);
       G.score.repairsCompleted++;
 
       if (team.sysKey === 'warp_core') {
@@ -608,6 +610,7 @@ function computeConduitConduction(dt) {
       if (sys.stress >= 100 && Math.random() < 0.3 * sc) {
         sys.tripped = true; sys.allocatedPower = 0;
         postLogEvent(`EPS BREAKER BLOWN: [${sys.label}] — system OFFLINE!`, 'crit');
+        crewReportSystemTripped(sys.label);
         if (key === 'warp_core') handleWarpCoreTrip();
         if (key === 'cloak_dev' && G.cloaked) { G.cloaked = false; postLogEvent("Cloak field collapsed!", 'crit'); updateCloakButton(); }
         if (G.activePanel === 'engineering') refreshEngineeringPanelGraphics();

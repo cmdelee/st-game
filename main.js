@@ -60,6 +60,8 @@ function masterSimulationCoreLoop(ts) {
   processRepairQueues(dt);
   processAutomatedDelegation(dt);
   processEnemyAI(dt);
+  tickCaptainCooldowns(dt);
+  tickCaptainPeriodicReports(dt);
 
   // Player sensor lock build-up
   if (G.cloakVulnTimer <= 0 && !G.cloaked) {
@@ -102,14 +104,22 @@ function masterSimulationCoreLoop(ts) {
   updateWarpAvailability();
   synchronizeGlobalInterfaceDisplays();
 
-  // Canvas rendering — helm shares the tactical monitor pair
-  if (G.activePanel === 'tactical' || G.activePanel === 'helm') {
+  // Canvas rendering — helm and captain share the tactical monitor pair
+  if (G.activePanel === 'tactical' || G.activePanel === 'helm' || G.activePanel === 'captain') {
     renderSpatialViewCanvas();
     renderEnemySchematicCanvas();
   } else {
     renderHullSchematicCanvas();
     renderPowerDistributionCanvas();
   }
+
+  // Low hull advisory for captain
+  if (G.playerChosenStation === 'captain' && !G._captainLowHullReported &&
+      G.player.hull / G.player.maxHull <= 0.35) {
+    G._captainLowHullReported = true;
+    crewReportLowHull();
+  }
+  if (G.player.hull / G.player.maxHull > 0.40) G._captainLowHullReported = false;
 
   requestAnimationFrame(masterSimulationCoreLoop);
 }
@@ -311,13 +321,15 @@ function initiateVesselSimulation(station) {
   postLogEvent("Ablative armour online — 6 layers protecting pressure hull.", 'good');
   postLogEvent("Quantum torpedoes ×18 and photon torpedoes ×12 loaded.", 'info');
   postLogEvent("Burst salvo, shield frequency rotation, and evasive pattern available.", 'info');
-  if (station === 'helm') postLogEvent("Helm: half impulse — fore attack vector — long engagement range. Auto-tactical and auto-engineering active.", 'info');
+  if (station === 'helm')    postLogEvent("Helm: half impulse — fore attack vector — long engagement range. Auto-tactical and auto-engineering active.", 'info');
+  if (station === 'captain') postLogEvent("Captain's Chair: all stations operating under computer delegation. Issue orders via command interface.", 'info');
 
   toggleActiveDeck(station);
   buildEnemySubsystemTargetGrid();
   updateCrewStatusDisplay();
   updateWarpAvailability();
   recalculateShieldRegenRate();
+  if (station === 'captain') initCaptainStation();
   // No extra rAF call needed — the boot loop in runMasterBootSequence is already running
 }
 

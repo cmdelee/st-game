@@ -16,7 +16,12 @@ function toggleActiveDeck(key) {
   const eu = document.getElementById('eng-utility-panel');
   if (eu) eu.style.display = key === 'engineering' ? 'flex' : 'none';
   const gs = document.getElementById('lbl-automation-status');
-  if (gs) gs.textContent = key === 'tactical' ? 'TACTICAL ROLE' : key === 'helm' ? 'HELM ROLE' : 'ENGINEERING ROLE';
+  if (gs) gs.textContent = key === 'tactical' ? 'TACTICAL ROLE' : key === 'helm' ? 'HELM ROLE' : key === 'captain' ? 'COMMAND ROLE' : 'ENGINEERING ROLE';
+  // Captain uses the same tactical monitors as helm
+  if (key === 'captain') {
+    document.querySelectorAll('.monitor-frame').forEach(f => f.classList.remove('active-monitor'));
+    document.querySelectorAll('.view-tactical').forEach(f => f.classList.add('active-monitor'));
+  }
   if (key === 'engineering') rebuildEngineeringMatrixInterface();
   updateCloakButton();
   updateEngUtilityPanel();
@@ -228,6 +233,9 @@ function synchronizeGlobalInterfaceDisplays() {
 
   // Helm panel refresh — only if active and no helm timer is already driving it this frame
   if (G.activePanel === 'helm' && !G.attackRunActive && !G.comeAboutActive) updateHelmPanel();
+
+  // Captain overview refresh
+  if (G.activePanel === 'captain') updateCaptainOverview();
 }
 
 // ============================================================
