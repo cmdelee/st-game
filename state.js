@@ -374,6 +374,9 @@ const G = {
   // Scoring
   score:{ totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false },
 
+  // Visual effects state
+  shieldHitFlash:{ player:{ sector:null, timer:0 }, enemy:{ sector:null, timer:0 } },
+  damageParticles:[],   // { x, y, vx, vy, life, maxLife, col } sparks on hull breach
   renderedBeamsVector:[],
   historicalLogTracks:[],
 };

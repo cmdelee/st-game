@@ -21,118 +21,302 @@ function handleHighDpiCanvasResizing() {
 }
 
 // ============================================================
-// SPATIAL VIEW CANVAS
+// SPATIAL VIEW CANVAS — fully enhanced battle display
 // ============================================================
 function renderSpatialViewCanvas() {
   if (!spatialCanvas || !spatialCtx) return;
   const bb = spatialCanvas.parentElement.getBoundingClientRect();
   const w = bb.width, h = bb.height; if (w <= 0 || h <= 0) return;
   const ctx = spatialCtx;
-  ctx.fillStyle = '#000104'; ctx.fillRect(0, 0, w, h);
+  const now = performance.now();
 
-  // Starfield
-  ctx.fillStyle = '#fff';
+  // ── 5: Nebula/deep-space gradient background ──
+  const grad = ctx.createRadialGradient(w*0.5, h*0.5, 10, w*0.5, h*0.5, w*0.75);
+  grad.addColorStop(0,   '#000510');
+  grad.addColorStop(0.4, '#000208');
+  grad.addColorStop(0.75,'#050012');
+  grad.addColorStop(1,   '#000000');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+
+  // Distant star cluster (static decorative)
+  ctx.fillStyle = 'rgba(100,120,180,0.12)';
+  ctx.beginPath(); ctx.arc(w*0.65, h*0.2, 40, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(80,100,160,0.06)';
+  ctx.beginPath(); ctx.arc(w*0.62, h*0.22, 65, 0, Math.PI*2); ctx.fill();
+
+  // Scrolling starfield
   STARS.forEach(s => {
     s.x -= G.velocitySpeedRating * 0.03;
     if (s.x < 0) s.x = w;
     ctx.globalAlpha = s.o;
+    ctx.fillStyle = '#fff';
     ctx.fillRect(s.x, s.y % h, s.d, s.d);
   });
   ctx.globalAlpha = 1;
 
-  // ── Player vessel ──
-  const px = w * 0.25, py = h * 0.5;
+  const px = w * 0.22, py = h * 0.58;  // player lower-left
+  const ex = w * 0.75, ey = h * 0.38;  // enemy upper-right
+  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
 
-  if (G.cloakVulnTimer > 0) {
-    const a = 0.4 + Math.sin(performance.now() * 0.02) * 0.3;
-    ctx.strokeStyle = `rgba(153,102,204,${a})`; ctx.lineWidth = 2; ctx.setLineDash([3,3]);
-    ctx.beginPath(); ctx.arc(px, py, 16, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
-  } else if (G.cloaked) {
-    const s = 0.15 + Math.sin(performance.now() * 0.008) * 0.1;
-    ctx.strokeStyle = `rgba(153,102,204,${s+0.2})`; ctx.lineWidth = 1.5; ctx.setLineDash([3,3]);
-    ctx.beginPath(); ctx.arc(px, py, 16, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = `rgba(153,102,204,${s*0.4})`; ctx.fill();
-    ctx.fillStyle = `rgba(153,102,204,${s+0.3})`; ctx.font = 'bold 8px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('◉', px, py);
-  } else {
-    ctx.strokeStyle = G.systems.warp_core.tripped ? C.warn : C.b; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(px, py, 16, 0, Math.PI*2); ctx.stroke();
-    ctx.fillStyle = '#0a1224'; ctx.fill();
-    ctx.strokeStyle = C.b; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(px+16,py); ctx.lineTo(px+28,py-6); ctx.lineTo(px+28,py+6); ctx.closePath(); ctx.stroke();
-
-    // Feature 3: Firing arc sector visualisation
-    // Each arc is drawn as a faint wedge at arc radius 48px
-    const arcDefs = [
-      { label:'FORE',  startAngle:-Math.PI*0.35, endAngle:Math.PI*0.35,   systems:['cannon_pu','cannon_su','nose_beam','torpedoes'] },
-      { label:'PORT',  startAngle:-Math.PI*0.90, endAngle:-Math.PI*0.35,  systems:['cannon_pu','cannon_pl'] },
-      { label:'STBD',  startAngle: Math.PI*0.35, endAngle: Math.PI*0.85,  systems:['cannon_su','cannon_sl'] },
-      { label:'AFT',   startAngle: Math.PI*1.00, endAngle: Math.PI*1.40,  systems:['cannon_pl','cannon_sl'] },
+  // ── 6: Range indicator between ships ──
+  if (!G.enemyCloaked) {
+    const rangeY  = h * 0.88;
+    const rx1     = px + 20, rx2 = ex - 20;
+    // Track line
+    ctx.strokeStyle = 'rgba(68,119,255,0.15)'; ctx.lineWidth = 1; ctx.setLineDash([4,8]);
+    ctx.beginPath(); ctx.moveTo(rx1, rangeY); ctx.lineTo(rx2, rangeY); ctx.stroke(); ctx.setLineDash([]);
+    // Bracket ticks
+    const brackets = [
+      { label:'CLOSE',  pct: 0.15, col: cfg.prefersCloseRange ? C.red   : '#446688' },
+      { label:'MEDIUM', pct: 0.45, col: cfg.prefersCloseRange ? C.warn  : '#446688' },
+      { label:'LONG',   pct: 0.80, col: '#446688' },
     ];
-    // Check if any recently fired weapon matches each arc
-    const now = performance.now();
-    arcDefs.forEach(arc => {
-      const recentFire = G.renderedBeamsVector.find(b =>
-        b.type !== 'burst_flash' && arc.systems.includes(b.type) &&
-        now - b.trackingStartTime < b.duration
-      );
-      const allOffline = arc.systems.every(k => G.systems[k] && (G.systems[k].tripped || G.systems[k].health < 10));
-      const alpha = recentFire ? 0.45 : allOffline ? 0.06 : 0.14;
-      const col   = recentFire ? C.b : allOffline ? C.red : 'rgba(68,119,255,0.6)';
+    brackets.forEach(br => {
+      const bx = rx1 + (rx2 - rx1) * br.pct;
+      ctx.strokeStyle = br.col; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(bx, rangeY-6); ctx.lineTo(bx, rangeY+6); ctx.stroke();
+      ctx.fillStyle = br.col; ctx.font = '7px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(br.label, bx, rangeY+8);
+    });
+    // Current position indicator
+    const rangePct = G.enemyRangeBracket === 'close' ? 0.12 : G.enemyRangeBracket === 'medium' ? 0.42 : 0.78;
+    const markerX  = rx1 + (rx2 - rx1) * rangePct;
+    const markerCol = G.enemyRangeBracket === 'close' ? C.red : G.enemyRangeBracket === 'medium' ? C.warn : C.green;
+    ctx.fillStyle = markerCol; ctx.beginPath(); ctx.arc(markerX, rangeY, 4, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = markerCol; ctx.font = 'bold 8px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText(`▼ ${(G.enemyRangeBracket || 'long').toUpperCase()}`, markerX, rangeY - 6);
+    // Range label (right side)
+    ctx.fillStyle = '#aabbcc'; ctx.font = '8px Antonio'; ctx.textAlign = 'left';
+    ctx.fillText('RANGE', rx2 + 6, rangeY - 4);
+  }
 
-      ctx.beginPath();
-      ctx.moveTo(px, py);
-      ctx.arc(px, py, 48, arc.startAngle, arc.endAngle);
-      ctx.closePath();
-      ctx.fillStyle = recentFire
-        ? `rgba(68,119,255,${alpha})`
-        : allOffline ? `rgba(255,51,51,${alpha})` : `rgba(68,119,255,${alpha})`;
-      ctx.fill();
-      if (recentFire) {
-        ctx.strokeStyle = C.b; ctx.lineWidth = 1.5;
-        ctx.stroke();
-      }
-      // Arc label
-      const midAngle = (arc.startAngle + arc.endAngle) / 2;
-      const lx = px + Math.cos(midAngle) * 58;
-      const ly = py + Math.sin(midAngle) * 58;
-      ctx.fillStyle = recentFire ? C.b : allOffline ? C.red : 'rgba(68,119,255,0.5)';
-      ctx.font = 'bold 7px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(arc.label, lx, ly);
+  // ── 1: Weapon beams — drawn BEFORE ships so ships render on top ──
+  const beamMap = {
+    cannon_pu: { col:'#88ccff', width:1.5, dash:[], style:'streak' },
+    cannon_pl: { col:'#88ccff', width:1.5, dash:[], style:'streak' },
+    cannon_su: { col:'#88ccff', width:1.5, dash:[], style:'streak' },
+    cannon_sl: { col:'#88ccff', width:1.5, dash:[], style:'streak' },
+    nose_beam: { col:'#ff9900', width:2.5, dash:[], style:'beam'   },
+    torpedoes: { col:'#cc66ff', width:1.5, dash:[4,3], style:'streak' },
+    photon:    { col:'#4477ff', width:1.5, dash:[3,4], style:'streak' },
+  };
+  G.renderedBeamsVector.forEach(b => {
+    if (b.type === 'burst_flash') return;
+    const bDef = beamMap[b.type]; if (!bDef) return;
+    const age  = now - b.trackingStartTime;
+    const fade = Math.max(0, 1 - age / b.duration);
+    ctx.save();
+    ctx.globalAlpha = fade * 0.9;
+    if (bDef.style === 'beam') {
+      // Nose beam — sustained line from player to enemy
+      const grad2 = ctx.createLinearGradient(px, py, ex, ey);
+      grad2.addColorStop(0,   bDef.col);
+      grad2.addColorStop(0.6, bDef.col);
+      grad2.addColorStop(1,   'transparent');
+      ctx.strokeStyle = grad2; ctx.lineWidth = bDef.width + (1-fade)*1.5;
+      ctx.setLineDash(bDef.dash);
+      ctx.beginPath(); ctx.moveTo(px+18, py); ctx.lineTo(ex-18, ey); ctx.stroke();
+      // Glow effect
+      ctx.lineWidth = bDef.width + 3; ctx.globalAlpha = fade * 0.25;
+      ctx.strokeStyle = bDef.col;
+      ctx.beginPath(); ctx.moveTo(px+18, py); ctx.lineTo(ex-18, ey); ctx.stroke();
+    } else {
+      // Pulse/streak — short animated dash travelling toward target
+      const prog = Math.min(1, age / (b.duration * 0.6));
+      const sx   = px + (ex - px) * (prog * 0.5);
+      const sy   = py + (ey - py) * (prog * 0.5);
+      const ex2  = px + (ex - px) * Math.min(1, prog * 0.5 + 0.12);
+      const ey2  = py + (ey - py) * Math.min(1, prog * 0.5 + 0.12);
+      ctx.strokeStyle = bDef.col; ctx.lineWidth = bDef.width;
+      ctx.setLineDash(bDef.dash);
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex2, ey2); ctx.stroke();
+    }
+    ctx.setLineDash([]); ctx.restore();
+  });
+
+  // ── 7: Torpedo wake trails ──
+  G.inFlightTorpedoes.forEach(t => {
+    const prog  = 1 - (t.timeToImpact / 3500);
+    const tx    = t.fromEnemy ? ex + (px - ex) * prog : px + (ex - px) * prog;
+    const ty    = t.fromEnemy ? ey + (py - ey) * prog : py + (ey - py) * prog;
+    const tCol  = t.fromEnemy ? C.red : (t.isPhoton ? '#4488ff' : C.t);
+    const tSize = t.fromEnemy ? 4 : 3.5;
+    // Wake trail
+    for (let i = 1; i <= 5; i++) {
+      const trailProg = prog - i * 0.04;
+      if (trailProg < 0) continue;
+      const trailX = t.fromEnemy ? ex + (px - ex) * trailProg : px + (ex - px) * trailProg;
+      const trailY = t.fromEnemy ? ey + (py - ey) * trailProg : py + (ey - py) * trailProg;
+      ctx.globalAlpha = (1 - i * 0.18) * 0.6;
+      ctx.fillStyle = tCol;
+      ctx.beginPath(); ctx.arc(trailX, trailY, tSize - i * 0.4, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // Torpedo body
+    ctx.fillStyle = tCol;
+    ctx.beginPath(); ctx.arc(tx, ty, tSize, 0, Math.PI*2); ctx.fill();
+    // Bright core
+    ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.7;
+    ctx.beginPath(); ctx.arc(tx, ty, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  // ── Damage particles ──
+  G.damageParticles = G.damageParticles.filter(p => {
+    p.life += 16;
+    if (p.life > p.maxLife) return false;
+    const fade = 1 - p.life / p.maxLife;
+    const ox = p.target === 'player' ? px : ex;
+    const oy = p.target === 'player' ? py : ey;
+    const dx = ox + p.vx * p.life * 0.06;
+    const dy = oy + p.vy * p.life * 0.06;
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = p.col;
+    ctx.fillRect(dx - 1, dy - 1, 2, 2);
+    ctx.globalAlpha = 1;
+    return true;
+  });
+
+  // ── Player vessel ──
+  if (G.cloakVulnTimer > 0) {
+    const a = 0.4 + Math.sin(now * 0.02) * 0.3;
+    ctx.strokeStyle = `rgba(153,102,204,${a})`; ctx.lineWidth = 2; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+  } else if (G.cloaked) {
+    const s = 0.15 + Math.sin(now * 0.008) * 0.1;
+    ctx.strokeStyle = `rgba(153,102,204,${s+0.2})`; ctx.lineWidth = 1.5; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = `rgba(153,102,204,${s*0.4})`; ctx.fill();
+    ctx.fillStyle = `rgba(153,102,204,${s+0.3})`; ctx.font = 'bold 10px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('◉', px, py);
+  } else {
+    // ── 8: Ablative armour segmented arc (replaces text) ──
+    const ab = G.ablative;
+    ab.layerHealth.forEach((lh, i) => {
+      const segStart = -Math.PI * 0.9 + i * (Math.PI * 1.8 / ABLATIVE_ARMOUR.maxLayers);
+      const segEnd   = segStart + (Math.PI * 1.8 / ABLATIVE_ARMOUR.maxLayers) - 0.08;
+      const regen    = ab.regenTimers[i] <= 0 && ab.regenProgress[i] > 0;
+      ctx.strokeStyle = lh > 0 ? `rgba(0,204,102,${0.4 + (lh/100)*0.5})` :
+                        regen  ? `rgba(255,170,0,0.35)` : `rgba(255,255,255,0.08)`;
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(px, py, 26, segStart, segEnd); ctx.stroke();
     });
 
-    // Ablative armour ring
-    const ab = G.ablative; const layerPct = ab.layers / ABLATIVE_ARMOUR.maxLayers;
-    if (layerPct > 0) {
-      ctx.strokeStyle = `rgba(0,204,102,${0.15 + layerPct * 0.45})`; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.arc(px, py, 22, 0, Math.PI*2); ctx.stroke();
-    }
+    // ── 3: Shield sector glow rings ──
+    const sectorAngles = { fore:0, starboard:Math.PI*0.5, aft:Math.PI, port:-Math.PI*0.5 };
+    Object.entries(sectorAngles).forEach(([s, angle]) => {
+      const sv   = G.player.shields[s] || 0;
+      const pct  = sv / G.player.shields.maxSectorValue;
+      const isHit = G.shieldHitFlash.player.sector === s && G.shieldHitFlash.player.timer > 0;
+      if (isHit) {
+        const hitAlpha = Math.min(1, G.shieldHitFlash.player.timer / 200);
+        ctx.strokeStyle = `rgba(255,255,255,${hitAlpha * 0.85})`;
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(px, py, 22 + hitAlpha*4, angle - 0.4, angle + 0.4); ctx.stroke();
+      } else if (pct > 0.05) {
+        ctx.strokeStyle = pct > 0.5 ? `rgba(68,200,255,${0.1 + pct*0.35})` : `rgba(255,170,0,${0.1 + pct*0.3})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(px, py, 22, angle - 0.4, angle + 0.4); ctx.stroke();
+      }
+    });
+    if (G.shieldHitFlash.player.timer > 0) G.shieldHitFlash.player.timer -= 16;
+
+    // ── 7: Faction engine glow — Federation blue ──
+    const engHealth = G.systems.engines.health / 100;
+    const engPulse  = 0.3 + Math.sin(now * 0.005) * 0.2 * engHealth;
+    ctx.strokeStyle = `rgba(68,119,255,${engPulse})`; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(px - 12, py, 8, Math.PI*0.6, Math.PI*1.4); ctx.stroke();
+    ctx.fillStyle = `rgba(68,119,255,${engPulse * 0.4})`;
+    ctx.beginPath(); ctx.arc(px - 14, py, 4, 0, Math.PI*2); ctx.fill();
+
+    // Hull outline — larger (20px)
+    const hullPct = G.player.hull / G.player.maxHull;
+    const baseCol = G.systems.warp_core.tripped ? C.warn : C.b;
+    // ── 4: Hull state colouring — darken as hull drops ──
+    ctx.strokeStyle = hullPct < 0.35 ? `rgba(255,100,60,0.9)` : baseCol;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI*2); ctx.stroke();
+    ctx.fillStyle = hullPct < 0.35 ? `rgba(80,10,5,0.5)` : '#0a1224'; ctx.fill();
+
+    // Bow nacelle detail
+    ctx.strokeStyle = baseCol; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(px+18,py); ctx.lineTo(px+32,py-7); ctx.lineTo(px+32,py+7); ctx.closePath(); ctx.stroke();
+
+    // Firing arc wedges
+    const arcDefs = [
+      { label:'FORE', startAngle:-Math.PI*0.35, endAngle:Math.PI*0.35,  systems:['cannon_pu','cannon_su','nose_beam','torpedoes'] },
+      { label:'PORT', startAngle:-Math.PI*0.90, endAngle:-Math.PI*0.35, systems:['cannon_pu','cannon_pl'] },
+      { label:'STBD', startAngle: Math.PI*0.35, endAngle: Math.PI*0.85, systems:['cannon_su','cannon_sl'] },
+      { label:'AFT',  startAngle: Math.PI*1.00, endAngle: Math.PI*1.40, systems:['cannon_pl','cannon_sl'] },
+    ];
+    arcDefs.forEach(arc => {
+      const recentFire = G.renderedBeamsVector.find(b =>
+        b.type !== 'burst_flash' && arc.systems.includes(b.type) && now - b.trackingStartTime < b.duration
+      );
+      const allOffline = arc.systems.every(k => G.systems[k] && (G.systems[k].tripped || G.systems[k].health < 10));
+      ctx.beginPath(); ctx.moveTo(px, py);
+      ctx.arc(px, py, 52, arc.startAngle, arc.endAngle); ctx.closePath();
+      ctx.fillStyle = recentFire ? `rgba(68,119,255,0.45)` : allOffline ? `rgba(255,51,51,0.07)` : `rgba(68,119,255,0.12)`;
+      ctx.fill();
+      if (recentFire) { ctx.strokeStyle = C.b; ctx.lineWidth = 1.5; ctx.stroke(); }
+      const midAngle = (arc.startAngle + arc.endAngle) / 2;
+      ctx.fillStyle = recentFire ? C.b : allOffline ? C.red : 'rgba(68,119,255,0.5)';
+      ctx.font = 'bold 7px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(arc.label, px + Math.cos(midAngle) * 63, py + Math.sin(midAngle) * 63);
+    });
+
     if (G.batteryActive) {
-      const ba = 0.4 + Math.sin(performance.now() * 0.015) * 0.3;
+      const ba = 0.4 + Math.sin(now * 0.015) * 0.3;
       ctx.strokeStyle = `rgba(255,170,0,${ba})`; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(px, py, 26, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(px, py, 30, 0, Math.PI*2); ctx.stroke();
+    }
+    if (G.systems.warp_core.tripped) {
+      ctx.fillStyle = 'rgba(255,170,0,0.75)'; ctx.font = 'bold 8px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(G.batteryActive ? '⚡ BATTERY' : '⊗ WARP OFFLINE', px, py - 38);
     }
   }
 
   // ── Enemy vessel ──
-  const ex = w * 0.78, ey = h * 0.5;
-  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
-
   if (G.enemyCloaked && G.enemyCloakVulnTimer === 0) {
-    // Fully cloaked — ghost outline only
     ctx.strokeStyle = 'rgba(153,102,204,0.1)'; ctx.lineWidth = 1; ctx.setLineDash([5,8]);
-    ctx.beginPath(); ctx.arc(ex, ey, 20, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
-    // Sensor ghost if Romulan
+    ctx.beginPath(); ctx.arc(ex, ey, 22, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
     if (G.sensorGhostActive) {
-      const ga = 0.3 + Math.sin(performance.now() * 0.02) * 0.2;
-      const gx = ex + Math.sin(performance.now() * 0.003) * 35, gy = ey + Math.cos(performance.now() * 0.004) * 25;
+      const ga = 0.3 + Math.sin(now * 0.02) * 0.2;
+      const gx = ex + Math.sin(now * 0.003) * 40, gy = ey + Math.cos(now * 0.004) * 28;
       ctx.strokeStyle = `rgba(255,170,0,${ga})`; ctx.lineWidth = 1; ctx.setLineDash([3,6]);
-      ctx.beginPath(); ctx.arc(gx, gy, 12, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = `rgba(255,170,0,${ga*0.7})`; ctx.font = 'bold 8px Antonio'; ctx.textAlign = 'center'; ctx.fillText('?', gx, gy-18);
+      ctx.beginPath(); ctx.arc(gx, gy, 14, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = `rgba(255,170,0,${ga*0.7})`; ctx.font = 'bold 9px Antonio'; ctx.textAlign = 'center'; ctx.fillText('?', gx, gy-20);
     }
   } else {
+    // ── 3: Enemy shield sector glow ──
+    if (G.running && G.threat.shields) {
+      const eSectorAngles = { fore:Math.PI, port:-Math.PI*0.5, starboard:Math.PI*0.5, aft:0 };
+      Object.entries(eSectorAngles).forEach(([s, angle]) => {
+        const sv   = G.threat.shields[s] || 0;
+        const cfg2 = ENEMY_CONFIGS[G.enemyArchetype];
+        const pct  = sv / (cfg2.shields[s] || 200);
+        const isHit = G.shieldHitFlash.enemy.sector === s && G.shieldHitFlash.enemy.timer > 0;
+        if (isHit) {
+          const hitAlpha = Math.min(1, G.shieldHitFlash.enemy.timer / 200);
+          ctx.strokeStyle = `rgba(255,100,80,${hitAlpha * 0.9})`; ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.arc(ex, ey, 26 + hitAlpha*5, angle - 0.4, angle + 0.4); ctx.stroke();
+        } else if (pct > 0.05) {
+          ctx.strokeStyle = pct > 0.5 ? `rgba(255,80,80,${0.12 + pct*0.3})` : `rgba(255,170,0,${0.12 + pct*0.25})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(ex, ey, 26, angle - 0.4, angle + 0.4); ctx.stroke();
+        }
+      });
+      if (G.shieldHitFlash.enemy.timer > 0) G.shieldHitFlash.enemy.timer -= 16;
+    }
+
+    // ── 7: Faction engine glow ──
+    const factionGlow = { Klingon:'rgba(255,60,40,', Romulan:'rgba(100,255,100,', Cardassian:'rgba(255,200,60,', Dominion:'rgba(180,60,255,', Borg:'rgba(0,200,100,' };
+    const fGlow = (factionGlow[cfg.faction] || 'rgba(200,100,100,') + `${0.3 + Math.sin(now*0.006)*0.2})`;
+    ctx.strokeStyle = fGlow; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(ex + 14, ey, 8, Math.PI*-0.4, Math.PI*0.4); ctx.stroke();
+    ctx.fillStyle = (factionGlow[cfg.faction] || 'rgba(200,100,100,') + '0.25)';
+    ctx.beginPath(); ctx.arc(ex + 16, ey, 4, 0, Math.PI*2); ctx.fill();
+
     ctx.save(); ctx.translate(ex, ey);
-    // Item 7: Klingon close-range — scale silhouette up to show proximity
-    const cfg = ENEMY_CONFIGS[G.enemyArchetype];
     const rangeScale = (cfg.prefersCloseRange && G.enemyRangeBracket === 'close') ? 1.4 :
                        (cfg.prefersCloseRange && G.enemyRangeBracket === 'medium') ? 1.2 : 1.0;
     if (rangeScale !== 1.0) ctx.scale(rangeScale, rangeScale);
@@ -140,93 +324,100 @@ function renderSpatialViewCanvas() {
       const am = { fore:0, aft:Math.PI, port:-Math.PI/4, starboard:Math.PI/4 };
       ctx.rotate(am[G.enemyPreferredSector] || 0);
     } else if (G.enemyManeuverState === 'torpedocharge') {
-      ctx.rotate(Math.sin(performance.now() * 0.01) * 0.12);
+      ctx.rotate(Math.sin(now * 0.01) * 0.12);
     }
 
-    ctx.strokeStyle = G.enemyManeuverState === 'torpedocharge' ? '#ff0000' : C.red;
+    // ── 4: Hull damage state — enemy silhouette darkens at low hull ──
+    const eHullPct  = G.threat.hull / G.threat.maxHull;
+    const critColor = eHullPct < 0.3;
+    ctx.strokeStyle = G.enemyManeuverState === 'torpedocharge' ? '#ff2200' : critColor ? '#ff6633' : C.red;
     ctx.lineWidth   = 2.5;
-    ctx.fillStyle   = G.enemyManeuverState === 'torpedocharge' ? 'rgba(255,0,0,0.25)' : 'rgba(230,40,40,0.1)';
+    ctx.fillStyle   = critColor ? 'rgba(255,60,20,0.25)' :
+                      G.enemyManeuverState === 'torpedocharge' ? 'rgba(255,0,0,0.2)' : 'rgba(230,40,40,0.08)';
 
     ctx.beginPath();
     switch (G.enemyArchetype) {
-      case 'ktinga':              ctx.moveTo(-5,-16);ctx.lineTo(5,0);ctx.lineTo(-5,16);ctx.lineTo(-15,8);ctx.lineTo(-10,0);ctx.lineTo(-15,-8);break;
-      case 'vor_cha':             ctx.moveTo(-6,-18);ctx.lineTo(8,0);ctx.lineTo(-6,18);ctx.lineTo(-18,10);ctx.lineTo(-14,0);ctx.lineTo(-18,-10);break;
-      case 'romulan_bop':         ctx.moveTo(8,0);ctx.lineTo(-8,-18);ctx.lineTo(-14,0);ctx.lineTo(-8,18);break;
-      case 'romulan_warbird':     ctx.moveTo(14,0);ctx.lineTo(-6,-22);ctx.lineTo(-18,0);ctx.lineTo(-6,22);break;
-      case 'cardassian_scout':    ctx.moveTo(-5,-8);ctx.lineTo(5,0);ctx.lineTo(-5,8);break;
-      case 'galor_class':         ctx.moveTo(-8,-12);ctx.lineTo(10,0);ctx.lineTo(-8,12);ctx.lineTo(-14,6);ctx.lineTo(-10,0);ctx.lineTo(-14,-6);break;
-      case 'jem_hadar_fighter':   ctx.moveTo(-4,-10);ctx.lineTo(6,0);ctx.lineTo(-4,10);break;
-      case 'jem_hadar_battleship':ctx.moveTo(-8,-16);ctx.lineTo(10,0);ctx.lineTo(-8,16);ctx.lineTo(-16,10);ctx.lineTo(-12,0);ctx.lineTo(-16,-10);break;
-      case 'borg_probe':          ctx.strokeStyle=C.green;ctx.fillStyle='rgba(0,204,102,0.1)';ctx.rect(-12,-12,24,24);break;
-      default:                    ctx.arc(0,0,10,0,Math.PI*2);
+      case 'ktinga':              ctx.moveTo(-5,-18);ctx.lineTo(8,0);ctx.lineTo(-5,18);ctx.lineTo(-18,10);ctx.lineTo(-12,0);ctx.lineTo(-18,-10);break;
+      case 'vor_cha':             ctx.moveTo(-6,-20);ctx.lineTo(10,0);ctx.lineTo(-6,20);ctx.lineTo(-20,12);ctx.lineTo(-16,0);ctx.lineTo(-20,-12);break;
+      case 'romulan_bop':         ctx.moveTo(10,0);ctx.lineTo(-10,-22);ctx.lineTo(-18,0);ctx.lineTo(-10,22);break;
+      case 'romulan_warbird':     ctx.moveTo(16,0);ctx.lineTo(-8,-26);ctx.lineTo(-24,0);ctx.lineTo(-8,26);break;
+      case 'cardassian_scout':    ctx.moveTo(-6,-10);ctx.lineTo(7,0);ctx.lineTo(-6,10);break;
+      case 'galor_class':         ctx.moveTo(-10,-15);ctx.lineTo(13,0);ctx.lineTo(-10,15);ctx.lineTo(-18,8);ctx.lineTo(-13,0);ctx.lineTo(-18,-8);break;
+      case 'jem_hadar_fighter':   ctx.moveTo(-5,-12);ctx.lineTo(8,0);ctx.lineTo(-5,12);break;
+      case 'jem_hadar_battleship':ctx.moveTo(-10,-18);ctx.lineTo(13,0);ctx.lineTo(-10,18);ctx.lineTo(-20,12);ctx.lineTo(-15,0);ctx.lineTo(-20,-12);break;
+      case 'borg_probe':          ctx.strokeStyle=C.green;ctx.fillStyle=`rgba(0,204,102,${0.1 + (1-eHullPct)*0.2})`;ctx.rect(-14,-14,28,28);break;
+      default:                    ctx.arc(0,0,12,0,Math.PI*2);
     }
     ctx.closePath(); ctx.fill(); ctx.stroke();
+
+    // Critical hull sparks (static particles drawn in ship-local space)
+    if (eHullPct < 0.3) {
+      for (let i = 0; i < 3; i++) {
+        const sx = (Math.sin(now * 0.003 + i * 2.1) * 10);
+        const sy = (Math.cos(now * 0.004 + i * 1.7) * 8);
+        const sa = 0.4 + Math.sin(now * 0.02 + i) * 0.35;
+        ctx.fillStyle = `rgba(255,${140 + i*30},0,${sa})`;
+        ctx.fillRect(sx - 1.5, sy - 1.5, 3, 3);
+      }
+    }
     ctx.restore();
 
-    // Borg tractor beam
+    // Status overlays
     if (G.enemyTractorActive) {
-      const ta = 0.4 + Math.sin(performance.now() * 0.01) * 0.3;
+      const ta = 0.4 + Math.sin(now * 0.01) * 0.3;
       ctx.strokeStyle = `rgba(0,204,102,${ta})`; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(ex-15, ey); ctx.lineTo(px+20, py); ctx.stroke();
-      ctx.fillStyle = 'rgba(0,204,102,0.6)'; ctx.font = '9px Antonio'; ctx.textAlign = 'center'; ctx.fillText('TRACTOR', ex, ey-30);
+      ctx.beginPath(); ctx.moveTo(ex-18, ey); ctx.lineTo(px+22, py); ctx.stroke();
+      ctx.fillStyle = 'rgba(0,204,102,0.7)'; ctx.font = '9px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText('TRACTOR', (ex+px)/2, py - 8);
     }
-    if (G.enemyRepairQueue.length > 0) {
-      ctx.fillStyle = 'rgba(255,170,0,0.7)'; ctx.font = '8px Antonio'; ctx.textAlign = 'center'; ctx.fillText('🔧', ex, ey-28);
+    if (G.enemyRepairQueue.length > 0 || G.enemyRepairQueue.length === 0 && G.repairTeams) {
+      ctx.fillStyle = 'rgba(255,170,0,0.75)'; ctx.font = '9px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText('🔧', ex, ey - 30);
     }
     if (G.enemyCloakVulnTimer > 0) {
-      const va = 0.5 + Math.sin(performance.now() * 0.02) * 0.3;
+      const va = 0.5 + Math.sin(now * 0.025) * 0.3;
       ctx.strokeStyle = `rgba(153,102,204,${va})`; ctx.lineWidth = 2; ctx.setLineDash([3,3]);
-      ctx.beginPath(); ctx.arc(ex, ey, 26, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = `rgba(255,170,0,0.8)`; ctx.font = 'bold 9px Antonio'; ctx.textAlign = 'center'; ctx.fillText('⚡ FIRE NOW', ex, ey+36);
+      ctx.beginPath(); ctx.arc(ex, ey, 32, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = `rgba(255,170,0,0.9)`; ctx.font = 'bold 10px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('⚡ FIRE NOW', ex, ey + 38);
     }
-    // Ramming run warning — enemy moves toward player with flashing indicator
     if (G.enemyRammingRun) {
-      const ra = 0.6 + Math.sin(performance.now() * 0.04) * 0.4;
+      const ra = 0.6 + Math.sin(now * 0.04) * 0.4;
       ctx.strokeStyle = `rgba(255,51,51,${ra})`; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(ex, ey, 32, 0, Math.PI*2); ctx.stroke();
-      ctx.fillStyle = `rgba(255,51,51,${ra})`; ctx.font = 'bold 10px Antonio'; ctx.textAlign = 'center';
-      ctx.fillText('⚠ RAMMING RUN', ex, ey - 40);
-      ctx.fillText(`IMPACT: ${Math.ceil(G.enemyRammingTimer/1000)}s`, ex, ey + 46);
-      // Draw a line showing the ramming trajectory
-      const prog = 1 - (G.enemyRammingTimer / 4000);
-      const rx   = ex + (px - ex) * prog * 0.6; // moves 60% of the way during animation
-      ctx.strokeStyle = `rgba(255,51,51,0.4)`; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.arc(ex, ey, 36, 0, Math.PI*2); ctx.stroke();
+      ctx.fillStyle = `rgba(255,51,51,${ra})`; ctx.font = 'bold 10px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText('⚠ RAMMING RUN', ex, ey - 42);
+      ctx.textBaseline = 'top';
+      ctx.fillText(`IMPACT: ${Math.ceil(G.enemyRammingTimer/1000)}s`, ex, ey + 42);
+      ctx.strokeStyle = `rgba(255,51,51,0.35)`; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
       ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]);
     }
+
+    // Enemy ship name label
+    ctx.fillStyle = `rgba(255,100,100,${eHullPct < 0.3 ? 0.9 : 0.55})`;
+    ctx.font = '8px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText(cfg.label, ex, ey - 36);
+    ctx.fillStyle = `rgba(200,80,80,${eHullPct < 0.3 ? 0.8 : 0.4})`;
+    ctx.fillText(`HULL ${Math.round(eHullPct*100)}%`, ex, ey - 27);
   }
 
-  // In-flight torpedoes
-  G.inFlightTorpedoes.forEach(t => {
-    const prog = 1 - (t.timeToImpact / 3500);
-    const tx   = t.fromEnemy ? ex + (px - ex) * prog : px + (ex - px) * prog;
-    ctx.fillStyle = t.fromEnemy ? C.red : C.t;
-    ctx.beginPath(); ctx.arc(tx, py, 4, 0, Math.PI*2); ctx.fill();
-  });
-
-  // Item 10: burst salvo flash — white ring around player vessel during burst window
-  const burstFlash = G.renderedBeamsVector.find(b => b.type === 'burst_flash' && performance.now() - b.trackingStartTime < b.duration);
+  // ── 1: Burst salvo flash ──
+  const burstFlash = G.renderedBeamsVector.find(b => b.type === 'burst_flash' && now - b.trackingStartTime < b.duration);
   if (burstFlash) {
-    const age  = performance.now() - burstFlash.trackingStartTime;
+    const age  = now - burstFlash.trackingStartTime;
     const fade = 1 - (age / burstFlash.duration);
-    ctx.strokeStyle = `rgba(255,255,255,${fade * 0.9})`;
-    ctx.lineWidth   = 3;
-    ctx.beginPath(); ctx.arc(px, py, 34 + (1 - fade) * 12, 0, Math.PI*2); ctx.stroke();
-  }
-  // Clean up expired beam vectors
-  G.renderedBeamsVector = G.renderedBeamsVector.filter(b => performance.now() - b.trackingStartTime < b.duration);
-
-  // Warp core offline overlay
-  if (G.systems.warp_core.tripped) {
-    ctx.fillStyle = 'rgba(255,170,0,0.7)'; ctx.font = 'bold 8px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(G.batteryActive ? '⚡ BATTERY' : '⊗ WARP OFFLINE', px, py-32);
+    ctx.strokeStyle = `rgba(255,255,255,${fade * 0.9})`; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(px, py, 36 + (1 - fade) * 14, 0, Math.PI*2); ctx.stroke();
   }
 
-  // Ablative armour indicator below player vessel
-  const ab = G.ablative;
-  ctx.font = '8px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  const ablStr = ab.layerHealth.map(h => h > 0 ? '▊' : '░').join('');
-  ctx.fillStyle = ab.layers > 3 ? C.green : ab.layers > 1 ? C.warn : C.red;
-  ctx.fillText(`ABLATIVE: ${ablStr}`, px, py + 26);
+  // Clean up
+  G.renderedBeamsVector = G.renderedBeamsVector.filter(b => now - b.trackingStartTime < b.duration);
+
+  // Player ship label
+  if (!G.cloaked) {
+    ctx.fillStyle = 'rgba(68,119,255,0.55)'; ctx.font = '8px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('USS DEFIANT', px, py + 24);
+  }
 }
 
 // ============================================================

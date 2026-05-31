@@ -177,6 +177,8 @@ function initiateVesselSimulation(station) {
   G.batteryActive      = false;
   G.inFlightTorpedoes  = [];
   G.renderedBeamsVector = [];
+  G.shieldHitFlash     = { player:{ sector:null, timer:0 }, enemy:{ sector:null, timer:0 } };
+  G.damageParticles    = [];
   G.lockProgress       = 0;
   G.enemyLockProgress  = 0;
   G.weaponsDisrupted   = false;

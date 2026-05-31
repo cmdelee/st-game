@@ -117,6 +117,27 @@ function postTacticalAdvisory(msg) {
 }
 
 // ============================================================
+// PARTICLE HELPER — spawns hull breach sparks stored in G state
+// resolved by canvas.js at draw time (uses stored px/ex positions)
+// ============================================================
+function spawnParticles(target, count, col) {
+  const particles = [];
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 0.4 + Math.random() * 1.2;
+    particles.push({
+      target,                        // 'player' | 'enemy'
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0,
+      maxLife: 400 + Math.random() * 500,
+      col,
+    });
+  }
+  return particles;
+}
+
+// ============================================================
 // CREW CASUALTIES & ROLE EFFECTS
 // ============================================================
 function inflictCrewCasualty() {
@@ -320,9 +341,12 @@ function applyDamageToEnemy(dmg, weapon, targetSectorOverride) {
       G.threat.shields[hitSector] = Math.max(0, G.threat.shields[hitSector] - abs);
       const leak = (shieldDmg - abs) + hullPassDmg;
       if (leak > 0) G.threat.hull = Math.max(0, G.threat.hull - leak);
+      G.shieldHitFlash.enemy = { sector: hitSector, timer: 350 };
       postLogEvent(`${hitSector.toUpperCase()} shield −${Math.round(abs)}. Enemy hull:${Math.ceil(G.threat.hull)}.${sNote}`, 'good');
     } else {
       G.threat.hull = Math.max(0, G.threat.hull - dmg);
+      G.shieldHitFlash.enemy = { sector: hitSector, timer: 600 };
+      G.damageParticles.push(...spawnParticles('enemy', 8, C.warn));
       postLogEvent(`Direct hull hit (${hitSector.toUpperCase()}) −${Math.round(dmg)}. Enemy hull:${Math.ceil(G.threat.hull)}.${sNote}`, 'good');
     }
     // Legacy adaptiveHits counter kept for regen scaling in engineering.js
@@ -1001,18 +1025,20 @@ function executeThreatCounterVolley() {
       G.player.hull = Math.max(0, G.player.hull - passResidual);
     }
     G.shieldUnderAttackTimer = 3000;
+    G.shieldHitFlash.player  = { sector: targetSector, timer: 350 };
+    postLogEvent(`${chosenSys.label} — ${targetSector.toUpperCase()} −${Math.round(rawDmg * shieldPenMult)}MW.${chosenSys.isPolaron ? ' [POLARON]' : ''}`, 'warn');
   } else {
     const leak     = (rawDmg * shieldPenMult - shieldAbsorb) + hullPassthrough;
     G.player.shields[targetSector] = 0;
     G.shieldUnderAttackTimer = 3000;
+    G.shieldHitFlash.player  = { sector: targetSector, timer: 600 };
     const residual = applyAblativeArmour(leak);
     G.player.hull  = Math.max(0, G.player.hull - residual);
     G.score.hullBreaches++;
     const ablaticNote = (leak - residual) > 1 ? ` Ablative absorbed ${Math.round(leak - residual)}.` : '';
     postLogEvent(`BREACH — ${targetSector.toUpperCase()} down! Hull −${Math.round(residual)}.${ablaticNote}`, 'crit');
+    G.damageParticles.push(...spawnParticles('player', 10, C.red));
 
-    // Item 6: internal damage weighted by which sector was breached
-    // Fore hits → fore-mounted weapons; port/stbd → lateral cannons; aft → engines/warp
     const sectorSystemPool = {
       fore:      ['cannon_pu','cannon_su','nose_beam','torpedoes','sensors'],
       port:      ['cannon_pu','cannon_pl','shields','sensors'],
@@ -1025,10 +1051,8 @@ function executeThreatCounterVolley() {
     G.systems[hitKey].health = Math.max(0, G.systems[hitKey].health - hitDmg);
     postLogEvent(`Internal damage: [${G.systems[hitKey].label}] −${hitDmg}%.`, 'crit');
     checkSystemDegradationThresholds(hitKey);
-    // Item 10: medical crew status affects how easily further casualties occur
-    // Dr. Bashir down = crew take casualties at lower breach damage threshold
     const medEff = getMedicalEfficiency();
-    const casualtyThreshold = 35 * medEff; // normal: >35 dmg; Bashir down: >14-24 dmg
+    const casualtyThreshold = 35 * medEff;
     if (leak > casualtyThreshold) inflictCrewCasualty();
   }
 
