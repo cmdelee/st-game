@@ -571,46 +571,100 @@
         <div id="captain-comms-feed" class="captain-comms-feed"></div>
       </div>
 
-      <!-- Orders: Worf -->
+      <!-- Orders: Worf — Fire -->
       <div class="captain-orders-group">
-        <div class="captain-orders-label" style="color:var(--o);">ORDER — LT. CMDR WORF  <span style="font-size:9px; color:#6688aa;">(Tactical)</span></div>
+        <div class="captain-orders-label" style="color:var(--o);">WORF — FIRE CONTROL  <span style="font-size:9px; color:#6688aa;">(Tactical)</span></div>
         <div class="captain-orders-grid">
-          <button class="pill-action-btn"         id="cap-ord-fire_cannons" onclick="capFireCannons()"><span>Fire Cannons</span></button>
-          <button class="pill-action-btn p-btn"   id="cap-ord-fire_quantum" onclick="capFireQuantum()"><span>Quantum Torp</span></button>
-          <button class="pill-action-btn"         id="cap-ord-fire_photon"  onclick="capFirePhoton()"><span>Photon Torp</span></button>
-          <button class="pill-action-btn red-btn" id="cap-ord-fire_burst"   onclick="capFireBurst()"><span>Burst Salvo</span></button>
-          <button class="pill-action-btn red-btn" id="cap-ord-fire_alpha"   onclick="capFireAlpha()"><span>Alpha Salvo</span></button>
-          <button class="pill-action-btn"         id="cap-ord-rotate_freq"  onclick="capRotateFreq()"><span>Rotate Freq</span></button>
-          <button class="pill-action-btn warn-btn"id="cap-ord-evasive"      onclick="capEvasive()"><span>Evasive ◈</span></button>
-          <button class="pill-action-btn warn-btn"id="cap-ord-cloak"        onclick="capCloak()"><span>Engage Cloak</span></button>
+          <button class="pill-action-btn"          id="cap-ord-fire_cannons" onclick="capFireCannons()"><span>Fire Cannons</span></button>
+          <button class="pill-action-btn p-btn"    id="cap-ord-fire_quantum" onclick="capFireQuantum()"><span>Quantum Torp</span></button>
+          <button class="pill-action-btn"          id="cap-ord-fire_photon"  onclick="capFirePhoton()"><span>Photon Torp</span></button>
+          <button class="pill-action-btn red-btn"  id="cap-ord-fire_burst"   onclick="capFireBurst()"><span>Burst Salvo</span></button>
+          <button class="pill-action-btn red-btn"  id="cap-ord-fire_alpha"   onclick="capFireAlpha()"><span>Alpha Salvo</span></button>
+          <button class="pill-action-btn"          id="cap-ord-rotate_freq"  onclick="capRotateFreq()"><span>Rotate Freq</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-cloak"        onclick="capCloak()"><span>Engage Cloak</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-decloak"      onclick="capDecloak()"><span>Decloak</span></button>
         </div>
       </div>
 
-      <!-- Orders: O'Brien -->
+      <!-- Orders: Worf — Targeting -->
       <div class="captain-orders-group">
-        <div class="captain-orders-label" style="color:var(--b);">ORDER — CHIEF O'BRIEN  <span style="font-size:9px; color:#6688aa;">(Engineering)</span></div>
+        <div class="captain-orders-label" style="color:var(--o);">WORF — TARGET ENEMY SYSTEM  <span style="font-size:9px; color:#6688aa;">Worf shifts sensor lock</span></div>
         <div class="captain-orders-grid">
-          <button class="pill-action-btn"         id="cap-ord-boost_shields" onclick="capBoostShields()"><span>Boost Shields</span></button>
-          <button class="pill-action-btn warn-btn"id="cap-ord-emerg_batt"    onclick="capEmergBatt()"><span>Emerg Battery</span></button>
-          <button class="pill-action-btn"         id="cap-ord-repair_wpn"    onclick="capRepairWpn()"><span>Repair Weapons</span></button>
-          <button class="pill-action-btn"         id="cap-ord-repair_sys"    onclick="capRepairSys()"><span>Repair Systems</span></button>
-          <button class="pill-action-btn"         id="cap-ord-flush_eps"     onclick="capFlushEPS()"><span>Flush EPS</span></button>
-          <button class="pill-action-btn red-btn" id="cap-ord-dmg_ctrl"      onclick="capDmgCtrl()"><span>Damage Control</span></button>
+          <button class="pill-action-btn"          id="cap-ord-tgt_hull"     onclick="capTgtHull()"><span>Target Hull</span></button>
+          <button class="pill-action-btn"          id="cap-ord-tgt_shields"  onclick="capTgtShields()"><span>Target Shields</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-tgt_weapons"  onclick="capTgtWeaponsAny()"><span>Target Weapons</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-tgt_engines"  onclick="capTgtEngines()"><span>Target Engines</span></button>
+          <button class="pill-action-btn p-btn"    id="cap-ord-tgt_cloak"    onclick="capTgtCloak()"><span>Target Cloak</span></button>
+          <button class="pill-action-btn"          id="cap-ord-tgt_sensors"  onclick="capTgtSensors()"><span>Target Sensors</span></button>
+          <button class="pill-action-btn"          id="cap-ord-tgt_warpcore" onclick="capTgtWarpCore()"><span>Target Warp Core</span></button>
+          <button class="pill-action-btn"          id="cap-ord-evasive"      onclick="capEvasive()"><span>Evasive ◈</span></button>
         </div>
       </div>
 
-      <!-- Orders: Nog -->
+      <!-- Orders: Worf — Scans -->
       <div class="captain-orders-group">
-        <div class="captain-orders-label" style="color:var(--t);">ORDER — ENSIGN NOG  <span style="font-size:9px; color:#6688aa;">(Helm)</span></div>
+        <div class="captain-orders-label" style="color:var(--o);">WORF — SENSOR SCANS  <span style="font-size:9px; color:#6688aa;">Auto-commits on completion</span></div>
         <div class="captain-orders-grid">
-          <button class="pill-action-btn green-btn"id="cap-ord-speed_full"   onclick="capSpeedFull()"><span>Full Impulse</span></button>
-          <button class="pill-action-btn"          id="cap-ord-speed_half"   onclick="capSpeedHalf()"><span>Half Impulse</span></button>
-          <button class="pill-action-btn"          id="cap-ord-speed_stop"   onclick="capSpeedStop()"><span>All Stop</span></button>
-          <button class="pill-action-btn p-btn"    id="cap-ord-attack_run"   onclick="capAttackRun()"><span>Attack Run</span></button>
-          <button class="pill-action-btn"          id="cap-ord-come_about"   onclick="capComeAbout()"><span>Come About</span></button>
-          <button class="pill-action-btn"          id="cap-ord-range_long"   onclick="capRangeLong()"><span>Long Range</span></button>
-          <button class="pill-action-btn warn-btn" id="cap-ord-range_close"  onclick="capRangeClose()"><span>Close Range</span></button>
-          <button class="pill-action-btn red-btn"  id="cap-ord-emerg_warp"   onclick="capEmergWarp()"><span>⚡ Emerg Warp</span></button>
+          <button class="pill-action-btn"          id="cap-ord-scan_shields" onclick="capScanShields()"><span>🛡 Shield Scan</span></button>
+          <button class="pill-action-btn"          id="cap-ord-scan_hull"    onclick="capScanHull()"><span>💥 Hull Scan</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-scan_weapons" onclick="capScanWeapons()"><span>⚡ Disrupt Scan</span></button>
+          <button class="pill-action-btn p-btn"    id="cap-ord-scan_tetryon" onclick="capScanTetryon()"><span>〜 Tetryon Scan</span></button>
+        </div>
+      </div>
+
+      <!-- Orders: O'Brien — Shields -->
+      <div class="captain-orders-group">
+        <div class="captain-orders-label" style="color:var(--b);">O'BRIEN — SHIELD MANAGEMENT  <span style="font-size:9px; color:#6688aa;">(Engineering)</span></div>
+        <div class="captain-orders-grid">
+          <button class="pill-action-btn"          id="cap-ord-shld_fore"        onclick="capShldFore()"><span>Reinforce Fore</span></button>
+          <button class="pill-action-btn"          id="cap-ord-shld_port"        onclick="capShldPort()"><span>Reinforce Port</span></button>
+          <button class="pill-action-btn"          id="cap-ord-shld_stbd"        onclick="capShldStbd()"><span>Reinforce Stbd</span></button>
+          <button class="pill-action-btn"          id="cap-ord-shld_aft"         onclick="capShldAft()"><span>Reinforce Aft</span></button>
+          <button class="pill-action-btn"          id="cap-ord-shld_equalise"    onclick="capShldEqualise()"><span>Equalise Shields</span></button>
+          <button class="pill-action-btn"          id="cap-ord-shld_regen_boost" onclick="capShldRegenBoost()"><span>Boost Regen</span></button>
+        </div>
+      </div>
+
+      <!-- Orders: O'Brien — Repairs -->
+      <div class="captain-orders-group">
+        <div class="captain-orders-label" style="color:var(--b);">O'BRIEN — REPAIRS &amp; SYSTEMS</div>
+        <div class="captain-orders-grid">
+          <button class="pill-action-btn warn-btn" id="cap-ord-emerg_batt"    onclick="capEmergBatt()"><span>Emerg Battery</span></button>
+          <button class="pill-action-btn"          id="cap-ord-repair_wpn"    onclick="capRepairWpn()"><span>Repair Weapons</span></button>
+          <button class="pill-action-btn"          id="cap-ord-repair_sys"    onclick="capRepairSys()"><span>Repair Systems</span></button>
+          <button class="pill-action-btn p-btn"    id="cap-ord-repair_cloak"  onclick="capRepairCloak()"><span>Repair Cloak</span></button>
+          <button class="pill-action-btn"          id="cap-ord-flush_eps"     onclick="capFlushEPS()"><span>Flush EPS</span></button>
+          <button class="pill-action-btn red-btn"  id="cap-ord-dmg_ctrl"      onclick="capDmgCtrl()"><span>Damage Control</span></button>
+        </div>
+      </div>
+
+      <!-- Orders: Nog — Attack Vectors -->
+      <div class="captain-orders-group">
+        <div class="captain-orders-label" style="color:var(--t);">NOG — ATTACK VECTOR  <span style="font-size:9px; color:#6688aa;">(Helm)</span></div>
+        <div class="captain-orders-grid">
+          <button class="pill-action-btn"          id="cap-ord-vec_fore" onclick="capVecFore()"><span>▲ Fore Vector</span></button>
+          <button class="pill-action-btn"          id="cap-ord-vec_port" onclick="capVecPort()"><span>◀ Port Vector</span></button>
+          <button class="pill-action-btn"          id="cap-ord-vec_stbd" onclick="capVecStbd()"><span>▶ Stbd Vector</span></button>
+          <button class="pill-action-btn"          id="cap-ord-vec_aft"  onclick="capVecAft()"><span>▼ Aft Vector</span></button>
+        </div>
+      </div>
+
+      <!-- Orders: Nog — Speed, Range & Manoeuvres -->
+      <div class="captain-orders-group">
+        <div class="captain-orders-label" style="color:var(--t);">NOG — SPEED, RANGE &amp; MANOEUVRES</div>
+        <div class="captain-orders-grid">
+          <button class="pill-action-btn green-btn" id="cap-ord-speed_full"    onclick="capSpeedFull()"><span>Full Impulse</span></button>
+          <button class="pill-action-btn"           id="cap-ord-speed_half"    onclick="capSpeedHalf()"><span>Half Impulse</span></button>
+          <button class="pill-action-btn"           id="cap-ord-speed_stop"    onclick="capSpeedStop()"><span>All Stop</span></button>
+          <button class="pill-action-btn"           id="cap-ord-range_long"    onclick="capRangeLong()"><span>Long Range</span></button>
+          <button class="pill-action-btn"           id="cap-ord-range_medium"  onclick="capRangeMedium()"><span>Medium Range</span></button>
+          <button class="pill-action-btn warn-btn"  id="cap-ord-range_close"   onclick="capRangeClose()"><span>Close Range</span></button>
+          <button class="pill-action-btn p-btn"     id="cap-ord-attack_run"    onclick="capAttackRun()"><span>Attack Run</span></button>
+          <button class="pill-action-btn"           id="cap-ord-come_about"    onclick="capComeAbout()"><span>Come About</span></button>
+          <button class="pill-action-btn p-btn"     id="cap-ord-picard"        onclick="capPicard()"><span>Picard Manoeuvre</span></button>
+          <button class="pill-action-btn red-btn"   id="cap-ord-pattern_omega" onclick="capPatternOmega()"><span>Pattern Omega</span></button>
+          <button class="pill-action-btn warn-btn"  id="cap-ord-evasive_alpha" onclick="capEvasiveAlpha()"><span>Evasive Alpha</span></button>
+          <button class="pill-action-btn red-btn"   id="cap-ord-emerg_warp"    onclick="capEmergWarp()"><span>⚡ Emerg Warp</span></button>
         </div>
       </div>
 

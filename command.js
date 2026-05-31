@@ -97,14 +97,28 @@ function _fillBar(id, pct) {
 // ── Order Cooldowns ───────────────────────────────────────────
 
 const _CAP_CD = {
-  fire_cannons:3000, fire_quantum:5000, fire_photon:3000,
-  fire_burst:14000,  fire_alpha:9000,   rotate_freq:32000,
-  evasive:22000,     cloak:28000,
-  boost_shields:8000, emerg_batt:22000, repair_wpn:12000,
-  repair_sys:12000,  flush_eps:16000,   dmg_ctrl:22000,
-  speed_full:1500,   speed_half:1500,   speed_stop:1500,
-  attack_run:22000,  come_about:20000,
-  range_long:1500,   range_close:1500,  emerg_warp:0,
+  // Worf — weapons & tactical
+  fire_cannons:3000,   fire_quantum:5000,   fire_photon:3000,
+  fire_burst:14000,    fire_alpha:9000,     rotate_freq:32000,
+  evasive:22000,       cloak:28000,         decloak:28000,
+  // Worf — targeting
+  tgt_hull:1000,       tgt_shields:1000,    tgt_weapons:1000,
+  tgt_engines:1000,    tgt_cloak:1000,      tgt_sensors:1000,
+  tgt_warpcore:1000,
+  // Worf — scans
+  scan_shields:30000,  scan_hull:26000,     scan_weapons:35000,  scan_tetryon:20000,
+  // O'Brien — shields & power
+  shld_fore:6000,      shld_port:6000,      shld_stbd:6000,      shld_aft:6000,
+  shld_equalise:8000,  shld_regen_boost:20000,
+  // O'Brien — repairs & systems
+  emerg_batt:22000,    repair_wpn:12000,    repair_sys:12000,
+  flush_eps:16000,     dmg_ctrl:22000,      repair_cloak:18000,
+  // Nog — helm
+  speed_full:1500,     speed_half:1500,     speed_stop:1500,
+  attack_run:22000,    come_about:20000,    emerg_warp:0,
+  range_long:1500,     range_close:1500,    range_medium:1500,
+  vec_fore:1000,       vec_port:1000,       vec_stbd:1000,       vec_aft:1000,
+  picard:55000,        pattern_omega:47000, evasive_alpha:35000,
 };
 
 function tickCaptainCooldowns(dt) {
@@ -141,33 +155,152 @@ function _order(key, fn, crew, msg) {
   _updateCaptainOrderButtons();
 }
 
-// Tactical — Worf
-function capFireCannons()  { _order('fire_cannons', firePulseCannons,                              'worf',   "Aye, Captain — all pulse cannons firing."); }
-function capFireQuantum()  { _order('fire_quantum',  () => fireSelectedArray('torpedo_quantum'),    'worf',   "Quantum torpedo away, sir."); }
-function capFirePhoton()   { _order('fire_photon',   () => fireSelectedArray('torpedo_photon'),     'worf',   "Photon torpedo launched, Captain."); }
-function capFireBurst()    { _order('fire_burst',    executeBurstFireSalvo,                         'worf',   "Initiating burst salvo — four cannon barrage."); }
-function capFireAlpha()    { _order('fire_alpha',    executeAlphaSalvoFire,                         'worf',   "All weapons firing, Captain."); }
-function capRotateFreq()   { _order('rotate_freq',   rotateShieldFrequency,                        'worf',   "Rotating shield frequencies now, Captain."); }
-function capEvasive()      { _order('evasive',       executeEvasivePattern,                         'worf',   "Evasive Pattern Delta, aye."); }
-function capCloak()        { _order('cloak',         toggleCloakingDevice,                          'worf',   "Engaging cloaking device, Captain."); }
+// ── WORF — Weapons & Tactical ─────────────────────────────────
+function capFireCannons()  { _order('fire_cannons',  firePulseCannons,                             'worf',   "Aye, Captain — all pulse cannons firing."); }
+function capFireQuantum()  { _order('fire_quantum',  () => fireSelectedArray('torpedo_quantum'),   'worf',   "Quantum torpedo away, sir."); }
+function capFirePhoton()   { _order('fire_photon',   () => fireSelectedArray('torpedo_photon'),    'worf',   "Photon torpedo launched, Captain."); }
+function capFireBurst()    { _order('fire_burst',    executeBurstFireSalvo,                        'worf',   "Initiating burst salvo — four cannon barrage."); }
+function capFireAlpha()    { _order('fire_alpha',    executeAlphaSalvoFire,                        'worf',   "All weapons firing, Captain."); }
+function capRotateFreq()   { _order('rotate_freq',   rotateShieldFrequency,                       'worf',   "Rotating shield frequencies now, Captain."); }
+function capEvasive()      { _order('evasive',       executeEvasivePattern,                        'worf',   "Evasive Pattern Delta, aye."); }
 
-// Engineering — O'Brien
-function capBoostShields() { _order('boost_shields', () => _capPumpShields(),                      'obrien', "Rerouting power to fore shields, Captain."); }
-function capEmergBatt()    { _order('emerg_batt',    _capActivateBattery,                           'obrien', "Switching to emergency battery, aye."); }
-function capRepairWpn()    { _order('repair_wpn',    emergencyRepairWeapons,                        'obrien', "Dispatching repair team to weapons, Captain."); }
-function capRepairSys()    { _order('repair_sys',    emergencyRepairSystems,                        'obrien', "Repair team on critical systems, aye."); }
-function capFlushEPS()     { _order('flush_eps',     masterConduitFlush,                            'obrien', "Flushing EPS conduits, Captain."); }
-function capDmgCtrl()      { _order('dmg_ctrl',      () => _capDamageControl(),                    'obrien', "Damage control engaged, Captain."); }
+// Cloak / Decloak as distinct orders
+function capCloak() {
+  if (G.cloaked) { postCrewReport('worf', "Captain, we are already cloaked.", 'status'); return; }
+  _order('cloak', toggleCloakingDevice, 'worf', "Engaging cloaking device, Captain.");
+}
+function capDecloak() {
+  if (!G.cloaked) { postCrewReport('worf', "Captain, the cloak is not currently engaged.", 'status'); return; }
+  _order('decloak', toggleCloakingDevice, 'worf', "Decloaking on your order, Captain.");
+}
 
-// Helm — Nog
-function capSpeedFull()    { _order('speed_full',    () => setHelmSpeed('full'),                   'nog',    "Full impulse, aye Captain."); }
-function capSpeedHalf()    { _order('speed_half',    () => setHelmSpeed('half'),                   'nog',    "Half impulse, aye."); }
-function capSpeedStop()    { _order('speed_stop',    () => setHelmSpeed('stop'),                   'nog',    "All stop, Captain."); }
-function capAttackRun()    { _order('attack_run',    executeAttackRun,                              'nog',    "Initiating attack run, Captain."); }
-function capComeAbout()    { _order('come_about',    executeComeAbout,                              'nog',    "Coming about, aye."); }
-function capRangeLong()    { _order('range_long',    () => setPlayerRangeBracket('long'),           'nog',    "Increasing to long-range engagement, Captain."); }
-function capRangeClose()   { _order('range_close',   () => setPlayerRangeBracket('close'),          'nog',    "Closing to combat range, aye Captain."); }
-function capEmergWarp()    { _order('emerg_warp',    attemptEmergencyWarp,                          'worf',   "Emergency warp engaged, Captain!"); }
+// ── WORF — Enemy Subsystem Targeting ─────────────────────────
+// Each order tells Worf to shift targeting to a specific enemy system.
+// Uses the live enemy systems from G.enemySystems to find the best match.
+
+function _capTargetSystem(cdKey, sysKeyHint, fallbackLabel) {
+  // Find the matching live enemy system key
+  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
+  if (!cfg) return;
+  // sysKeyHint is a category string we match against systemTargetKey or the key name
+  let matchKey = null, matchLabel = fallbackLabel;
+  Object.keys(G.enemySystems).forEach(k => {
+    const s = G.enemySystems[k];
+    if (s.systemTargetKey === sysKeyHint || k.includes(sysKeyHint)) {
+      if (!matchKey || s.health > G.enemySystems[matchKey].health) { // prefer healthier one
+        matchKey = k; matchLabel = s.label;
+      }
+    }
+  });
+  // Special non-weapon targets
+  if (!matchKey) {
+    if (sysKeyHint === 'hull')    { matchKey = 'hull';    matchLabel = 'Hull'; }
+    if (sysKeyHint === 'shields') { matchKey = 'shields'; matchLabel = 'Shield Generators'; }
+  }
+  if (!matchKey) { postCrewReport('worf', `No ${fallbackLabel} systems detected on enemy vessel, Captain.`, 'alert'); return; }
+  if (!_canOrder(cdKey)) return;
+  _startCD(cdKey);
+  postCrewReport('worf', `Targeting enemy ${matchLabel}, Captain. Shifting sensor lock.`, 'status');
+  setTimeout(() => { try { setEnemyTarget(matchKey, matchLabel, 'All'); } catch(e) {} }, 350);
+  _updateCaptainOrderButtons();
+}
+
+function capTgtHull()      { _capTargetSystem('tgt_hull',     'hull',       'Hull'); }
+function capTgtShields()   { _capTargetSystem('tgt_shields',  'shields',    'Shield Generators'); }
+function capTgtWeapons()   { _capTargetSystem('tgt_weapons',  'disruptors', 'Weapons'); }   // tries disruptors, phasers, etc.
+function capTgtEngines()   { _capTargetSystem('tgt_engines',  'engines',    'Impulse Engines'); }
+function capTgtCloak()     { _capTargetSystem('tgt_cloak',    'cloak',      'Cloaking Device'); }
+function capTgtSensors()   { _capTargetSystem('tgt_sensors',  'sensors',    'Sensor Array'); }
+function capTgtWarpCore()  { _capTargetSystem('tgt_warpcore', 'warp',       'Warp Core'); }
+
+// Weapon category targeting helper (tries multiple systemTargetKeys)
+function capTgtWeaponsAny() {
+  if (!_canOrder('tgt_weapons')) return;
+  const cfg = ENEMY_CONFIGS[G.enemyArchetype]; if (!cfg) return;
+  const weaponSysKeys = ['disruptors','phasers','polaron','torpedoes'];
+  let best = null, bestLabel = 'Weapons';
+  weaponSysKeys.forEach(hint => {
+    Object.keys(G.enemySystems).forEach(k => {
+      const s = G.enemySystems[k];
+      if ((s.systemTargetKey === hint || k.includes(hint)) && s.health > 0) {
+        if (!best) { best = k; bestLabel = s.label; }
+      }
+    });
+  });
+  if (!best) { postCrewReport('worf', "All enemy weapon systems appear offline, Captain.", 'alert'); return; }
+  _startCD('tgt_weapons');
+  postCrewReport('worf', `Targeting enemy ${bestLabel}, Captain.`, 'status');
+  setTimeout(() => { try { setEnemyTarget(best, bestLabel, 'All'); } catch(e) {} }, 350);
+  _updateCaptainOrderButtons();
+}
+
+// ── WORF — Sensor Scans ───────────────────────────────────────
+// Activate a scan profile and auto-commit when analysis hits 100%.
+
+function _capScan(cdKey, scanType, worfMsg) {
+  if (!_canOrder(cdKey)) return;
+  _startCD(cdKey);
+  postCrewReport('worf', worfMsg, 'status');
+  setTimeout(() => {
+    try {
+      activateScanProfile(scanType);
+      // Poll until analysis complete then auto-commit
+      const sessionId = G.gameSessionId;
+      const poll = setInterval(() => {
+        if (!G.running || G.gameSessionId !== sessionId) { clearInterval(poll); return; }
+        if (G.scanAnalysisProgress >= 100 && G.activeScanProfile === scanType) {
+          clearInterval(poll);
+          commitScanProfile();
+          postCrewReport('worf', `${scanType.charAt(0).toUpperCase()+scanType.slice(1)} scan committed, Captain.`, 'good');
+        }
+      }, 500);
+    } catch(e) {}
+  }, 350);
+  _updateCaptainOrderButtons();
+}
+
+function capScanShields()  { _capScan('scan_shields',  'shields', "Running shield frequency analysis, Captain. Committing when complete."); }
+function capScanHull()     { _capScan('scan_hull',     'hull',    "Scanning enemy hull for structural fissures, Captain."); }
+function capScanWeapons()  { _capScan('scan_weapons',  'weapons', "Initiating weapons disruption scan, Captain."); }
+function capScanTetryon()  { _capScan('scan_tetryon',  'tetryon', "Launching tetryon pulse — enemy targeting will be degraded, Captain."); }
+
+// ── O'BRIEN — Shield Sectors ──────────────────────────────────
+function capShldFore()     { _order('shld_fore',      () => pumpShieldSector('fore'),      'obrien', "Reinforcing fore shields, Captain."); }
+function capShldPort()     { _order('shld_port',      () => pumpShieldSector('port'),      'obrien', "Rerouting power to port shields, aye."); }
+function capShldStbd()     { _order('shld_stbd',      () => pumpShieldSector('starboard'), 'obrien', "Starboard shields reinforced, Captain."); }
+function capShldAft()      { _order('shld_aft',       () => pumpShieldSector('aft'),       'obrien', "Aft shields reinforced on your order, Captain."); }
+function capShldEqualise() { _order('shld_equalise',  rebalanceShieldArrays,               'obrien', "Equalising shield arrays — brief power dip during transfer, Captain."); }
+function capShldRegenBoost(){ _order('shld_regen_boost', () => adjustShieldRegenMode('boost'), 'obrien', "Boosting shield regeneration rate, Captain. Diverting extra EPS to deflectors."); }
+
+// ── O'BRIEN — Repairs & Systems ───────────────────────────────
+function capEmergBatt()    { _order('emerg_batt',     _capActivateBattery,                 'obrien', "Switching to emergency battery, aye."); }
+function capRepairWpn()    { _order('repair_wpn',     emergencyRepairWeapons,              'obrien', "Dispatching repair team to weapons, Captain."); }
+function capRepairSys()    { _order('repair_sys',     emergencyRepairSystems,              'obrien', "Repair team on critical systems, aye."); }
+function capRepairCloak()  { _order('repair_cloak',   repairCloakingDevice,               'obrien', "Repair team to the cloaking array, Captain. ETA shortly."); }
+function capFlushEPS()     { _order('flush_eps',      masterConduitFlush,                  'obrien', "Flushing EPS conduits, Captain."); }
+function capDmgCtrl()      { _order('dmg_ctrl',       () => _capDamageControl(),           'obrien', "Damage control engaged, Captain."); }
+
+// ── NOG — Attack Vectors ──────────────────────────────────────
+function capVecFore()      { _order('vec_fore',  () => setHelmAttackVector('fore'),      'nog', "Presenting fore shields to the enemy, Captain."); }
+function capVecPort()      { _order('vec_port',  () => setHelmAttackVector('port'),      'nog', "Port attack vector, aye."); }
+function capVecStbd()      { _order('vec_stbd',  () => setHelmAttackVector('starboard'), 'nog', "Starboard attack vector, aye Captain."); }
+function capVecAft()       { _order('vec_aft',   () => setHelmAttackVector('aft'),       'nog', "Coming around to aft attack vector, Captain."); }
+
+// ── NOG — Speed & Range ───────────────────────────────────────
+function capSpeedFull()    { _order('speed_full',   () => setHelmSpeed('full'),             'nog', "Full impulse, aye Captain."); }
+function capSpeedHalf()    { _order('speed_half',   () => setHelmSpeed('half'),             'nog', "Half impulse, aye."); }
+function capSpeedStop()    { _order('speed_stop',   () => setHelmSpeed('stop'),             'nog', "All stop, Captain."); }
+function capRangeLong()    { _order('range_long',   () => setPlayerRangeBracket('long'),    'nog', "Increasing to long-range engagement, Captain."); }
+function capRangeMedium()  { _order('range_medium', () => setPlayerRangeBracket('medium'),  'nog', "Returning to medium range, aye."); }
+function capRangeClose()   { _order('range_close',  () => setPlayerRangeBracket('close'),   'nog', "Closing to combat range, aye Captain."); }
+
+// ── NOG — Manoeuvres ─────────────────────────────────────────
+function capAttackRun()    { _order('attack_run',     executeAttackRun,          'nog', "Initiating attack run, Captain."); }
+function capComeAbout()    { _order('come_about',     executeComeAbout,          'nog', "Coming about, aye."); }
+function capPicard()       { _order('picard',         executePicardManoeuver,    'nog', "Picard Manoeuvre — initiating micro-warp jump, Captain!"); }
+function capPatternOmega() { _order('pattern_omega',  executeAttackPatternOmega, 'nog', "Attack Pattern Omega engaged, Captain. All weapons to maximum yield."); }
+function capEvasiveAlpha() { _order('evasive_alpha',  executeEvasivePatternAlpha,'nog', "Evasive Pattern Alpha, aye — maximum evasion for 5 seconds."); }
+function capEmergWarp()    { _order('emerg_warp',     attemptEmergencyWarp,      'worf', "Emergency warp engaged, Captain!"); }
 
 // ── Engineering wrappers (bypass station guards) ──────────────
 
