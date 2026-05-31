@@ -205,12 +205,14 @@ function fireSelectedArray(weaponKey) {
 
   // Block ALL energy weapons when enemy is fully cloaked
   if (G.enemyCloaked && G.enemyCloakVulnTimer <= 0) {
-    if (weaponKey === 'torpedo_fore') {
-      if (G.player.torpedoes <= 0) { postLogEvent("Torpedo magazine empty.", 'warn'); return; }
-      G.player.torpedoes--;
+    if (weaponKey === 'torpedo_quantum' || weaponKey === 'torpedo_photon') {
+      const isPhoton = weaponKey === 'torpedo_photon';
+      const mag = isPhoton ? G.player.photonTorpedoes : G.player.torpedoes;
+      if (mag <= 0) { postLogEvent(`${isPhoton ? 'Photon' : 'Quantum'} torpedo magazine empty.`, 'warn'); return; }
+      if (isPhoton) G.player.photonTorpedoes--; else G.player.torpedoes--;
       parentSys.cap -= weapon.cost;
       G.inFlightTorpedoes.push({ dmg: weapon.yield * 0.4, timeToImpact: 3500, fromEnemy: false });
-      postLogEvent("Quantum torpedo blind-fired at last known position — low accuracy.", 'warn');
+      postLogEvent(`${isPhoton ? 'Photon' : 'Quantum'} torpedo blind-fired at last known position.`, 'warn');
     } else {
       postLogEvent("Enemy cloaked — energy weapons cannot track target.", 'warn');
     }
@@ -218,11 +220,19 @@ function fireSelectedArray(weaponKey) {
   }
 
   // Require lock before firing (cloak vuln window is free-fire opportunity)
-  if (G.lockProgress < 5 && G.enemyCloakVulnTimer <= 0) { postLogEvent("No targeting lock — acquire lock before firing.", 'warn'); return; }
+  // Photon torpedoes don't need a lock
+  const needsLock = !weapon.isPhoton;
+  if (needsLock && G.lockProgress < 5 && G.enemyCloakVulnTimer <= 0) {
+    postLogEvent("No targeting lock — acquire lock before firing.", 'warn'); return;
+  }
 
-  if (weaponKey === 'torpedo_fore') {
-    if (G.player.torpedoes <= 0) { postLogEvent("Torpedo magazine empty.", 'warn'); return; }
+  // Deduct from correct magazine
+  if (weaponKey === 'torpedo_quantum') {
+    if (G.player.torpedoes <= 0) { postLogEvent("Quantum torpedo magazine empty.", 'warn'); return; }
     G.player.torpedoes--;
+  } else if (weaponKey === 'torpedo_photon') {
+    if (G.player.photonTorpedoes <= 0) { postLogEvent("Photon torpedo magazine empty.", 'warn'); return; }
+    G.player.photonTorpedoes--;
   }
 
   parentSys.cap -= weapon.cost;
@@ -234,57 +244,49 @@ function fireSelectedArray(weaponKey) {
   const lockMod      = (0.5 + (G.lockProgress / 100) * 0.5) * sensorMod * crewMod;
 
   let dmg;
-  // QUANTUM TORPEDO: binary high-damage — either hits hard or glances.
-  // They don't degrade gracefully like phasers; minimum damage floor is high.
-  if (weaponKey === 'torpedo_fore') {
-    const baseYield = weapon.yield;
+  if (weaponKey === 'torpedo_quantum') {
+    // Binary damage — clean hit or glancing
     if (G.lockProgress >= 60) {
-      // Clean hit — full yield with minimal spread
-      dmg = baseYield * (0.85 + Math.random() * 0.30) * (parentSys.health / 100) * crewMod;
+      dmg = weapon.yield * (0.85 + Math.random() * 0.30) * (parentSys.health / 100) * crewMod;
       postLogEvent("Quantum torpedo — clean intercept solution.", 'good');
     } else {
-      // Glancing hit — still does meaningful damage (quantum torps don't just fizzle)
-      dmg = baseYield * (0.45 + Math.random() * 0.20) * (parentSys.health / 100) * crewMod;
+      dmg = weapon.yield * (0.45 + Math.random() * 0.20) * (parentSys.health / 100) * crewMod;
       postLogEvent("Quantum torpedo — partial lock, glancing impact.", 'warn');
     }
+  } else if (weaponKey === 'torpedo_photon') {
+    // Photons: reliable damage, no lock scaling
+    dmg = weapon.yield * (parentSys.health / 100) * crewMod;
   } else {
+    // Energy weapons: scale with lock
     dmg = weapon.yield * (parentSys.health / 100) * lockMod;
   }
 
   // Scan bonuses
   if (G.scanBonus && performance.now() < G.scanBonus.expiry) {
-    if (G.scanBonus.type === 'shields' && weapon && weapon.parentSystem !== 'torpedoes') dmg *= G.scanBonus.value;
+    if (G.scanBonus.type === 'shields' && weapon && !weapon.isPhoton && weapon.parentSystem !== 'torpedoes') dmg *= G.scanBonus.value;
     if (G.scanBonus.type === 'hull') dmg *= G.scanBonus.value;
   }
 
-  // Borg per-weapon adaptation — each weapon becomes progressively less effective
+  // Borg per-weapon adaptation
   const cfg = ENEMY_CONFIGS[G.enemyArchetype];
   if (cfg.adaptiveShields) {
-    const adaptKey = weapon.parentSystem;
+    const adaptKey = weapon.isPhoton ? 'photon' : weapon.parentSystem;
     const resist   = G.enemyAdaptiveResist[adaptKey] || 0;
     dmg *= (1 - resist);
-    // Increase resistance for this weapon type after each hit
     G.enemyAdaptiveResist[adaptKey] = Math.min(0.75, resist + 0.06);
-    if (resist > 0.1 && resist < 0.75) {
-      postLogEvent(`Borg adapting to ${weapon.label} — ${Math.round(resist * 100)}% resistance.`, 'warn');
-    }
+    if (resist > 0.1 && resist < 0.75) postLogEvent(`Borg adapting to ${weapon.label} — ${Math.round(resist*100)}% resistance.`, 'warn');
     if (resist >= 0.75) postLogEvent(`Borg fully adapted to ${weapon.label} — switch weapons!`, 'crit');
   }
 
   G.score.volleysFired++;
   G.score.totalDmgDealt += dmg;
 
-  // Cloak vuln window — enemy briefly has no shields
   const bonusMult = G.enemyCloakVulnTimer > 0 ? 1.4 : 1.0;
   applyDamageToEnemy(dmg * bonusMult, weapon);
   if (weapon) {
     parentSys.stress = Math.min(100, parentSys.stress + weapon.cost * 0.18);
-    G.renderedBeamsVector.push({ type: weapon.parentSystem, trackingStartTime: performance.now(), duration: 300 });
-    // Item 4: EPS thermal buildup from weapons fire
-    if (parentSys.isWeapon) {
-      G.epsHeat = Math.min(100, G.epsHeat + weapon.cost * 0.12);
-    }
-    // Item 9: track last fire time for hull regen advisory
+    G.renderedBeamsVector.push({ type: weapon.isPhoton ? 'photon' : weapon.parentSystem, trackingStartTime: performance.now(), duration: 300 });
+    if (parentSys.isWeapon) G.epsHeat = Math.min(100, G.epsHeat + weapon.cost * 0.12);
     G.lastPlayerFireTime = performance.now();
   }
 }
@@ -351,7 +353,7 @@ function applyDamageToEnemy(dmg, weapon, targetSectorOverride) {
 }
 
 function firePulseCannons()      { ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'].forEach(k => fireSelectedArray(k)); }
-function executeAlphaSalvoFire() { Object.keys(ARRAYS_DICTIONARY).forEach(k => fireSelectedArray(k)); }
+function executeAlphaSalvoFire() { ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose','torpedo_quantum'].forEach(k => fireSelectedArray(k)); }
 
 // ============================================================
 // PLAYER CLOAKING
@@ -510,7 +512,12 @@ function buildEnemySubsystemTargetGrid() {
 
 function setEnemyTarget(key, label, arc) {
   G.targetedSubsystemType = key;
+  // Item 10: log advisory if scan was in progress when target changed
+  if (G.activeScanProfile && G.scanAnalysisProgress > 20) {
+    postLogEvent(`Scan analysis interrupted — switching target resets sensor focus. Progress lost.`, 'warn');
+  }
   G.lockProgress = Math.max(0, G.lockProgress - 30);
+  G.scanAnalysisProgress = 0;
   document.querySelectorAll('[id^="enemy-tgt-btn-"]').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById(`enemy-tgt-btn-${key}`); if (btn) btn.classList.add('active');
   const t = document.getElementById('txt-current-target'); if (t) t.textContent = label.toUpperCase();
@@ -566,6 +573,7 @@ function triggerEnemyDecloak(cfg, reason) {
   G.enemyCloaked = false; G.enemyCloakPower = 0; G.enemyCloakVulnTimer = 1500; G.enemyCloakCooldown = 25000;
   ['fore','port','starboard','aft'].forEach(s => { G.threat.shields[s] = 0; });
   postLogEvent(`${cfg.label} DECLOAKING (${reason}) — shields offline 1.5s! Fire now!`, 'crit');
+  postTacticalAdvisory("Enemy shields down during decloak — maximum yield fire window open!");
   setTimeout(() => {
     if (G.dead) return;
     G.enemyCloakVulnTimer = 0;
@@ -801,18 +809,22 @@ function processEnemyAI(dt) {
     }
   }
 
-  // Item 7: Borg escalating threat arc — announce adaptation milestones
+  // Item 2: Borg escalating threat arc — announce adaptation milestones and increase damage
   if (cfg.adaptiveShields) {
-    const totalHits = Object.values(G.enemyAdaptiveResist).reduce((a, v) => a + v, 0);
     const fullyAdapted = Object.entries(G.enemyAdaptiveResist).filter(([k, v]) => v >= 0.75);
+    const newLevel = Math.min(3, Math.floor(fullyAdapted.length / 2));
+    if (newLevel > G.borgEscalationLevel) {
+      G.borgEscalationLevel = newLevel;
+      postLogEvent(`BORG: Cutting beam power increased — ${Math.round(newLevel * 15)}% more damage. Adapt or die.`, 'crit');
+    }
     if (fullyAdapted.length === 1 && Math.random() < 0.01 * sc * 60) {
-      postLogEvent(`BORG: "Your ${fullyAdapted[0][0].replace('_',' ')} weapons are irrelevant. Adaptation complete."`, 'crit');
+      postLogEvent(`BORG: "Your ${fullyAdapted[0][0].replace(/_/g,' ')} weapons are irrelevant. Adaptation complete."`, 'crit');
     }
     if (fullyAdapted.length >= 3 && Math.random() < 0.005 * sc * 60) {
       postLogEvent('BORG: "Resistance is futile. Your offensive capability has been neutralised."', 'crit');
     }
     if (fullyAdapted.length >= 5 && Math.random() < 0.003 * sc * 60) {
-      postTacticalAdvisory("All primary weapons fully adapted — target subsystems or use burst salvo to vary frequencies!");
+      postTacticalAdvisory("All primary weapons fully adapted — target subsystems or use photon torpedoes!");
     }
   }
 
@@ -930,6 +942,11 @@ function executeThreatCounterVolley() {
   // Klingon close-range bonus
   if (cfg.prefersCloseRange && G.enemyRangeBracket === 'close' && chosenSys.systemTargetKey === 'disruptors') {
     rawDmg *= (cfg.closeRangeDmgBonus || 1.4);
+  }
+
+  // Item 2: Borg escalating damage — each adaptation level adds 15%
+  if (cfg.adaptiveShields && G.borgEscalationLevel > 0) {
+    rawDmg *= (1 + G.borgEscalationLevel * 0.15);
   }
 
   // Hard/Elite system targeting
@@ -1068,7 +1085,8 @@ function processAutomatedDelegation(dt) {
               return !s.tripped && s.health >= 15 && s.cap >= ARRAYS_DICTIONARY[k].cost;
             }).forEach(k => fireSelectedArray(k));
             if (Math.random() < 0.5 * ce)  fireSelectedArray('emitter_nose');
-            if (Math.random() < 0.25 * ce && G.player.torpedoes > 5) fireSelectedArray('torpedo_fore');
+            if (Math.random() < 0.25 * ce && G.player.torpedoes > 3)     fireSelectedArray('torpedo_quantum');
+            if (Math.random() < 0.20 * ce && G.player.photonTorpedoes > 0) fireSelectedArray('torpedo_photon');
           }
         }
       }

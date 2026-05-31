@@ -131,6 +131,11 @@ function renderSpatialViewCanvas() {
     }
   } else {
     ctx.save(); ctx.translate(ex, ey);
+    // Item 7: Klingon close-range — scale silhouette up to show proximity
+    const cfg = ENEMY_CONFIGS[G.enemyArchetype];
+    const rangeScale = (cfg.prefersCloseRange && G.enemyRangeBracket === 'close') ? 1.4 :
+                       (cfg.prefersCloseRange && G.enemyRangeBracket === 'medium') ? 1.2 : 1.0;
+    if (rangeScale !== 1.0) ctx.scale(rangeScale, rangeScale);
     if (G.enemyManeuverState === 'angling') {
       const am = { fore:0, aft:Math.PI, port:-Math.PI/4, starboard:Math.PI/4 };
       ctx.rotate(am[G.enemyPreferredSector] || 0);

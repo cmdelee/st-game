@@ -130,10 +130,12 @@ function initiateVesselSimulation(station) {
   G.threat.lockRate     = cfg.lockRate * diff.enemyLockMult;
   G.player.hull         = Math.round(500 * diff.playerHullMult);
   G.player.maxHull      = G.player.hull;
-  // Items 1+2: reset shields and torpedoes — were never reset between games
-  G.player.torpedoes    = 18;
-  G.player.maxTorpedoes = 18;
-  G.player.shields      = { fore:320, port:260, starboard:260, aft:200, maxSectorValue:320 };
+  // Items 1+2: reset shields and torpedoes
+  G.player.torpedoes      = 18;
+  G.player.maxTorpedoes   = 18;
+  G.player.photonTorpedoes    = 12;
+  G.player.maxPhotonTorpedoes = 12;
+  G.player.shields        = { fore:320, port:260, starboard:260, aft:200, maxSectorValue:320 };
 
   // Reset ablative armour — 6 layers
   G.ablative = { layers:6, layerHealth:[100,100,100,100,100,100], regenTimers:[0,0,0,0,0,0], regenProgress:[0,0,0,0,0,0] };
@@ -156,8 +158,9 @@ function initiateVesselSimulation(station) {
   G.epsHeat                  = 0;
   G.shieldTransferInProgress = false;
   G.lastPlayerFireTime       = 0;
-  G.enemyAdaptiveResist      = { cannon_pu:0, cannon_pl:0, cannon_su:0, cannon_sl:0, nose_beam:0, torpedoes:0 };
+  G.enemyAdaptiveResist      = { cannon_pu:0, cannon_pl:0, cannon_su:0, cannon_sl:0, nose_beam:0, torpedoes:0, photon:0 };
   G.enemyAdaptiveHits        = 0;
+  G.borgEscalationLevel      = 0;
 
   // Item 1 — Full state reset between games (crew, score, queues, timers, misc)
   Object.keys(CREW_STATIONS).forEach(k => {
@@ -229,6 +232,26 @@ function initiateVesselSimulation(station) {
   G.running = true;
   G.lastFrameTimestamp = performance.now();
 
+  // Item 1: Generate stardate and mission context
+  G.stardate = 50000 + Math.floor(Math.random() * 5000) + Math.random().toFixed(1) * 1;
+  const missionContexts = {
+    ktinga:               ["K'Tinga battle cruiser challenging the Bajoran corridor.", "Klingon patrol contesting approach to DS9.", "K'Tinga intercepted on disputed border patrol.", "Klingon vessel denying access to Federation outpost."],
+    vor_cha:              ["Vor'Cha attack cruiser blocking supply route to Bajor.", "Klingon warship pursuing a damaged freighter.", "Vor'Cha intercepted near Cardassian border.", "Klingon cruiser challenging DS9 defence perimeter."],
+    romulan_bop:          ["Romulan Bird-of-Prey in Federation space — intentions hostile.", "Romulan vessel decloaking near Bajoran wormhole.", "Bird-of-Prey intercepted on intelligence-gathering mission.", "Romulan scout challenging Defiant's patrol route."],
+    romulan_warbird:      ["D'Deridex warbird enforcing contested Romulan border claim.", "Romulan warbird interdicting Federation supply convoy.", "D'Deridex on show-of-force mission near Cardassian space.", "Romulan warbird decloaking — diplomatic contact failed."],
+    cardassian_scout:     ["Cardassian scout harassing Bajoran civilian traffic.", "Cardassian vessel in restricted Bajoran space — refuses to withdraw.", "Scout ship challenging Defiant's approach to DS9.", "Cardassian patrol contesting wormhole access rights."],
+    galor_class:          ["Galor-class warship blockading a Bajoran colony.", "Cardassian warship intercepted running weapons to dissidents.", "Galor pursuing a Federation runabout into hostile space.", "Cardassian warship contesting the demilitarised zone."],
+    jem_hadar_fighter:    ["Jem'Hadar attack ship engaging Defiant on patrol.", "Dominion fighter challenging DS9 approach vector.", "Jem'Hadar intercepted near the wormhole — Dominion provocation.", "Dominion attack ship pursuing a Bajoran transport."],
+    jem_hadar_battleship: ["Jem'Hadar battle cruiser engaging Defiant in the Gamma Quadrant.", "Dominion warship interdicting Federation access to the wormhole.", "Jem'Hadar battle cruiser on punitive mission — Dominion retaliation.", "Elite Dominion warship — Founders' direct orders to destroy DS9."],
+    borg_probe:           ["Borg probe on intercept course — assimilation imminent.", "Borg vessel scanning DS9 for tactical data.", "Borg probe detected in Bajoran space — resistance is not futile.", "Borg probe intercepted before it reaches DS9 — time critical."],
+  };
+  const contexts = missionContexts[G.enemyArchetype] || [`${cfg.label} intercepted in Federation space.`];
+  G.missionContext = contexts[Math.floor(Math.random() * contexts.length)];
+
+  // Update header stardate display
+  const sdEl = document.getElementById('lbl-stardate'); if (sdEl) sdEl.textContent = `STARDATE ${G.stardate.toFixed(1)}`;
+  const mcEl = document.getElementById('lbl-mission-context'); if (mcEl) mcEl.textContent = G.missionContext;
+
   // Enemy label
   const aiLbl = document.getElementById('lbl-ai-archetype'); if (aiLbl) aiLbl.textContent = cfg.label;
 
@@ -242,8 +265,9 @@ function initiateVesselSimulation(station) {
   if (cfg.plasmaReloadTime)  postLogEvent(`WARNING: Romulan plasma torpedoes — catastrophic damage, ${cfg.plasmaReloadTime/1000}s reload.`, 'warn');
   if (cfg.canRam)            postLogEvent("WARNING: Jem'Hadar may attempt ramming at low hull — monitor enemy status!", 'crit');
   if (diff.targetsSystems)   postLogEvent(`[${currentDifficulty.toUpperCase()}] Enemy AI targeting player subsystems.`, 'crit');
-  postLogEvent("Ablative armour online — 5 layers protecting pressure hull.", 'good');
-  postLogEvent("Burst salvo and shield frequency rotation available in tactical panel.", 'info');
+  postLogEvent("Ablative armour online — 6 layers protecting pressure hull.", 'good');
+  postLogEvent("Quantum torpedoes ×18 and photon torpedoes ×12 loaded.", 'info');
+  postLogEvent("Burst salvo, shield frequency rotation, and evasive pattern available.", 'info');
 
   toggleActiveDeck(station);
   buildEnemySubsystemTargetGrid();

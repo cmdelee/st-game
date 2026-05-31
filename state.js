@@ -200,7 +200,8 @@ const ARRAYS_DICTIONARY = {
   cannon_stbd_upper:{ yield:18, cost:20, parentSystem:'cannon_su', tag:'csu', label:'Stbd Upper Pulse Cannon', arc:['fore','starboard'] },
   cannon_stbd_lower:{ yield:18, cost:20, parentSystem:'cannon_sl', tag:'csl', label:'Stbd Lower Pulse Cannon', arc:['fore','starboard','aft'] },
   emitter_nose:     { yield:55, cost:50, parentSystem:'nose_beam', tag:'emn', label:'Heavy Nose Array Emitter', arc:['fore'] },
-  torpedo_fore:     { yield:90, cost:85, parentSystem:'torpedoes', tag:'tff', label:'Forward Quantum Tube',     arc:['fore','port','starboard'] }
+  torpedo_quantum:  { yield:90, cost:85, parentSystem:'torpedoes', tag:'tff', label:'Forward Quantum Tube',     arc:['fore','port','starboard'], isQuantum:true },
+  torpedo_photon:   { yield:60, cost:30, parentSystem:'torpedoes', tag:'tph', label:'Photon Torpedo Tube',      arc:['fore','port','starboard'], isPhoton:true },
 };
 
 // ============================================================
@@ -280,7 +281,7 @@ const G = {
   weaponsDisrupted:false, weaponsDisruptedTimer:0,
   enemyTractorActive:false,
   enemyAdaptiveHits:0,
-  enemyAdaptiveResist:{ cannon_pu:0, cannon_pl:0, cannon_su:0, cannon_sl:0, nose_beam:0, torpedoes:0 }, // per-weapon Borg adaptation 0-1
+  enemyAdaptiveResist:{ cannon_pu:0, cannon_pl:0, cannon_su:0, cannon_sl:0, nose_beam:0, torpedoes:0, photon:0 }, // per-weapon Borg adaptation 0-1
   sensorGhostTimer:0,
   sensorGhostActive:false,
   inFlightTorpedoes:[],
@@ -318,6 +319,7 @@ const G = {
   player:{
     hull:500, maxHull:500,
     torpedoes:30, maxTorpedoes:30,
+    photonTorpedoes:12, maxPhotonTorpedoes:12,
     shields:{ fore:320, port:260, starboard:260, aft:200, maxSectorValue:320 }
   },
   threat:{ hull:900, maxHull:900 },
@@ -353,15 +355,21 @@ const G = {
 
   // Targeting
   targetedSubsystemType:'hull',
-  repairQueue:[],
   autoTacticalFireClock:0,
 
-  // Repair teams — 2 independent teams (feature 7)
+  // Repair teams — 2 independent teams
   repairTeams:[
     { sysKey:null, label:'', totalTime:0, remaining:0 },
     { sysKey:null, label:'', totalTime:0, remaining:0 },
   ],
-  repairQueue:[],  // kept for enemy repair tracking
+  repairQueue:[],  // enemy repair tracking only
+
+  // Stardate / mission context (item 1)
+  stardate:0,
+  missionContext:'',
+
+  // Borg escalation counter (item 2)
+  borgEscalationLevel:0,   // 0-3; each level adds 15% enemy damage
 
   // Scoring
   score:{ totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false },

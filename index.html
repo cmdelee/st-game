@@ -62,7 +62,13 @@
 ════════════════════════════════════════════════════════════ -->
 <header>
   <div class="brand">LCARS Co-Delegated Control Array</div>
-  <div class="sys-ref">BRIDGE COMMAND CONSOLE // STABLE ENGINE MATRIX</div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+    <div class="sys-ref">BRIDGE COMMAND CONSOLE // STABLE ENGINE MATRIX</div>
+    <div style="display:flex;gap:16px;align-items:center;">
+      <span id="lbl-stardate" style="font-family:'Antonio';font-size:11px;color:var(--t);letter-spacing:1px;">STARDATE —</span>
+      <span id="lbl-mission-context" style="font-family:'Roboto Mono';font-size:10px;color:#6688aa;max-width:500px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">Awaiting orders.</span>
+    </div>
+  </div>
   <div class="header-accent-line"></div>
 </header>
 
@@ -253,7 +259,8 @@
         <div>
           <div class="bar-row"><span class="bar-label">Pulse Cannon S/L</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-csl" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-csl">100%</span></div>
           <div class="bar-row"><span class="bar-label">Nose Beam Array</span> <div class="bar-rail"><div class="bar-fill" id="bar-cap-emn" style="color:var(--p);"></div></div><span class="bar-val" id="txt-cap-emn">100%</span></div>
-          <div class="bar-row"><span class="bar-label">Torpedo Tube Cap</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-tff" style="color:var(--t);"></div></div><span class="bar-val" id="txt-cap-tff">100%</span></div>
+          <div class="bar-row"><span class="bar-label">Quantum Tube Cap</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-tff" style="color:var(--t);"></div></div><span class="bar-val" id="txt-cap-tff">100%</span></div>
+          <div class="bar-row"><span class="bar-label">Photon Tube Cap</span> <div class="bar-rail"><div class="bar-fill" id="bar-cap-tph" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-tph">100%</span></div>
         </div>
       </div>
 
@@ -272,6 +279,8 @@
         <button class="pill-action-btn p-btn"                        onclick="fireSelectedArray('emitter_nose')">Nose Beam <span style="font-size:9px;">[FWD]</span></button>
         <button class="pill-action-btn p-btn"                        onclick="fireSelectedArray('torpedo_fore')">Quantum Torpedo <span style="font-size:9px;">[FWD/AFT]</span></button>
         <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-burst-fire" onclick="executeBurstFireSalvo()">⚡⚡ BURST SALVO — 4-CANNON BARRAGE</button>
+        <button class="pill-action-btn p-btn"                        onclick="fireSelectedArray('torpedo_quantum')">Quantum Torp <span style="font-size:9px;">[FWD]</span></button>
+        <button class="pill-action-btn"                               onclick="fireSelectedArray('torpedo_photon')">Photon Torp <span style="font-size:9px;">[FWD/No lock]</span></button>
         <button class="pill-action-btn warn-btn" id="btn-cloak"      onclick="toggleCloakingDevice()">◉ ENGAGE CLOAK</button>
         <button class="pill-action-btn"         id="btn-shield-freq" onclick="rotateShieldFrequency()">🛡 ROTATE FREQ</button>
         <button class="pill-action-btn p-btn"   id="btn-evasive"     onclick="executeEvasivePattern()">◈ EVASIVE PATTERN</button>
@@ -369,9 +378,14 @@
       <span class="bar-val" id="txt-player-hull">500</span>
     </div>
     <div class="bar-row" style="margin-bottom:3px;">
-      <span style="font-size:10px; color:#aabbcc; text-transform:uppercase; width:55px;">Torpedoes</span>
+      <span style="font-size:10px; color:#aabbcc; text-transform:uppercase; width:55px;">Quantum</span>
       <div class="bar-rail" style="height:10px;"><div class="bar-fill" id="bar-player-torps" style="color:var(--t);"></div></div>
-      <span class="bar-val" id="txt-player-torps">30</span>
+      <span class="bar-val" id="txt-player-torps">18</span>
+    </div>
+    <div class="bar-row" style="margin-bottom:3px;">
+      <span style="font-size:10px; color:#aabbcc; text-transform:uppercase; width:55px;">Photon</span>
+      <div class="bar-rail" style="height:10px;"><div class="bar-fill" id="bar-player-photons" style="color:var(--b);"></div></div>
+      <span class="bar-val" id="txt-player-photons">12</span>
     </div>
 
     <div class="section-header" style="font-size:12px;">Shield Sectors
@@ -382,9 +396,12 @@
     <div class="bar-row" style="margin-bottom:2px;"><span class="bar-label" style="width:45px; font-size:10px;">Stbd</span>     <div class="bar-rail" style="height:11px;"><div class="bar-fill" id="bar-shield-starboard" style="color:var(--green);"></div></div><span class="bar-val" style="font-size:10px;" id="txt-shield-starboard">150</span></div>
     <div class="bar-row" style="margin-bottom:4px;"><span class="bar-label" style="width:45px; font-size:10px;">Aft</span>      <div class="bar-rail" style="height:11px;"><div class="bar-fill" id="bar-shield-aft"       style="color:var(--green);"></div></div><span class="bar-val" style="font-size:10px;" id="txt-shield-aft">150</span></div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:4px;">
-      <button class="pill-action-btn" style="font-size:10px; padding:4px;" onclick="pumpShieldSector('fore')">Reinforce Fore</button>
-      <button class="pill-action-btn" style="font-size:10px; padding:4px;" onclick="rebalanceShieldArrays()">Equalise</button>
+      <button class="pill-action-btn" style="font-size:9px; padding:4px;" onclick="pumpShieldSector('fore')">▲ Fore</button>
+      <button class="pill-action-btn" style="font-size:9px; padding:4px;" onclick="pumpShieldSector('port')">◄ Port</button>
+      <button class="pill-action-btn" style="font-size:9px; padding:4px;" onclick="pumpShieldSector('starboard')">► Stbd</button>
+      <button class="pill-action-btn" style="font-size:9px; padding:4px;" onclick="pumpShieldSector('aft')">▼ Aft</button>
     </div>
+    <button class="pill-action-btn" style="font-size:10px; padding:4px; width:100%; margin-bottom:4px;" onclick="rebalanceShieldArrays()">⇌ Equalise All</button>
 
     <div class="section-header" style="font-size:12px;">System Health</div>
     <div id="sys-health-display" style="display:flex; flex-direction:column; gap:2px;"></div>

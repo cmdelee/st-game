@@ -162,10 +162,19 @@ function assignRepairTeam(sysKey, teamIdx) {
   refreshEngineeringPanelGraphics();
 }
 
+function recallRepairTeam(teamIdx) {
+  if (G.playerChosenStation !== 'engineering') { postLogEvent("Repair requires Engineering station.", 'warn'); return; }
+  const team = G.repairTeams[teamIdx];
+  if (!team.sysKey) { postLogEvent(`${teamIdx === 0 ? 'Alpha' : 'Beta'} Team already on standby.`, 'info'); return; }
+  const teamName = teamIdx === 0 ? 'Alpha' : 'Beta';
+  postLogEvent(`${teamName} Team recalled from ${team.label}.`, 'warn');
+  team.sysKey = null; team.label = ''; team.totalTime = 0; team.remaining = 0;
+  refreshEngineeringPanelGraphics();
+}
 // Legacy wrapper — used by auto-delegation (tactical player)
 function queueSystemRepair(sysKey) {
   if (G.playerChosenStation !== 'engineering') { return; }
-  // Auto-assign to whichest team is free, else team with most progress
+  // Auto-assign to whichever team is free, else team with most progress
   const freeIdx = G.repairTeams.findIndex(t => !t.sysKey);
   const teamIdx = freeIdx >= 0 ? freeIdx : (G.repairTeams[0].remaining > G.repairTeams[1].remaining ? 1 : 0);
   assignRepairTeam(sysKey, teamIdx);
@@ -491,11 +500,12 @@ function updateEngUtilityPanel() {
       const s = Math.ceil(team.remaining / 1000);
       return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px;">
         <span style="color:var(--b);font-size:9px;min-width:38px;">👤 ${name}</span>
-        <span style="color:var(--warn);font-size:9px;flex:1;">${team.label}</span>
-        <div style="width:35px;height:5px;background:#050a14;border:1px solid #1a2640;overflow:hidden;">
+        <span style="color:var(--warn);font-size:9px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${team.label}</span>
+        <div style="width:30px;height:5px;background:#050a14;border:1px solid #1a2640;overflow:hidden;flex-shrink:0;">
           <div style="width:${p}%;height:100%;background:var(--warn);"></div>
         </div>
-        <span style="color:#aabbcc;font-size:9px;min-width:18px;">${s}s</span>
+        <span style="color:#aabbcc;font-size:9px;min-width:16px;flex-shrink:0;">${s}s</span>
+        <button onclick="recallRepairTeam(${idx})" style="font-size:7px;padding:1px 3px;background:rgba(255,51,51,0.2);border:1px solid var(--red);color:var(--red);border-radius:2px;cursor:pointer;flex-shrink:0;">✕</button>
       </div>`;
     });
     rq.innerHTML = teamLines.join('');

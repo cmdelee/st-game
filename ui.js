@@ -33,13 +33,21 @@ function synchronizeGlobalInterfaceDisplays() {
   // Left panel EPS
   const le = document.getElementById('lbl-left-eps'); if (le) le.textContent = `${total} / ${warpOut} MW`;
 
-  // Alert condition
+  // Alert condition — item 9: threat-based not just hull%
   const al = document.getElementById('lbl-left-alert');
   if (al) {
-    const hp = G.player.hull / G.player.maxHull;
-    if (hp < 0.2)       { al.textContent = 'RED ALERT';      al.style.color = 'var(--red)';   }
-    else if (hp < 0.55) { al.textContent = 'YELLOW ALERT';   al.style.color = 'var(--warn)';  }
-    else                { al.textContent = 'CONDITION GREEN'; al.style.color = 'var(--green)'; }
+    const hp             = G.player.hull / G.player.maxHull;
+    const shieldBreached = ['fore','port','starboard','aft'].some(s => G.player.shields[s] <= 0);
+    const torpedoInbound = G.enemyManeuverState === 'torpedocharge';
+    const critHull       = hp < 0.2;
+    const incomingTorp   = G.inFlightTorpedoes.some(t => t.fromEnemy);
+    if (critHull || shieldBreached || torpedoInbound || incomingTorp || G.enemyRammingRun) {
+      al.textContent = 'RED ALERT';      al.style.color = 'var(--red)';
+    } else if (hp < 0.55 || G.enemyLockProgress > 60 || G.shieldUnderAttackTimer > 0) {
+      al.textContent = 'YELLOW ALERT';   al.style.color = 'var(--warn)';
+    } else {
+      al.textContent = 'CONDITION GREEN'; al.style.color = 'var(--green)';
+    }
   }
 
   // Player hull & torpedoes
@@ -47,6 +55,8 @@ function synchronizeGlobalInterfaceDisplays() {
   const pt = document.getElementById('txt-player-hull'); if (pt) pt.textContent = `${Math.ceil(G.player.hull)}`;
   const pTB = document.getElementById('bar-player-torps'); if (pTB) pTB.style.width = `${(G.player.torpedoes / G.player.maxTorpedoes) * 100}%`;
   const pTT = document.getElementById('txt-player-torps'); if (pTT) pTT.textContent = G.player.torpedoes;
+  const pPB = document.getElementById('bar-player-photons'); if (pPB) pPB.style.width = `${(G.player.photonTorpedoes / G.player.maxPhotonTorpedoes) * 100}%`;
+  const pPT = document.getElementById('txt-player-photons'); if (pPT) pPT.textContent = G.player.photonTorpedoes;
 
   // Player shield bars
   ['fore','port','starboard','aft'].forEach(s => {
@@ -138,8 +148,6 @@ function synchronizeGlobalInterfaceDisplays() {
     const t = document.getElementById(`txt-cap-${wd.tag}`);
     if (t) t.textContent = sys.tripped ? 'OFFLINE' : `${Math.round(cap)}%`;
   });
-
-  // Ablative armour strip (tactical)
   const abDiv = document.getElementById('ablative-armour-strip');
   if (abDiv) {
     const ab = G.ablative;
@@ -249,7 +257,20 @@ function concludeSimulationRun(victory, msg, escaped) {
   const overlay = document.getElementById('overlay'); overlay.style.display = 'flex';
   const setup = document.getElementById('setup-controls-anchor'); if (setup) setup.style.display = 'none';
   const title = document.getElementById('modal-title');
-  if (title) { title.textContent = escaped ? 'DISENGAGED' : victory ? 'TACTICAL VICTORY' : 'VESSEL DESTROYED'; title.style.color = escaped ? C.warn : victory ? C.green : C.red; }
+  if (title) {
+    let titleText, titleColor;
+    if (escaped) {
+      titleText = 'DISENGAGED'; titleColor = C.warn;
+    } else if (victory) {
+      const hullPct = G.player.hull / G.player.maxHull;
+      if (hullPct >= 0.70)      { titleText = 'DECISIVE VICTORY';  titleColor = '#00ffaa'; }
+      else if (hullPct >= 0.35) { titleText = 'TACTICAL VICTORY';  titleColor = C.green;   }
+      else                      { titleText = 'PYRRHIC VICTORY';   titleColor = C.warn;    }
+    } else {
+      titleText = 'VESSEL DESTROYED'; titleColor = C.red;
+    }
+    title.textContent = titleText; title.style.color = titleColor;
+  }
   const desc = document.getElementById('modal-desc'); if (desc) desc.textContent = msg;
 
   const scoreDiv = document.getElementById('score-display');
