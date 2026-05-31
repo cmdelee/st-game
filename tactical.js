@@ -303,6 +303,11 @@ function fireSelectedArray(weaponKey) {
     if (_r === 'long')  dmg *= 0.90;
   }
 
+  // Overload bonuses
+  if (G._overchargeActive)   dmg *= 1.50;
+  if (G._unstableTorpActive) dmg *= 1.70;
+  if (G.powerDumpActive)     dmg *= 1.40;
+
   // Scan bonuses
   if (G.scanBonus && performance.now() < G.scanBonus.expiry) {
     if (G.scanBonus.type === 'shields' && weapon && !weapon.isPhoton && weapon.parentSystem !== 'torpedoes') dmg *= G.scanBonus.value;
@@ -399,6 +404,90 @@ function applyDamageToEnemy(dmg, weapon, targetSectorOverride) {
 
 function firePulseCannons()      { ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'].forEach(k => fireSelectedArray(k)); }
 function executeAlphaSalvoFire() { ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose','torpedo_quantum'].forEach(k => fireSelectedArray(k)); }
+
+// ============================================================
+// OVERLOAD WEAPON MODES
+// ============================================================
+function executeCannonOvercharge() {
+  if (!G.running || G.dead) return;
+  if (!G.overchargeReady) { postLogEvent(`Overcharge capacitors resetting — ${Math.ceil(G.overchargeCooldown/1000)}s.`, 'warn'); return; }
+  if (G.cloaked || G.cloakVulnTimer > 0) { postLogEvent("Cannot fire while cloaking.", 'warn'); return; }
+  if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
+
+  const cannonKeys = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
+  const ready = cannonKeys.filter(k => {
+    const sys = G.systems[ARRAYS_DICTIONARY[k].parentSystem];
+    return sys && !sys.tripped && sys.health >= 10 && sys.cap >= ARRAYS_DICTIONARY[k].cost;
+  });
+  if (ready.length === 0) { postLogEvent("No cannon capacitors charged for overcharge.", 'warn'); return; }
+
+  postLogEvent("CANNON OVERCHARGE — +50% yield, high breaker risk!", 'crit');
+  G.overchargeReady   = false;
+  G.overchargeCooldown = 30000;
+
+  ready.forEach((k, i) => {
+    setTimeout(() => {
+      if (G.dead) return;
+      const weapon = ARRAYS_DICTIONARY[k];
+      const sys    = G.systems[weapon.parentSystem];
+      if (!sys || sys.tripped || sys.cap < weapon.cost) return;
+      // Fire with 50% yield bonus applied via temporary flag
+      G._overchargeActive = true;
+      fireSelectedArray(k);
+      G._overchargeActive = false;
+      // Spike stress — high breaker risk
+      sys.stress = Math.min(100, sys.stress + 55);
+      G.epsHeat  = Math.min(100, G.epsHeat + 8);
+    }, i * 150);
+  });
+}
+
+function executeUnstableTorpedo() {
+  if (!G.running || G.dead) return;
+  if (!G.unstableTorpReady) { postLogEvent(`Torpedo tube re-stabilising — ${Math.ceil(G.unstableTorpCooldown/1000)}s.`, 'warn'); return; }
+  if (G.cloaked || G.cloakVulnTimer > 0) { postLogEvent("Cannot fire while cloaking.", 'warn'); return; }
+  if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
+  if (G.player.torpedoes <= 0) { postLogEvent("Quantum torpedo magazine empty.", 'warn'); return; }
+
+  const sys = G.systems.torpedoes;
+  if (!sys || sys.tripped || sys.health < 10) { postLogEvent("Torpedo tube offline.", 'warn'); return; }
+
+  postLogEvent("UNSTABLE TORPEDO — +70% yield, misfire risk!", 'crit');
+  G.unstableTorpReady    = false;
+  G.unstableTorpCooldown = 35000;
+  G._unstableTorpActive  = true;
+  fireSelectedArray('torpedo_quantum');
+  G._unstableTorpActive  = false;
+
+  // 25% chance of tube damage from containment breach
+  if (Math.random() < 0.25) {
+    const dmg = 30 + Math.random() * 20;
+    sys.health = Math.max(0, sys.health - dmg);
+    postLogEvent(`Containment breach — torpedo tube took ${Math.round(dmg)}% damage!`, 'crit');
+    if (sys.health < 20) { sys.tripped = true; postLogEvent("Torpedo tube offline — containment failure.", 'crit'); }
+  }
+}
+
+function executeEmergencyPowerDump() {
+  if (!G.running || G.dead) return;
+  if (!G.powerDumpReady) { postLogEvent(`EPS dump capacitors recharging — ${Math.ceil(G.powerDumpCooldown/1000)}s.`, 'warn'); return; }
+  if (G.powerDumpActive) { postLogEvent("Emergency power dump already active.", 'warn'); return; }
+
+  postLogEvent("EMERGENCY POWER DUMP — all weapons +40% for 10s. EPS heat spike!", 'crit');
+  G.powerDumpActive   = true;
+  G.powerDumpTimer    = 10000;
+  G.powerDumpReady    = false;
+  G.powerDumpCooldown = 50000;
+
+  // EPS heat spike — risks cap recharge penalty
+  G.epsHeat = Math.min(100, G.epsHeat + 55);
+
+  // Shields drop to 70% — power diverted from defensive systems
+  ['fore','port','starboard','aft'].forEach(s => {
+    G.player.shields[s] = Math.max(0, G.player.shields[s] * 0.70);
+  });
+  postLogEvent("Shield power diverted — sectors at 70%.", 'warn');
+}
 
 // ============================================================
 // PLAYER CLOAKING
@@ -688,6 +777,27 @@ function processNewMechanicsTimers(dt) {
       G.burstFireReady = true;
       postLogEvent("Burst capacitors recharged — salvo ready.", 'good');
     }
+  }
+
+  // Overload mode cooldowns + power dump active timer
+  if (!G.overchargeReady) {
+    G.overchargeCooldown = Math.max(0, G.overchargeCooldown - dt);
+    if (G.overchargeCooldown <= 0) { G.overchargeReady = true; postLogEvent("Cannon overcharge capacitors reset.", 'good'); }
+  }
+  if (!G.unstableTorpReady) {
+    G.unstableTorpCooldown = Math.max(0, G.unstableTorpCooldown - dt);
+    if (G.unstableTorpCooldown <= 0) { G.unstableTorpReady = true; postLogEvent("Torpedo tube re-stabilised — unstable load ready.", 'good'); }
+  }
+  if (G.powerDumpActive) {
+    G.powerDumpTimer = Math.max(0, G.powerDumpTimer - dt);
+    if (G.powerDumpTimer <= 0) {
+      G.powerDumpActive = false;
+      postLogEvent("Emergency power dump expired — EPS returning to normal.", 'warn');
+    }
+  }
+  if (!G.powerDumpReady) {
+    G.powerDumpCooldown = Math.max(0, G.powerDumpCooldown - dt);
+    if (G.powerDumpCooldown <= 0) { G.powerDumpReady = true; postLogEvent("EPS power dump capacitors recharged.", 'good'); }
   }
 
   // Shield frequency rotation

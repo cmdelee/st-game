@@ -286,6 +286,14 @@
         <button class="pill-action-btn red-btn"  style="grid-column:span 1;" onclick="executeAlphaSalvoFire()">ALPHA SALVO — ALL WEAPONS</button>
       </div>
 
+      <!-- Overload weapon modes -->
+      <div style="font-family:'Antonio'; color:var(--red); font-size:11px; margin:6px 0 4px; border-bottom:1px solid rgba(255,51,51,0.3); padding-bottom:2px;">⚠ OVERLOAD MODES — HIGH RISK</div>
+      <div class="button-matrix-grid">
+        <button class="pill-action-btn red-btn" id="btn-overcharge"   onclick="executeCannonOvercharge()">⚡ OVERCHARGE<br><span style="font-size:11px;">Cannon +50% · Breaker risk · CD 30s</span></button>
+        <button class="pill-action-btn red-btn" id="btn-unstable-torp" onclick="executeUnstableTorpedo()">☢ UNSTABLE TORP<br><span style="font-size:11px;">Quantum +70% · Misfire 25% · CD 35s</span></button>
+        <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-power-dump" onclick="executeEmergencyPowerDump()">⚡⚡ EMERGENCY POWER DUMP — Wpn+40% 10s · EPS spike · Shld−30% · CD 50s</button>
+      </div>
+
       <!-- Enemy subsystem targeting -->
       <div style="margin-top:4px;">
         <div style="font-family:'Antonio'; font-size:11px; color:var(--t); text-transform:uppercase; border-bottom:1px solid var(--dim2); margin-bottom:4px; padding-bottom:2px;">Target Enemy Subsystem</div>
@@ -522,14 +530,14 @@
 <!-- ═══════════════════════════════════════════════════════════
      SCRIPTS — load order: state → engineering → tactical → canvas → ui → main
 ════════════════════════════════════════════════════════════ -->
-<script src="state.js?v=7"></script>
-<script src="engineering.js?v=7"></script>
-<script src="tactical.js?v=7"></script>
-<script src="helm.js?v=7"></script>
-<script src="canvas-three.js?v=7"></script>
-<script src="canvas-2d.js?v=7"></script>
-<script src="ui.js?v=7"></script>
-<script src="main.js?v=7"></script>
+<script src="state.js?v=8"></script>
+<script src="engineering.js?v=8"></script>
+<script src="tactical.js?v=8"></script>
+<script src="helm.js?v=8"></script>
+<script src="canvas-three.js?v=8"></script>
+<script src="canvas-2d.js?v=8"></script>
+<script src="ui.js?v=8"></script>
+<script src="main.js?v=8"></script>
 
 </body>
 </html>

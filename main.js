@@ -176,6 +176,14 @@ function initiateVesselSimulation(station) {
   G.epsHeat                  = 0;
   G.shieldTransferInProgress = false;
   G.lastPlayerFireTime       = 0;
+  G.overchargeReady          = true;
+  G.overchargeCooldown       = 0;
+  G.unstableTorpReady        = true;
+  G.unstableTorpCooldown     = 0;
+  G.powerDumpActive          = false;
+  G.powerDumpTimer           = 0;
+  G.powerDumpReady           = true;
+  G.powerDumpCooldown        = 0;
   G.enemyAdaptiveResist      = { cannon_pu:0, cannon_pl:0, cannon_su:0, cannon_sl:0, nose_beam:0, torpedoes:0, photon:0 };
   G.enemyAdaptiveHits        = 0;
   G.borgEscalationLevel      = 0;
