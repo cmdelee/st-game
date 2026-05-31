@@ -83,6 +83,7 @@ function updateCaptainOverview() {
   _setTxt('cap-helm-maneuver', maneuver);
 
   _updateCaptainOrderButtons();
+  _updateCloakButtonLabel();
 }
 
 function _setTxt(id, txt) {
@@ -100,7 +101,7 @@ const _CAP_CD = {
   // Worf — weapons & tactical
   fire_cannons:3000,   fire_quantum:5000,   fire_photon:3000,
   fire_burst:14000,    fire_alpha:9000,     rotate_freq:32000,
-  evasive:22000,       cloak:28000,         decloak:28000,
+  evasive:22000,       cloak:28000,
   // Worf — targeting
   tgt_hull:1000,       tgt_shields:1000,    tgt_weapons:1000,
   tgt_engines:1000,    tgt_cloak:1000,      tgt_sensors:1000,
@@ -164,14 +165,24 @@ function capFireAlpha()    { _order('fire_alpha',    executeAlphaSalvoFire,     
 function capRotateFreq()   { _order('rotate_freq',   rotateShieldFrequency,                       'worf',   "Rotating shield frequencies now, Captain."); }
 function capEvasive()      { _order('evasive',       executeEvasivePattern,                        'worf',   "Evasive Pattern Delta, aye."); }
 
-// Cloak / Decloak as distinct orders
-function capCloak() {
-  if (G.cloaked) { postCrewReport('worf', "Captain, we are already cloaked.", 'status'); return; }
-  _order('cloak', toggleCloakingDevice, 'worf', "Engaging cloaking device, Captain.");
+// Cloak / Decloak — single toggle, label updates with state
+function capCloakToggle() {
+  const msg = G.cloaked ? "Decloaking on your order, Captain." : "Engaging cloaking device, Captain.";
+  _order('cloak', toggleCloakingDevice, 'worf', msg);
 }
-function capDecloak() {
-  if (!G.cloaked) { postCrewReport('worf', "Captain, the cloak is not currently engaged.", 'status'); return; }
-  _order('decloak', toggleCloakingDevice, 'worf', "Decloaking on your order, Captain.");
+
+function _updateCloakButtonLabel() {
+  const btn = document.getElementById('cap-ord-cloak');
+  if (!btn) return;
+  const span = btn.firstChild;
+  if (!span) return;
+  if (G.cloaked) {
+    span.textContent = '◉ Decloak';
+    btn.className = 'pill-action-btn green-btn';
+  } else {
+    span.textContent = '◉ Engage Cloak';
+    btn.className = 'pill-action-btn warn-btn';
+  }
 }
 
 // ── WORF — Enemy Subsystem Targeting ─────────────────────────
