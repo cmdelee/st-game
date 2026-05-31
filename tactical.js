@@ -284,6 +284,9 @@ function fireSelectedArray(weaponKey) {
 
   // Helm speed: stable platform / high-speed firing penalty
   dmg *= (HELM_SPEED_CONFIG[G.helmSpeed]?.yieldMult ?? 1.0);
+  // Helm manoeuvre bonuses
+  if (G.picardManoeuverActive)   dmg *= 1.50; // confusion window — point-blank targeting
+  if (G.attackPatternOmegaActive) dmg *= 1.40; // all-out assault
   // Helm engagement range: weapon-type modifiers
   const _r = G.playerRangeBracket;
   const _isTorp   = weaponKey === 'torpedo_quantum' || weaponKey === 'torpedo_photon';
@@ -816,9 +819,11 @@ function processEnemyAI(dt) {
   const sMod       = eSens ? eSens.health / 100 : 1;
   const evasiveMod = G.evasiveActive ? getHelmEvasiveModifier() : 1.0;
   const tetryonMod = (G.scanBonus && G.scanBonus.type === 'tetryon' && performance.now() < G.scanBonus.expiry) ? G.scanBonus.value : 1.0;
-  const helmSpeedCfg = HELM_SPEED_CONFIG[G.helmSpeed] || HELM_SPEED_CONFIG.half;
-  const helmSpeedMod = G.comeAboutActive ? 1.25 : helmSpeedCfg.enemyLockMult;
-  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * sc);
+  const helmSpeedCfg  = HELM_SPEED_CONFIG[G.helmSpeed] || HELM_SPEED_CONFIG.half;
+  const helmSpeedMod  = G.comeAboutActive ? 1.25 : helmSpeedCfg.enemyLockMult;
+  const alphaLockMod  = G.evasiveAlphaActive ? 0.5 : 1.0;   // Evasive Pattern Alpha
+  const picardLockMod = G.picardManoeuverActive ? 0.0 : 1.0; // Picard Manoeuvre — no lock possible
+  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * alphaLockMod * picardLockMod * sc);
 
   // Jem'Hadar — check for ramming opportunity (below 20% hull)
   if (cfg.canRam && !G.enemyRammingRun) {
@@ -918,6 +923,7 @@ function executeThreatCounterVolley() {
 
   if (G.enemyCloaked && G.enemyCloakVulnTimer <= 0) return;
   if (G.enemyRammingRun) return; // committed to ram, not firing
+  if (G.picardManoeuverActive) { postLogEvent("Enemy fire disrupted — Picard Manoeuvre confusion window.", 'good'); return; }
 
   const wpns = Object.entries(G.enemySystems).filter(([k, s]) => s.isWeapon && s.health > 0);
   if (wpns.length === 0) { postLogEvent("All enemy weapons offline.", 'good'); return; }
@@ -985,8 +991,9 @@ function executeThreatCounterVolley() {
   }
 
   let rawDmg = (Math.random() * (dmgMax - dmgMin) + dmgMin) * (chosenSys.health / 100) * diff.enemyDmgMult;
-  if (G.weaponsDisrupted)               rawDmg *= 0.5;
-  if (G.activePanel === 'engineering')  rawDmg *= 0.85;
+  if (G.weaponsDisrupted)                rawDmg *= 0.5;
+  if (G.activePanel === 'engineering')   rawDmg *= 0.85;
+  if (G.attackPatternOmegaActive)        rawDmg *= 1.20; // shields compromised during all-out attack
 
   // Klingon close-range bonus
   if (cfg.prefersCloseRange && G.enemyRangeBracket === 'close' && chosenSys.systemTargetKey === 'disruptors') {

@@ -411,10 +411,13 @@
         <div style="background:#070d1a; border:1px solid var(--p); padding:8px; border-radius:4px;">
           <div style="font-family:'Antonio'; color:var(--p); font-size:11px; margin-bottom:5px; border-bottom:1px solid var(--dim2); padding-bottom:3px;">TACTICAL MANOEUVRES</div>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
-            <button class="pill-action-btn p-btn"   id="btn-evasive-helm"     onclick="executeEvasivePattern()" style="font-size:9px; padding:4px;">◈ EVASIVE DELTA<br><span style="font-size:7px; color:#cc99ff;">Lock−60% · 8s · CD 20s</span></button>
-            <button class="pill-action-btn red-btn" id="btn-helm-attack-run"  onclick="executeAttackRun()"      style="font-size:9px; padding:4px;">◈ ATTACK RUN<br><span style="font-size:7px;">Cannon+20% · 8s · CD 20s</span></button>
-            <button class="pill-action-btn warn-btn" id="btn-helm-come-about" onclick="executeComeAbout()"      style="font-size:9px; padding:4px;">↺ COME ABOUT<br><span style="font-size:7px; color:#ffcc88;">3s rotate · CD 18s</span></button>
-            <button class="pill-action-btn warn-btn"                           onclick="attemptEmergencyWarp()" style="font-size:9px; padding:4px;">⚡ EMRG WARP<br><span style="font-size:7px; color:#ffcc88;">Hull ≤35%</span></button>
+            <button class="pill-action-btn p-btn"    id="btn-evasive-helm"       onclick="executeEvasivePattern()"     style="font-size:9px; padding:4px;">◈ EVASIVE DELTA<br><span style="font-size:7px; color:#cc99ff;">Lock−60% · 8s · CD 20s</span></button>
+            <button class="pill-action-btn p-btn"    id="btn-helm-evasive-alpha" onclick="executeEvasivePatternAlpha()" style="font-size:9px; padding:4px;">◈ EVASIVE ALPHA<br><span style="font-size:7px; color:#cc99ff;">Lock−70% instant · CD 15s</span></button>
+            <button class="pill-action-btn red-btn"  id="btn-helm-attack-run"    onclick="executeAttackRun()"          style="font-size:9px; padding:4px;">◈ ATTACK RUN<br><span style="font-size:7px;">Cannon+20% · 8s · CD 20s</span></button>
+            <button class="pill-action-btn red-btn"  id="btn-helm-omega"         onclick="executeAttackPatternOmega()" style="font-size:9px; padding:4px;">Ω PATTERN OMEGA<br><span style="font-size:7px;">Wpn×1.4 · 10s · CD 45s</span></button>
+            <button class="pill-action-btn warn-btn" id="btn-helm-come-about"    onclick="executeComeAbout()"          style="font-size:9px; padding:4px;">↺ COME ABOUT<br><span style="font-size:7px; color:#ffcc88;">3s rotate · CD 18s</span></button>
+            <button class="pill-action-btn p-btn"    id="btn-helm-picard"        onclick="executePicardManoeuver()"    style="font-size:9px; padding:4px;">∞ PICARD MANOEUVER<br><span style="font-size:7px; color:#aaddff;">Dmg×1.5 · No fire · CD 60s</span></button>
+            <button class="pill-action-btn warn-btn" style="grid-column:span 2; font-size:9px; padding:4px;" onclick="attemptEmergencyWarp()">⚡ EMERGENCY WARP — Hull ≤35%</button>
           </div>
         </div>
 

@@ -162,6 +162,15 @@ function initiateVesselSimulation(station) {
   G.comeAboutActive          = false;
   G.comeAboutTimer           = 0;
   G.comeAboutCooldown        = 0;
+  G.picardManoeuverActive    = false;
+  G.picardManoeuverTimer     = 0;
+  G.picardManoeuverCooldown  = 0;
+  G.attackPatternOmegaActive = false;
+  G.attackPatternOmegaTimer  = 0;
+  G.attackPatternOmegaCooldown = 0;
+  G.evasiveAlphaActive       = false;
+  G.evasiveAlphaTimer        = 0;
+  G.evasiveAlphaCooldown     = 0;
   G.evasiveActive            = false;
   G.evasiveCooldown          = 0;
   G.epsHeat                  = 0;

@@ -336,6 +336,17 @@ const G = {
   comeAboutTimer:0,
   comeAboutCooldown:0,
 
+  // Helm manoeuvres
+  picardManoeuverActive:false,      // 3s window — enemy can't fire, player ×1.5 dmg
+  picardManoeuverTimer:0,
+  picardManoeuverCooldown:0,
+  attackPatternOmegaActive:false,   // 10s — weapons ×1.4, incoming dmg ×1.2
+  attackPatternOmegaTimer:0,
+  attackPatternOmegaCooldown:0,
+  evasiveAlphaActive:false,         // 5s — drops lock 70% + slows lock build rate
+  evasiveAlphaTimer:0,
+  evasiveAlphaCooldown:0,
+
   // Player
   player:{
     hull:500, maxHull:500,
