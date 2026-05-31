@@ -89,8 +89,8 @@ function masterSimulationCoreLoop(ts) {
   updateWarpAvailability();
   synchronizeGlobalInterfaceDisplays();
 
-  // Canvas rendering
-  if (G.activePanel === 'tactical') {
+  // Canvas rendering — helm shares the tactical monitor pair
+  if (G.activePanel === 'tactical' || G.activePanel === 'helm') {
     renderSpatialViewCanvas();
     renderEnemySchematicCanvas();
   } else {
