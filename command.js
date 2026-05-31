@@ -109,7 +109,6 @@ const _CAP_CD = {
   // Worf — scans
   scan_shields:30000,  scan_hull:26000,     scan_weapons:35000,  scan_tetryon:20000,
   // O'Brien — shields & power
-  shld_fore:6000,      shld_port:6000,      shld_stbd:6000,      shld_aft:6000,
   shld_equalise:8000,  shld_regen_boost:20000,
   // O'Brien — repairs & systems
   emerg_batt:22000,    repair_wpn:12000,    repair_sys:12000,
@@ -275,11 +274,7 @@ function capScanHull()     { _capScan('scan_hull',     'hull',    "Scanning enem
 function capScanWeapons()  { _capScan('scan_weapons',  'weapons', "Initiating weapons disruption scan, Captain."); }
 function capScanTetryon()  { _capScan('scan_tetryon',  'tetryon', "Launching tetryon pulse — enemy targeting will be degraded, Captain."); }
 
-// ── O'BRIEN — Shield Sectors ──────────────────────────────────
-function capShldFore()     { _order('shld_fore',      () => pumpShieldSector('fore'),      'obrien', "Reinforcing fore shields, Captain."); }
-function capShldPort()     { _order('shld_port',      () => pumpShieldSector('port'),      'obrien', "Rerouting power to port shields, aye."); }
-function capShldStbd()     { _order('shld_stbd',      () => pumpShieldSector('starboard'), 'obrien', "Starboard shields reinforced, Captain."); }
-function capShldAft()      { _order('shld_aft',       () => pumpShieldSector('aft'),       'obrien', "Aft shields reinforced on your order, Captain."); }
+// ── O'BRIEN — Shield Management ───────────────────────────────
 function capShldEqualise() { _order('shld_equalise',  rebalanceShieldArrays,               'obrien', "Equalising shield arrays — brief power dip during transfer, Captain."); }
 function capShldRegenBoost(){ _order('shld_regen_boost', () => adjustShieldRegenMode('boost'), 'obrien', "Boosting shield regeneration rate, Captain. Diverting extra EPS to deflectors."); }
 
