@@ -582,27 +582,32 @@ canvas { width: 100%; height: 100%; display: block; }
 .captain-comms-wrap {
   flex-shrink: 0;
   flex-grow: 0;
+  height: clamp(58px, 7vh, 78px);
   background: #020509;
   border: 1px solid var(--dim2);
   border-left: 3px solid var(--b);
   border-radius: 4px;
-  padding: clamp(4px, 0.5vh, 8px);
+  padding: 4px 8px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .captain-comms-header {
   font-family: 'Antonio', sans-serif;
-  font-size: clamp(9px, 0.95vh, 11px);
+  font-size: clamp(8px, 0.85vh, 10px);
   color: var(--b);
   letter-spacing: 2px;
   text-transform: uppercase;
-  margin-bottom: clamp(3px, 0.4vh, 6px);
+  margin-bottom: 2px;
+  flex-shrink: 0;
 }
 .captain-comms-feed {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
   overflow: hidden;
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
 }
 .comms-line {
   display: flex;
@@ -625,17 +630,19 @@ canvas { width: 100%; height: 100%; display: block; }
 .captain-orders-group { flex-shrink: 0; }
 .captain-orders-label {
   font-family: 'Antonio', sans-serif;
-  font-size: clamp(9px, 1vh, 12px);
+  font-size: clamp(8px, 0.9vh, 11px);
   font-weight: bold;
   letter-spacing: 1px;
   text-transform: uppercase;
   border-bottom: 1px solid var(--dim2);
-  padding-bottom: clamp(1px, 0.2vh, 3px);
-  margin-bottom: clamp(2px, 0.3vh, 5px);
+  padding-bottom: 1px;
+  margin-bottom: clamp(2px, 0.3vh, 4px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .captain-orders-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: clamp(3px, 0.4vh, 6px);
+  gap: clamp(2px, 0.3vh, 4px);
 }
 
