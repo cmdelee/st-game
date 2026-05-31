@@ -11,6 +11,8 @@ function toggleActiveDeck(key) {
   const deck = document.getElementById(`deck-${key}`); if (deck) deck.classList.add('active-deck');
   document.querySelectorAll('.monitor-frame').forEach(f => f.classList.remove('active-monitor'));
   document.querySelectorAll(`.view-${key}`).forEach(f => f.classList.add('active-monitor'));
+  const monRow = document.querySelector('.top-monitor-row');
+  if (monRow) monRow.classList.toggle('engineering-monitors', key === 'engineering');
   const eu = document.getElementById('eng-utility-panel');
   if (eu) eu.style.display = key === 'engineering' ? 'flex' : 'none';
   const gs = document.getElementById('lbl-automation-status');

@@ -98,6 +98,7 @@ header {
 
 /* ── Monitors ── */
 .top-monitor-row { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; height: 38%; min-height: 230px; }
+.top-monitor-row.engineering-monitors { height: 26%; min-height: 180px; }
 .monitor-frame   { background: #010205; border: 1.5px solid var(--dim2); border-radius: 6px; position: relative; overflow: hidden; display: none; }
 .monitor-frame.active-monitor { display: block; }
 .monitor-title   { position: absolute; top: 6px; left: 10px; font-family: 'Antonio'; font-size: 13px; color: var(--o); z-index: 10; letter-spacing: 1px; }

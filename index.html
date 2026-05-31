@@ -335,11 +335,11 @@
         <span id="badge-engineering" class="delegation-badge">Syncing Status...</span>
       </div>
       <!-- Power routing presets -->
-      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:8px;">
-        <button class="pill-action-btn warn-btn" onclick="applyPowerPreset('attack')">⚡ ATTACK MODE<br><span style="font-size:11px;">Wpn max · Shld −</span></button>
-        <button class="pill-action-btn p-btn"    onclick="applyPowerPreset('silent')">◉ SILENT RUNNING<br><span style="font-size:11px;">Cloak ready · Wpn off</span></button>
-        <button class="pill-action-btn green-btn" onclick="applyPowerPreset('evasive')">◈ EVASIVE<br><span style="font-size:11px;">Engines max · Shld +</span></button>
-        <button class="pill-action-btn"          onclick="applyPowerPreset('damage_control')">🛡 DAMAGE CONTROL<br><span style="font-size:11px;">Shld max · Sensors +</span></button>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:6px;">
+        <button class="pill-action-btn warn-btn" style="padding:6px; font-size:12px;" onclick="applyPowerPreset('attack')">⚡ ATTACK MODE <span style="font-size:10px; opacity:0.8;">Wpn max · Shld −</span></button>
+        <button class="pill-action-btn p-btn"    style="padding:6px; font-size:12px;" onclick="applyPowerPreset('silent')">◉ SILENT RUNNING <span style="font-size:10px; opacity:0.8;">Cloak ready · Wpn off</span></button>
+        <button class="pill-action-btn green-btn" style="padding:6px; font-size:12px;" onclick="applyPowerPreset('evasive')">◈ EVASIVE <span style="font-size:10px; opacity:0.8;">Engines max · Shld +</span></button>
+        <button class="pill-action-btn"          style="padding:6px; font-size:12px;" onclick="applyPowerPreset('damage_control')">🛡 DAMAGE CTRL <span style="font-size:10px; opacity:0.8;">Shld max · Sensors +</span></button>
       </div>
       <div class="eng-layout-split">
         <div>
@@ -511,14 +511,14 @@
 <!-- ═══════════════════════════════════════════════════════════
      SCRIPTS — load order: state → engineering → tactical → canvas → ui → main
 ════════════════════════════════════════════════════════════ -->
-<script src="state.js?v=4"></script>
-<script src="engineering.js?v=4"></script>
-<script src="tactical.js?v=4"></script>
-<script src="helm.js?v=4"></script>
-<script src="canvas-three.js?v=4"></script>
-<script src="canvas-2d.js?v=4"></script>
-<script src="ui.js?v=4"></script>
-<script src="main.js?v=4"></script>
+<script src="state.js?v=5"></script>
+<script src="engineering.js?v=5"></script>
+<script src="tactical.js?v=5"></script>
+<script src="helm.js?v=5"></script>
+<script src="canvas-three.js?v=5"></script>
+<script src="canvas-2d.js?v=5"></script>
+<script src="ui.js?v=5"></script>
+<script src="main.js?v=5"></script>
 
 </body>
 </html>
