@@ -213,8 +213,8 @@ function synchronizeGlobalInterfaceDisplays() {
     updateEngUtilityPanel();
   }
 
-  // Helm panel refresh (only if active)
-  if (G.activePanel === 'helm') updateHelmPanel();
+  // Helm panel refresh — only if active and no helm timer is already driving it this frame
+  if (G.activePanel === 'helm' && !G.attackRunActive && !G.comeAboutActive) updateHelmPanel();
 }
 
 // ============================================================

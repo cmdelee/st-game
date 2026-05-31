@@ -9,7 +9,8 @@ function processHelmTimers(dt) {
     G.attackRunTimer = Math.max(0, G.attackRunTimer - dt);
     if (G.attackRunTimer <= 0) {
       G.attackRunActive = false;
-      postLogEvent("Attack run complete — cannon advantage at close range sustained.", 'good');
+      G.playerRangeBracket = 'medium'; // return to neutral range after run
+      postLogEvent("Attack run complete — range returned to medium. CD 20s.", 'good');
     }
     if (G.activePanel === 'helm') updateHelmPanel();
   } else if (G.attackRunCooldown > 0) {
@@ -94,6 +95,7 @@ function executeAttackRun() {
   if (G.systems.engines.health < 25 || G.systems.engines.tripped) { postLogEvent("Engines too damaged for attack run.", 'crit'); return; }
   G.attackRunActive     = true;
   G.attackRunTimer      = 8000;
+  G.attackRunCooldown   = 20000;   // starts counting once attackRunActive → false
   G.playerRangeBracket  = 'close';
   G.systems.engines.stress = Math.min(100, G.systems.engines.stress + 35);
   postLogEvent("ATTACK RUN — closing to combat range. Cannon yield +20% for 8s. Engine stress +35%.", 'crit');
