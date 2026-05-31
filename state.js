@@ -9,9 +9,11 @@ const C = { b:'#4477ff', o:'#ff9900', t:'#cc6699', p:'#9966cc', red:'#ff3333', w
 // DIFFICULTY SETTINGS
 // ============================================================
 const DIFFICULTY = {
-  normal: { label:'Normal',  enemyHullMult:1.0, enemyDmgMult:1.0,  enemyLockMult:1.0, enemyFireMult:1.0,  playerHullMult:1.0, targetsSystems:false, repairSpeedMult:1.0 },
-  hard:   { label:'Hard',    enemyHullMult:1.3, enemyDmgMult:1.25, enemyLockMult:1.4, enemyFireMult:0.8,  playerHullMult:0.8, targetsSystems:true,  repairSpeedMult:0.8 },
-  elite:  { label:'Elite',   enemyHullMult:1.6, enemyDmgMult:1.5,  enemyLockMult:1.8, enemyFireMult:0.65, playerHullMult:0.65,targetsSystems:true,  repairSpeedMult:0.6 },
+  //                                                                                                                          sys target  sys target
+  //                         enemy HP    enemy dmg   enemy lock  enemy fire  player HP   targets sys  chance    repair spd
+  normal: { label:'Normal',  enemyHullMult:1.0,  enemyDmgMult:1.0,  enemyLockMult:1.0,  enemyFireMult:1.0,  playerHullMult:1.0,  targetsSystems:false, systemTargetChance:0.00, repairSpeedMult:1.0  },
+  hard:   { label:'Hard',    enemyHullMult:1.2,  enemyDmgMult:1.15, enemyLockMult:1.3,  enemyFireMult:0.85, playerHullMult:0.85, targetsSystems:true,  systemTargetChance:0.20, repairSpeedMult:0.85 },
+  elite:  { label:'Elite',   enemyHullMult:1.35, enemyDmgMult:1.28, enemyLockMult:1.5,  enemyFireMult:0.78, playerHullMult:0.78, targetsSystems:true,  systemTargetChance:0.30, repairSpeedMult:0.72 },
 };
 let currentDifficulty = 'normal';
 
@@ -437,9 +439,9 @@ function getTotalAllocatedPower() {
 function setDifficulty(level) {
   currentDifficulty = level;
   const descs = {
-    normal:'Standard engagement. Enemy fires at hull sectors only.',
-    hard:'Enhanced AI. Enemy targets specific systems. Reduced repair speed.',
-    elite:'Elite AI. Enemy prioritises critical systems. Severe penalties.'
+    normal:'Standard engagement. Enemy fires at hull sectors only. Balanced for all players.',
+    hard:'Enhanced AI. 20% chance to target player subsystems. Faster enemy fire, reduced repair speed.',
+    elite:'Elite threat. 30% subsystem targeting. Enemy fires 28% faster. Slower repairs. Tough but beatable.'
   };
   const d = document.getElementById('diff-desc'); if (d) d.textContent = descs[level];
   ['normal','hard','elite'].forEach(l => {

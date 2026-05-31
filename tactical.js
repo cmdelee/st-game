@@ -320,7 +320,7 @@ function fireSelectedArray(weaponKey) {
     const adaptKey = weapon.isPhoton ? 'photon' : weapon.parentSystem;
     const resist   = G.enemyAdaptiveResist[adaptKey] || 0;
     dmg *= (1 - resist);
-    G.enemyAdaptiveResist[adaptKey] = Math.min(0.75, resist + 0.06);
+    G.enemyAdaptiveResist[adaptKey] = Math.min(0.65, resist + 0.04); // 17 hits to full adaptation (was 12 hits at 75%)
     if (resist > 0.1 && resist < 0.75) postLogEvent(`Borg adapting to ${weapon.label} — ${Math.round(resist*100)}% resistance.`, 'warn');
     if (resist >= 0.75) postLogEvent(`Borg fully adapted to ${weapon.label} — switch weapons!`, 'crit');
   }
@@ -1117,14 +1117,14 @@ function executeThreatCounterVolley() {
     rawDmg *= (cfg.closeRangeDmgBonus || 1.4);
   }
 
-  // Item 2: Borg escalating damage — each adaptation level adds 15%
+  // Borg escalating damage — each level adds 10% (was 15%), capped at 2 levels (+20% max)
   if (cfg.adaptiveShields && G.borgEscalationLevel > 0) {
-    rawDmg *= (1 + G.borgEscalationLevel * 0.15);
+    rawDmg *= (1 + Math.min(G.borgEscalationLevel, 2) * 0.10);
   }
 
   // Hard/Elite system targeting
   let hitPlayerSystem = null;
-  if (diff.targetsSystems && Math.random() < (currentDifficulty === 'elite' ? 0.45 : 0.25)) {
+  if (diff.targetsSystems && Math.random() < diff.systemTargetChance) {
     const systemTargets = {
       torpedo_tube:['torpedoes'], disruptors:['cannon_pu','cannon_pl','cannon_su','cannon_sl'],
       phasers:['cannon_pu','nose_beam'], engines:['engines'], sensors:['sensors'],
