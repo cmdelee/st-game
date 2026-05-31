@@ -264,7 +264,9 @@ function renderSpatialViewCanvas() {
 
   // Enemy movement
   if (G.running) {
-    const rangeDist = G.enemyRangeBracket==='close'?22:G.enemyRangeBracket==='medium'?38:55;
+    const _eDist = G.enemyRangeBracket==='close'?22:G.enemyRangeBracket==='medium'?38:55;
+    const _pDist = G.playerRangeBracket==='close'?22:G.playerRangeBracket==='medium'?38:55;
+    const rangeDist = Math.min(_eDist, _pDist);
     mesh_enemyGroup.position.x = THREE.MathUtils.lerp(mesh_enemyGroup.position.x, mesh_defiant.position.x+rangeDist, 0.008);
     mesh_enemyGroup.position.y = Math.sin(now*0.35+1.2)*0.7;
     mesh_enemyGroup.position.z = Math.sin(now*0.22+0.7)*1.1;

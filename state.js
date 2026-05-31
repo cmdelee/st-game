@@ -233,6 +233,16 @@ const ABLATIVE_ARMOUR = {
 };
 
 // ============================================================
+// HELM SPEED PROFILES
+// ============================================================
+const HELM_SPEED_CONFIG = {
+  stop:        { label:'ALL STOP',          enemyLockMult:1.35, yieldMult:1.10 },
+  maneuvering: { label:'MANEUVERING',        enemyLockMult:1.10, yieldMult:1.00 },
+  half:        { label:'HALF IMPULSE',       enemyLockMult:0.85, yieldMult:0.97 },
+  full:        { label:'FULL IMPULSE',       enemyLockMult:0.65, yieldMult:0.88 },
+};
+
+// ============================================================
 // MAIN GAME STATE
 // ============================================================
 const G = {
@@ -314,6 +324,17 @@ const G = {
   evasiveCooldown:0,
   evasiveDuration:8000,    // 8s of reduced enemy lock build rate
   evasiveCooldownTime:20000, // 20s cooldown
+
+  // Helm station state
+  helmSpeed:'half',
+  helmAttackVector:'fore',
+  playerRangeBracket:'long',
+  attackRunActive:false,
+  attackRunTimer:0,
+  attackRunCooldown:0,
+  comeAboutActive:false,
+  comeAboutTimer:0,
+  comeAboutCooldown:0,
 
   // Player
   player:{

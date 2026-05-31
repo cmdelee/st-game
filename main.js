@@ -153,6 +153,15 @@ function initiateVesselSimulation(station) {
   G.shieldFreqWeaponType     = null;
   G.burstFireReady           = true;
   G.burstFireCooldown        = 0;
+  G.helmSpeed                = 'half';
+  G.helmAttackVector         = 'fore';
+  G.playerRangeBracket       = 'long';
+  G.attackRunActive          = false;
+  G.attackRunTimer           = 0;
+  G.attackRunCooldown        = 0;
+  G.comeAboutActive          = false;
+  G.comeAboutTimer           = 0;
+  G.comeAboutCooldown        = 0;
   G.evasiveActive            = false;
   G.evasiveCooldown          = 0;
   G.epsHeat                  = 0;
@@ -272,6 +281,7 @@ function initiateVesselSimulation(station) {
   postLogEvent("Ablative armour online — 6 layers protecting pressure hull.", 'good');
   postLogEvent("Quantum torpedoes ×18 and photon torpedoes ×12 loaded.", 'info');
   postLogEvent("Burst salvo, shield frequency rotation, and evasive pattern available.", 'info');
+  if (station === 'helm') postLogEvent("Helm: half impulse — fore attack vector — long engagement range. Auto-tactical and auto-engineering active.", 'info');
 
   toggleActiveDeck(station);
   buildEnemySubsystemTargetGrid();

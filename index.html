@@ -31,8 +31,9 @@
 
     <!-- Station buttons -->
     <div class="setup-buttons-flex" id="setup-controls-anchor">
-      <button class="pill-action-btn" style="width:220px; padding:14px; background:var(--o);" onclick="initiateVesselSimulation('tactical')">COMMAND TACTICAL</button>
-      <button class="pill-action-btn" style="width:220px; padding:14px; background:var(--p);" onclick="initiateVesselSimulation('engineering')">CONTROL ENGINEERING</button>
+      <button class="pill-action-btn" style="width:180px; padding:14px; background:var(--o);" onclick="initiateVesselSimulation('tactical')">COMMAND TACTICAL</button>
+      <button class="pill-action-btn" style="width:180px; padding:14px; background:var(--p);" onclick="initiateVesselSimulation('engineering')">CONTROL ENGINEERING</button>
+      <button class="pill-action-btn" style="width:180px; padding:14px; background:var(--t);" onclick="initiateVesselSimulation('helm')">FLY HELM</button>
     </div>
 
     <!-- End-game score display (hidden until game over) -->
@@ -82,6 +83,7 @@
     <div class="lcars-elbow"><span class="lcars-elbow-text">SYS-CON</span></div>
     <div class="nav-pill-btn active" id="tab-tactical"    onclick="toggleActiveDeck('tactical')">Tactical Systems</div>
     <div class="nav-pill-btn"        id="tab-engineering" onclick="toggleActiveDeck('engineering')">Engineering</div>
+    <div class="nav-pill-btn"        id="tab-helm"        onclick="toggleActiveDeck('helm')">Helm</div>
 
     <div class="nav-spacer-block">
       <!-- EPS load -->
@@ -161,11 +163,11 @@
 
     <!-- Monitor row (top) -->
     <div class="top-monitor-row">
-      <div class="monitor-frame active-monitor view-tactical">
+      <div class="monitor-frame active-monitor view-tactical view-helm">
         <div class="monitor-title">Spatial Intercept Coordinates Grid</div>
         <div class="canvas-container" id="spatial-3d-mount"></div>
       </div>
-      <div class="monitor-frame active-monitor view-tactical">
+      <div class="monitor-frame active-monitor view-tactical view-helm">
         <div class="monitor-title">Enemy Vessel Tactical Assessment</div>
         <div class="canvas-container"><canvas id="canvas-enemy-schematic"></canvas></div>
       </div>
@@ -359,6 +361,81 @@
         </div>
       </div>
     </div><!-- /deck-engineering -->
+
+    <!-- ══ HELM DECK ══ -->
+    <div class="control-deck-plate" id="deck-helm">
+      <div class="section-header">
+        <span>Flight Control &amp; Tactical Manoeuvre Systems — Ensign Nog</span>
+        <span id="badge-helm" class="delegation-badge" style="color:var(--t);">AUTO-TAC + AUTO-ENG ACTIVE</span>
+      </div>
+
+      <!-- Row 1: Speed + Vector -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+
+        <!-- Speed Control -->
+        <div style="background:#070d1a; border:1px solid var(--t); padding:8px; border-radius:4px;">
+          <div style="font-family:'Antonio'; color:var(--t); font-size:11px; margin-bottom:5px; border-bottom:1px solid var(--dim2); padding-bottom:3px;">IMPULSE SPEED</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+            <button class="pill-action-btn" id="btn-helm-speed-stop"        onclick="setHelmSpeed('stop')"        style="font-size:9px; padding:4px;">ALL STOP<br><span style="font-size:7px; color:#88aaff;">Lock+35% Yld+10%</span></button>
+            <button class="pill-action-btn" id="btn-helm-speed-maneuvering" onclick="setHelmSpeed('maneuvering')" style="font-size:9px; padding:4px;">MANEUVERING<br><span style="font-size:7px; color:#88aaff;">Lock+10% Yld±0%</span></button>
+            <button class="pill-action-btn" id="btn-helm-speed-half"        onclick="setHelmSpeed('half')"        style="font-size:9px; padding:4px; background:var(--green); color:#000;">HALF IMPULSE<br><span style="font-size:7px;">Lock−15% Yld−3%</span></button>
+            <button class="pill-action-btn" id="btn-helm-speed-full"        onclick="setHelmSpeed('full')"        style="font-size:9px; padding:4px;">FULL IMPULSE<br><span style="font-size:7px; color:#88aaff;">Lock−35% Yld−12%</span></button>
+          </div>
+        </div>
+
+        <!-- Attack Vector -->
+        <div style="background:#070d1a; border:1px solid var(--b); padding:8px; border-radius:4px;">
+          <div style="font-family:'Antonio'; color:var(--b); font-size:11px; margin-bottom:5px; border-bottom:1px solid var(--dim2); padding-bottom:3px;">ATTACK VECTOR <span style="font-size:9px; color:#6688aa;">— 65% hit probability</span></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+            <button class="pill-action-btn" id="btn-helm-vector-fore"      onclick="setHelmAttackVector('fore')"      style="font-size:9px; padding:4px; background:var(--b); color:#fff;">▲ FORE<br><span style="font-size:7px;">— MW</span></button>
+            <button class="pill-action-btn" id="btn-helm-vector-port"      onclick="setHelmAttackVector('port')"      style="font-size:9px; padding:4px;">◄ PORT<br><span style="font-size:7px; color:#88aaff;">— MW</span></button>
+            <button class="pill-action-btn" id="btn-helm-vector-starboard" onclick="setHelmAttackVector('starboard')" style="font-size:9px; padding:4px;">► STBD<br><span style="font-size:7px; color:#88aaff;">— MW</span></button>
+            <button class="pill-action-btn" id="btn-helm-vector-aft"       onclick="setHelmAttackVector('aft')"       style="font-size:9px; padding:4px;">▼ AFT<br><span style="font-size:7px; color:#88aaff;">— MW</span></button>
+          </div>
+        </div>
+
+      </div><!-- /row1 -->
+
+      <!-- Row 2: Range + Manoeuvres -->
+      <div style="display:grid; grid-template-columns:0.6fr 1fr; gap:8px; margin-bottom:8px;">
+
+        <!-- Engagement Range -->
+        <div style="background:#070d1a; border:1px solid var(--o); padding:8px; border-radius:4px;">
+          <div style="font-family:'Antonio'; color:var(--o); font-size:11px; margin-bottom:5px; border-bottom:1px solid var(--dim2); padding-bottom:3px;">ENGAGEMENT RANGE</div>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <button class="pill-action-btn" id="btn-helm-range-long"   onclick="setPlayerRangeBracket('long')"   style="font-size:9px; padding:4px; background:var(--o); color:#000;">◎ LONG — Torp+15% / Cannon−10%</button>
+            <button class="pill-action-btn" id="btn-helm-range-medium" onclick="setPlayerRangeBracket('medium')" style="font-size:9px; padding:4px;">◉ MEDIUM — Balanced</button>
+            <button class="pill-action-btn" id="btn-helm-range-close"  onclick="setPlayerRangeBracket('close')"  style="font-size:9px; padding:4px;">⊕ CLOSE — Cannon+20% / Torp−10%</button>
+          </div>
+          <div style="font-size:8px; color:#6688aa; margin-top:4px;" id="lbl-helm-range-status">Engagement: LONG | Enemy: LONG | Vec: FORE</div>
+        </div>
+
+        <!-- Tactical Manoeuvres -->
+        <div style="background:#070d1a; border:1px solid var(--p); padding:8px; border-radius:4px;">
+          <div style="font-family:'Antonio'; color:var(--p); font-size:11px; margin-bottom:5px; border-bottom:1px solid var(--dim2); padding-bottom:3px;">TACTICAL MANOEUVRES</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+            <button class="pill-action-btn p-btn"   id="btn-evasive-helm"     onclick="executeEvasivePattern()" style="font-size:9px; padding:4px;">◈ EVASIVE DELTA<br><span style="font-size:7px; color:#cc99ff;">Lock−60% · 8s · CD 20s</span></button>
+            <button class="pill-action-btn red-btn" id="btn-helm-attack-run"  onclick="executeAttackRun()"      style="font-size:9px; padding:4px;">◈ ATTACK RUN<br><span style="font-size:7px;">Cannon+20% · 8s · CD 20s</span></button>
+            <button class="pill-action-btn warn-btn" id="btn-helm-come-about" onclick="executeComeAbout()"      style="font-size:9px; padding:4px;">↺ COME ABOUT<br><span style="font-size:7px; color:#ffcc88;">3s rotate · CD 18s</span></button>
+            <button class="pill-action-btn warn-btn"                           onclick="attemptEmergencyWarp()" style="font-size:9px; padding:4px;">⚡ EMRG WARP<br><span style="font-size:7px; color:#ffcc88;">Hull ≤35%</span></button>
+          </div>
+        </div>
+
+      </div><!-- /row2 -->
+
+      <!-- Auto-delegation status -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div style="background:#070d1a; border:1px solid var(--dim2); padding:8px; border-radius:4px;">
+          <div style="font-family:'Antonio'; color:var(--warn); font-size:11px; margin-bottom:4px;">AUTO-TACTICAL (DELEGATED)</div>
+          <div style="font-size:9px; color:#aabbcc; line-height:1.6;" id="lbl-helm-autotac">Initialising...</div>
+        </div>
+        <div style="background:#070d1a; border:1px solid var(--dim2); padding:8px; border-radius:4px;">
+          <div style="font-family:'Antonio'; color:var(--green); font-size:11px; margin-bottom:4px;">AUTO-ENGINEERING (DELEGATED)</div>
+          <div style="font-size:9px; color:#aabbcc; line-height:1.6;" id="lbl-helm-autoeng">Initialising...</div>
+        </div>
+      </div>
+
+    </div><!-- /deck-helm -->
 
   </div><!-- /center-operations-deck -->
 

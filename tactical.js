@@ -282,6 +282,24 @@ function fireSelectedArray(weaponKey) {
     dmg = weapon.yield * (parentSys.health / 100) * lockMod;
   }
 
+  // Helm speed: stable platform / high-speed firing penalty
+  dmg *= (HELM_SPEED_CONFIG[G.helmSpeed]?.yieldMult ?? 1.0);
+  // Helm engagement range: weapon-type modifiers
+  const _r = G.playerRangeBracket;
+  const _isTorp   = weaponKey === 'torpedo_quantum' || weaponKey === 'torpedo_photon';
+  const _isCannon = weapon.parentSystem && weapon.parentSystem.startsWith('cannon');
+  const _isNose   = weapon.parentSystem === 'nose_beam';
+  if (_isTorp) {
+    if (_r === 'long')  dmg *= 1.15;
+    if (_r === 'close') dmg *= 0.90;
+  } else if (_isCannon) {
+    if (_r === 'close' || G.attackRunActive) dmg *= 1.20;
+    else if (_r === 'long' && !G.attackRunActive) dmg *= 0.90;
+  } else if (_isNose) {
+    if (_r === 'close') dmg *= 1.10;
+    if (_r === 'long')  dmg *= 0.90;
+  }
+
   // Scan bonuses
   if (G.scanBonus && performance.now() < G.scanBonus.expiry) {
     if (G.scanBonus.type === 'shields' && weapon && !weapon.isPhoton && weapon.parentSystem !== 'torpedoes') dmg *= G.scanBonus.value;
@@ -717,6 +735,35 @@ function processNewMechanicsTimers(dt) {
       executeRammingImpact();
     }
   }
+
+  // Helm: attack run active timer
+  if (G.attackRunActive) {
+    G.attackRunTimer = Math.max(0, G.attackRunTimer - dt);
+    if (G.attackRunTimer <= 0) {
+      G.attackRunActive = false;
+      postLogEvent("Attack run complete — cannon advantage at close range sustained.", 'good');
+    }
+    if (G.activePanel === 'helm') updateHelmPanel();
+  } else if (G.attackRunCooldown > 0) {
+    G.attackRunCooldown = Math.max(0, G.attackRunCooldown - dt);
+    if (G.attackRunCooldown <= 0 && G.activePanel === 'helm') updateHelmPanel();
+  }
+
+  // Helm: come about rotation timer
+  if (G.comeAboutActive) {
+    G.comeAboutTimer = Math.max(0, G.comeAboutTimer - dt);
+    if (G.comeAboutTimer <= 0) {
+      G.comeAboutActive = false;
+      const strongest = ['fore','port','starboard','aft'].reduce((best, s) =>
+        G.player.shields[s] > G.player.shields[best] ? s : best, 'fore');
+      G.helmAttackVector = strongest;
+      postLogEvent(`Come-about complete — ${strongest.toUpperCase()} shields presented (${Math.round(G.player.shields[strongest])}MW).`, 'good');
+    }
+    if (G.activePanel === 'helm') updateHelmPanel();
+  } else if (G.comeAboutCooldown > 0) {
+    G.comeAboutCooldown = Math.max(0, G.comeAboutCooldown - dt);
+    if (G.comeAboutCooldown <= 0 && G.activePanel === 'helm') updateHelmPanel();
+  }
 }
 
 // ============================================================
@@ -796,7 +843,9 @@ function processEnemyAI(dt) {
   const sMod       = eSens ? eSens.health / 100 : 1;
   const evasiveMod = G.evasiveActive ? getHelmEvasiveModifier() : 1.0;
   const tetryonMod = (G.scanBonus && G.scanBonus.type === 'tetryon' && performance.now() < G.scanBonus.expiry) ? G.scanBonus.value : 1.0;
-  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * sc);
+  const helmSpeedCfg = HELM_SPEED_CONFIG[G.helmSpeed] || HELM_SPEED_CONFIG.half;
+  const helmSpeedMod = G.comeAboutActive ? 1.25 : helmSpeedCfg.enemyLockMult;
+  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * sc);
 
   // Jem'Hadar — check for ramming opportunity (below 20% hull)
   if (cfg.canRam && !G.enemyRammingRun) {
@@ -921,6 +970,7 @@ function executeThreatCounterVolley() {
         dmgMin = chosenSys.dmgMin; dmgMax = chosenSys.dmgMax;
         const arc = chosenSys.firingArc.length ? chosenSys.firingArc : ['fore','port','starboard','aft'];
         targetSector = arc[Math.floor(Math.random() * arc.length)] || 'fore';
+        if (!G.comeAboutActive && Math.random() < 0.65) targetSector = G.helmAttackVector;
         G.enemyLockProgress = 0; G.enemyManeuverState = 'neutral';
       } else {
         [chosenKey, chosenSys] = torps;
@@ -957,6 +1007,8 @@ function executeThreatCounterVolley() {
     const preferredValid = validSectors.filter(s => preferred.includes(s));
     const pool = preferredValid.length > 0 ? preferredValid : validSectors;
     targetSector = pool[Math.floor(Math.random() * pool.length)] || 'fore';
+    // Helm attack vector — 65% chance enemy fire hits the presented shield face
+    if (!G.comeAboutActive && Math.random() < 0.65) targetSector = G.helmAttackVector;
   }
 
   let rawDmg = (Math.random() * (dmgMax - dmgMin) + dmgMin) * (chosenSys.health / 100) * diff.enemyDmgMult;
@@ -1060,7 +1112,10 @@ function executeThreatCounterVolley() {
 }
 
 function processAutomatedDelegation(dt) {
-  if (G.playerChosenStation === 'tactical') {
+  const runAutoEng = G.playerChosenStation === 'tactical' || G.playerChosenStation === 'helm';
+  const runAutoTac = G.playerChosenStation === 'engineering' || G.playerChosenStation === 'helm';
+
+  if (runAutoEng) {
     // Auto-engineering: re-latch tripped breakers
     const ce = getCrewEfficiency('engineering');
     Object.keys(G.systems).forEach(key => {
@@ -1074,11 +1129,11 @@ function processAutomatedDelegation(dt) {
         refreshEngineeringPanelGraphics();
       }
     });
-    // Auto-assign repair teams to damaged systems (tactical player only)
+    // Auto-assign repair teams to damaged systems
     const damaged = Object.keys(G.systems)
       .filter(k => (G.systems[k].health < 70 || G.systems[k].tripped) &&
                    !G.repairTeams.some(t => t.sysKey === k))
-      .sort((a, b) => G.systems[a].health - G.systems[b].health); // worst first
+      .sort((a, b) => G.systems[a].health - G.systems[b].health);
     G.repairTeams.forEach((team, idx) => {
       if (!team.sysKey && damaged.length > idx) {
         const target = damaged[idx];
@@ -1092,9 +1147,10 @@ function processAutomatedDelegation(dt) {
         postLogEvent(`Computer: repair team dispatched to [${sys.label}].`, 'info');
       }
     });
+  }
 
-  } else {
-    // Auto-tactical: engineering player — fire weapons on a clock
+  if (runAutoTac) {
+    // Auto-tactical: fire weapons on a clock
     G.autoTacticalFireClock += dt;
     if (G.autoTacticalFireClock > 2400) {
       G.autoTacticalFireClock = 0;
@@ -1115,5 +1171,166 @@ function processAutomatedDelegation(dt) {
         }
       }
     }
+  }
+}
+
+// ============================================================
+// HELM — SPEED CONTROL
+// ============================================================
+function setHelmSpeed(speed) {
+  if (!HELM_SPEED_CONFIG[speed]) return;
+  G.helmSpeed = speed;
+  const cfg = HELM_SPEED_CONFIG[speed];
+  if (speed === 'full') {
+    G.systems.engines.stress = Math.min(100, G.systems.engines.stress + 15);
+    postLogEvent(`HELM: FULL IMPULSE — enemy lock −${Math.round((1 - cfg.enemyLockMult) * 100)}% | Engine stress +15%.`, 'warn');
+  } else if (speed === 'stop') {
+    postLogEvent(`HELM: ALL STOP — stable platform. Weapon yield +10% | Enemy lock rate +35%.`, 'info');
+  } else {
+    const lockStr  = cfg.enemyLockMult > 1 ? `+${Math.round((cfg.enemyLockMult-1)*100)}%` : `−${Math.round((1-cfg.enemyLockMult)*100)}%`;
+    const yieldStr = cfg.yieldMult   >= 1 ? `+${Math.round((cfg.yieldMult-1)*100)}%`  : `−${Math.round((1-cfg.yieldMult)*100)}%`;
+    postLogEvent(`HELM: ${cfg.label} — enemy lock ${lockStr} | yield ${yieldStr}.`, 'info');
+  }
+  if (G.activePanel === 'helm') updateHelmPanel();
+}
+
+// ============================================================
+// HELM — ATTACK VECTOR
+// ============================================================
+function setHelmAttackVector(sector) {
+  if (!['fore','port','starboard','aft'].includes(sector)) return;
+  if (G.comeAboutActive) { postLogEvent("Cannot change vector during come-about manoeuvre.", 'warn'); return; }
+  G.helmAttackVector = sector;
+  const hp = G.running ? Math.round(G.player.shields[sector]) : '—';
+  postLogEvent(`HELM: Attack vector ${sector.toUpperCase()} — ${hp}MW shields presented (65% hit probability on that sector).`, 'info');
+  if (G.activePanel === 'helm') updateHelmPanel();
+}
+
+// ============================================================
+// HELM — ENGAGEMENT RANGE
+// ============================================================
+function setPlayerRangeBracket(range) {
+  if (!['long','medium','close'].includes(range)) return;
+  if (G.attackRunActive) { postLogEvent("Range locked during attack run.", 'warn'); return; }
+  G.playerRangeBracket = range;
+  const msgs = {
+    long:   'Long range — torpedo +15%, cannon −10%.',
+    medium: 'Medium range — balanced engagement.',
+    close:  'Close quarters — cannon +20%, torpedo −10%.',
+  };
+  postLogEvent(`HELM: ${msgs[range]}`, 'info');
+  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
+  if (range === 'close' && cfg.prefersCloseRange) postTacticalAdvisory("Klingon close range — their disruptors intensify!");
+  if (G.activePanel === 'helm') updateHelmPanel();
+}
+
+// ============================================================
+// HELM — ATTACK RUN
+// ============================================================
+function executeAttackRun() {
+  if (!G.running || G.dead) return;
+  if (G.attackRunActive)       { postLogEvent("Attack run already in progress.", 'info'); return; }
+  if (G.attackRunCooldown > 0) { postLogEvent(`Attack run recharging — ${Math.ceil(G.attackRunCooldown/1000)}s.`, 'warn'); return; }
+  if (G.systems.engines.health < 25 || G.systems.engines.tripped) { postLogEvent("Engines too damaged for attack run.", 'crit'); return; }
+  G.attackRunActive     = true;
+  G.attackRunTimer      = 8000;
+  G.playerRangeBracket  = 'close';
+  G.systems.engines.stress = Math.min(100, G.systems.engines.stress + 35);
+  postLogEvent("ATTACK RUN — closing to combat range. Cannon yield +20% for 8s. Engine stress +35%.", 'crit');
+  postTacticalAdvisory("Attack run — maximum cannon effectiveness window!");
+  if (G.activePanel === 'helm') updateHelmPanel();
+}
+
+// ============================================================
+// HELM — COME ABOUT
+// ============================================================
+function executeComeAbout() {
+  if (!G.running || G.dead) return;
+  if (G.comeAboutActive)       { postLogEvent("Come-about already in progress.", 'info'); return; }
+  if (G.comeAboutCooldown > 0) { postLogEvent(`Come-about recharging — ${Math.ceil(G.comeAboutCooldown/1000)}s.`, 'warn'); return; }
+  if (G.systems.engines.health < 20 || G.systems.engines.tripped) { postLogEvent("Engines too damaged for come-about.", 'crit'); return; }
+  G.comeAboutActive  = true;
+  G.comeAboutTimer   = 3000;
+  G.comeAboutCooldown = 18000;
+  postLogEvent("COME ABOUT — 3s rotation. All sectors exposed! Will auto-present strongest shields.", 'warn');
+  if (G.activePanel === 'helm') updateHelmPanel();
+}
+
+// ============================================================
+// HELM — PANEL UI UPDATE
+// ============================================================
+function updateHelmPanel() {
+  // Speed buttons
+  ['stop','maneuvering','half','full'].forEach(s => {
+    const btn = document.getElementById(`btn-helm-speed-${s}`); if (!btn) return;
+    if (G.helmSpeed === s) { btn.style.background = 'var(--green)'; btn.style.color = '#000'; }
+    else                   { btn.style.background = ''; btn.style.color = ''; }
+  });
+
+  // Vector buttons — live shield HP display
+  ['fore','port','starboard','aft'].forEach(s => {
+    const btn = document.getElementById(`btn-helm-vector-${s}`); if (!btn) return;
+    const hp  = G.running ? Math.ceil(G.player.shields[s]) : '—';
+    const pct = G.running ? (G.player.shields[s] / G.player.shields.maxSectorValue) * 100 : 100;
+    const col = pct > 66 ? 'var(--green)' : pct > 33 ? 'var(--warn)' : 'var(--red)';
+    const arrow = { fore:'▲', aft:'▼', port:'◄', starboard:'►' }[s];
+    btn.innerHTML = `${arrow} ${s.toUpperCase()}<br><span style="font-size:8px;color:${col};">${hp} MW</span>`;
+    if (G.comeAboutActive)         { btn.style.background = 'var(--red)';  btn.style.color = '#fff'; }
+    else if (G.helmAttackVector === s) { btn.style.background = 'var(--b)'; btn.style.color = '#fff'; }
+    else                               { btn.style.background = ''; btn.style.color = ''; }
+  });
+
+  // Range buttons
+  ['long','medium','close'].forEach(r => {
+    const btn = document.getElementById(`btn-helm-range-${r}`); if (!btn) return;
+    if (G.playerRangeBracket === r) { btn.style.background = 'var(--o)'; btn.style.color = '#000'; }
+    else                            { btn.style.background = ''; btn.style.color = ''; }
+  });
+
+  // Attack run button
+  const arBtn = document.getElementById('btn-helm-attack-run');
+  if (arBtn) {
+    if (G.attackRunActive)             { arBtn.textContent = `◈ ATTACK RUN ${Math.ceil(G.attackRunTimer/1000)}s`; arBtn.style.background='var(--red)'; arBtn.style.color='#fff'; }
+    else if (G.attackRunCooldown > 0)  { arBtn.textContent = `◈ ATK RUN CD ${Math.ceil(G.attackRunCooldown/1000)}s`; arBtn.style.background='var(--dim2)'; arBtn.style.color='#aabbcc'; }
+    else                               { arBtn.textContent = '◈ ATTACK RUN'; arBtn.style.background=''; arBtn.style.color=''; }
+  }
+
+  // Come about button
+  const caBtn = document.getElementById('btn-helm-come-about');
+  if (caBtn) {
+    if (G.comeAboutActive)             { caBtn.textContent = `↺ ROTATING ${Math.ceil(G.comeAboutTimer/1000)}s`; caBtn.style.background='var(--red)'; caBtn.style.color='#fff'; }
+    else if (G.comeAboutCooldown > 0)  { caBtn.textContent = `↺ COME ABOUT CD ${Math.ceil(G.comeAboutCooldown/1000)}s`; caBtn.style.background='var(--dim2)'; caBtn.style.color='#aabbcc'; }
+    else                               { caBtn.textContent = '↺ COME ABOUT'; caBtn.style.background=''; caBtn.style.color=''; }
+  }
+
+  // Evasive button at helm
+  const evBtn = document.getElementById('btn-evasive-helm');
+  if (evBtn) {
+    if (G.evasiveActive)            { evBtn.textContent=`◈ EVADING ${Math.ceil(G.evasiveCooldown/1000)}s`; evBtn.style.background='var(--green)'; evBtn.style.color='#000'; }
+    else if (G.evasiveCooldown > 0) { evBtn.textContent=`◈ EVASIVE CD ${Math.ceil(G.evasiveCooldown/1000)}s`; evBtn.style.background='var(--dim2)'; evBtn.style.color='#aabbcc'; }
+    else                            { evBtn.textContent='◈ EVASIVE DELTA'; evBtn.style.background=''; evBtn.style.color=''; }
+  }
+
+  // Range/come-about status
+  const rl = document.getElementById('lbl-helm-range-status');
+  if (rl) {
+    const effRange = G.attackRunActive ? 'CLOSE (RUN)' : G.playerRangeBracket.toUpperCase();
+    const kRange   = G.enemyRangeBracket.toUpperCase();
+    rl.textContent = `Engagement: ${effRange} | Enemy: ${kRange} | Vector: ${G.helmAttackVector.toUpperCase()}`;
+    rl.style.color = G.comeAboutActive ? 'var(--red)' : '#6688aa';
+  }
+
+  // Auto-delegation summaries
+  const at = document.getElementById('lbl-helm-autotac');
+  if (at) {
+    const healthy = ['cannon_pu','cannon_pl','cannon_su','cannon_sl'].filter(k => !G.systems[k].tripped && G.systems[k].health >= 15).length;
+    const torpsOk = !G.systems.torpedoes.tripped && G.player.torpedoes > 0;
+    at.textContent = `${healthy}/4 cannons · Torps: ${torpsOk ? 'RDY' : 'LOW'} · Lock: ${Math.round(G.lockProgress)}% · ${G.cloaked ? '[CLOAKED]' : 'FIRING'}`;
+  }
+  const ae = document.getElementById('lbl-helm-autoeng');
+  if (ae) {
+    const teamA = G.repairTeams[0].sysKey ? `A→${G.repairTeams[0].label.split(' ').slice(-1)[0]}` : 'A:idle';
+    const teamB = G.repairTeams[1].sysKey ? `B→${G.repairTeams[1].label.split(' ').slice(-1)[0]}` : 'B:idle';
+    ae.textContent = `${teamA} · ${teamB} · EPS: ${getTotalAllocatedPower()}/${getWarpOutput()}MW`;
   }
 }

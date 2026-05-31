@@ -14,7 +14,7 @@ function toggleActiveDeck(key) {
   const eu = document.getElementById('eng-utility-panel');
   if (eu) eu.style.display = key === 'engineering' ? 'flex' : 'none';
   const gs = document.getElementById('lbl-automation-status');
-  if (gs) gs.textContent = key === 'tactical' ? 'TACTICAL ROLE' : 'ENGINEERING ROLE';
+  if (gs) gs.textContent = key === 'tactical' ? 'TACTICAL ROLE' : key === 'helm' ? 'HELM ROLE' : 'ENGINEERING ROLE';
   if (key === 'engineering') rebuildEngineeringMatrixInterface();
   updateCloakButton();
   updateEngUtilityPanel();
@@ -212,6 +212,9 @@ function synchronizeGlobalInterfaceDisplays() {
     refreshEngineeringPanelGraphics();
     updateEngUtilityPanel();
   }
+
+  // Helm panel refresh (only if active)
+  if (G.activePanel === 'helm') updateHelmPanel();
 }
 
 // ============================================================
