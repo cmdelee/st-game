@@ -60,13 +60,24 @@ function synchronizeGlobalInterfaceDisplays() {
   const pPB = document.getElementById('bar-player-photons'); if (pPB) pPB.style.width = `${(G.player.photonTorpedoes / G.player.maxPhotonTorpedoes) * 100}%`;
   const pPT = document.getElementById('txt-player-photons'); if (pPT) pPT.textContent = G.player.photonTorpedoes;
 
-  // Player shield bars
+  // Player shield bars + incoming hit flash
+  const _hitSector = G.shieldHitFlash.player.timer > 0 ? G.shieldHitFlash.player.sector : null;
   ['fore','port','starboard','aft'].forEach(s => {
     const bar = document.getElementById(`bar-shield-${s}`);
     if (bar) {
       const pct = G.cloaked ? 0 : (G.player.shields[s] / G.player.shields.maxSectorValue) * 100;
       bar.style.width = `${pct}%`;
       bar.style.color = G.cloaked ? C.p : pct > 66 ? C.green : pct > 33 ? C.warn : C.red;
+      const rail = bar.parentElement;
+      if (rail) {
+        if (s === _hitSector && !rail.classList.contains('shield-hit-flash')) {
+          rail.classList.remove('shield-hit-flash');
+          void rail.offsetWidth; // force reflow to restart animation
+          rail.classList.add('shield-hit-flash');
+        } else if (s !== _hitSector) {
+          rail.classList.remove('shield-hit-flash');
+        }
+      }
     }
     const txt = document.getElementById(`txt-shield-${s}`); if (txt) txt.textContent = G.cloaked ? 'CLK' : Math.ceil(G.player.shields[s]);
   });

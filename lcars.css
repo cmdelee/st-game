@@ -305,6 +305,10 @@ canvas { width: 100%; height: 100%; display: block; }
 @keyframes conduit-flash { from { opacity: 0.3; } to { opacity: 1.0; } }
 .tripped-relay-alert { animation: conduit-flash 0.3s infinite alternate; background: var(--red) !important; color: #fff !important; }
 
+/* ── Incoming Hit Flash — shield sector bar rail ── */
+@keyframes shield-hit { 0% { box-shadow: inset 0 0 0 2px rgba(255,51,51,0.9), 0 0 10px rgba(255,51,51,0.7); background: rgba(255,51,51,0.25); } 100% { box-shadow: none; background: transparent; } }
+.shield-hit-flash { animation: shield-hit 0.55s ease-out forwards; border-radius: 3px; }
+
 /* ── Repair Animation ── */
 @keyframes repair-pulse { 0%,100% { color: var(--warn); } 50% { color: #fff; } }
 
