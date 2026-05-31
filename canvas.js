@@ -198,8 +198,6 @@ function buildRomulanWarbirdGeometry(sz) {
 }
 
 function buildEnemyGeometry(archetype) {
-
-function buildEnemyGeometry(archetype) {
   const cfg = ENEMY_CONFIGS[archetype];
   const sz = { romulan_warbird:10, ktinga:8, vor_cha:9, romulan_bop:7, jem_hadar_battleship:9 }[archetype] || 7;
 
