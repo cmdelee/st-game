@@ -938,9 +938,10 @@ function processEnemyAI(dt) {
   const tetryonMod = (G.scanBonus && G.scanBonus.type === 'tetryon' && performance.now() < G.scanBonus.expiry) ? G.scanBonus.value : 1.0;
   const helmSpeedCfg  = HELM_SPEED_CONFIG[G.helmSpeed] || HELM_SPEED_CONFIG.half;
   const helmSpeedMod  = G.comeAboutActive ? 1.25 : helmSpeedCfg.enemyLockMult;
-  const alphaLockMod  = G.evasiveAlphaActive ? 0.5 : 1.0;   // Evasive Pattern Alpha
-  const picardLockMod = G.picardManoeuverActive ? 0.0 : 1.0; // Picard Manoeuvre — no lock possible
-  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * alphaLockMod * picardLockMod * sc);
+  const alphaLockMod   = G.evasiveAlphaActive  ? 0.5 : 1.0;  // Evasive Pattern Alpha
+  const picardLockMod  = G.picardManoeuverActive ? 0.0 : 1.0; // Picard Manoeuvre — no lock possible
+  const silentRunMod   = G.silentRunning        ? 0.6 : 1.0;  // Silent Running — 40% lock reduction
+  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * sc);
 
   // Jem'Hadar — check for ramming opportunity (below 20% hull)
   if (cfg.canRam && !G.enemyRammingRun) {
@@ -1248,8 +1249,8 @@ function processAutomatedDelegation(dt) {
     });
   }
 
-  if (runAutoTac) {
-    // Auto-tactical: fire weapons on a clock
+  if (runAutoTac && !G.holdFire) {
+    // Auto-tactical: fire weapons on a clock (suppressed when captain orders Hold Fire)
     G.autoTacticalFireClock += dt;
     if (G.autoTacticalFireClock > 2400) {
       G.autoTacticalFireClock = 0;

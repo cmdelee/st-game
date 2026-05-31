@@ -74,9 +74,12 @@ function updateCaptainOverview() {
   // Helm panel
   const speedLabel = { stop:'ALL STOP', maneuvering:'MANEUVERING', half:'HALF IMPULSE', full:'FULL IMPULSE' };
   const rangeLabel = { long:'LONG', medium:'MEDIUM', close:'CLOSE' };
-  const maneuver   = G.attackRunActive ? 'ATTACK RUN' :
-                     G.comeAboutActive ? 'COME ABOUT' :
-                     G.evasiveActive   ? 'EVASIVE ◈'  : '—';
+  const maneuver   = G.attackRunActive   ? 'ATTACK RUN'    :
+                     G.comeAboutActive   ? 'COME ABOUT'    :
+                     G.evasiveActive     ? 'EVASIVE ◈'     :
+                     G.autoShieldTrack   ? 'AUTO SHIELD ⟳' :
+                     G.silentRunning     ? 'SILENT RUN 🔇' :
+                     G.holdFire          ? 'HOLD FIRE ✋'  : '—';
   _setTxt('cap-helm-speed',    speedLabel[G.helmSpeed] || G.helmSpeed.toUpperCase());
   _setTxt('cap-helm-range',    rangeLabel[G.playerRangeBracket] || G.playerRangeBracket.toUpperCase());
   _setTxt('cap-helm-vector',   (G.helmAttackVector || 'fore').toUpperCase());
@@ -100,25 +103,26 @@ function _fillBar(id, pct) {
 const _CAP_CD = {
   // Worf — weapons & tactical
   fire_cannons:3000,   fire_quantum:5000,   fire_photon:3000,
-  fire_burst:14000,    fire_alpha:9000,     rotate_freq:32000,
-  evasive:22000,       cloak:28000,
-  // Worf — targeting
-  tgt_hull:1000,       tgt_shields:1000,    tgt_weapons:1000,
-  tgt_engines:1000,    tgt_cloak:1000,      tgt_sensors:1000,
-  tgt_warpcore:1000,
+  fire_burst:14000,    fire_alpha:15000,    rotate_freq:32000,  // alpha raised 9→15s
+  evasive:22000,       cloak:28000,         hold_fire:20000,
+  // Worf — targeting (2.5s debounce — targeting is a deliberate decision)
+  tgt_hull:2500,       tgt_shields:2500,    tgt_weapons:2500,
+  tgt_engines:2500,    tgt_cloak:2500,      tgt_sensors:2500,
+  tgt_warpcore:2500,
   // Worf — scans
   scan_shields:30000,  scan_hull:26000,     scan_weapons:35000,  scan_tetryon:20000,
   // O'Brien — shields & power
   shld_equalise:8000,  shld_regen_boost:20000,
   // O'Brien — repairs & systems
   emerg_batt:22000,    repair_wpn:12000,    repair_sys:12000,
-  flush_eps:16000,     dmg_ctrl:22000,      repair_cloak:18000,
-  // Nog — helm
-  speed_full:1500,     speed_half:1500,     speed_stop:1500,
+  flush_eps:25000,     dmg_ctrl:22000,      repair_cloak:18000,  // flush raised 16→25s
+  // Nog — helm (speed/range/vector 2-2.5s — comms + response time)
+  speed_full:2500,     speed_half:2500,     speed_stop:2500,
   attack_run:22000,    come_about:20000,    emerg_warp:0,
-  range_long:1500,     range_close:1500,    range_medium:1500,
-  vec_fore:1000,       vec_port:1000,       vec_stbd:1000,       vec_aft:1000,
+  range_long:2000,     range_close:2000,    range_medium:2000,
+  vec_fore:2000,       vec_port:2000,       vec_stbd:2000,       vec_aft:2000,
   picard:55000,        pattern_omega:47000, evasive_alpha:35000,
+  auto_shld_track:30000, silent_running:40000, emerg_thrusters:25000,
 };
 
 function tickCaptainCooldowns(dt) {
@@ -313,6 +317,89 @@ function capPicard()       { _order('picard',         executePicardManoeuver,   
 function capPatternOmega() { _order('pattern_omega',  executeAttackPatternOmega, 'nog', "Attack Pattern Omega engaged, Captain. All weapons to maximum yield."); }
 function capEvasiveAlpha() { _order('evasive_alpha',  executeEvasivePatternAlpha,'nog', "Evasive Pattern Alpha, aye — maximum evasion for 5 seconds."); }
 function capEmergWarp()    { _order('emerg_warp',     attemptEmergencyWarp,      'worf', "Emergency warp engaged, Captain!"); }
+
+// ── Worf — Hold Fire ──────────────────────────────────────────
+function capHoldFire() {
+  if (!_canOrder('hold_fire')) return;
+  _startCD('hold_fire');
+  G.holdFire      = true;
+  G.holdFireTimer = 8000;
+  postCrewReport('worf', "Holding fire, Captain. All weapons standing down.", 'status');
+  _updateCaptainOrderButtons();
+}
+
+// ── Nog — Advanced Manoeuvres ─────────────────────────────────
+
+// Auto Shield Track: Nog presents strongest shield sector every second for 15s
+function capAutoShieldTrack() {
+  _order('auto_shld_track', () => {
+    G.autoShieldTrack      = true;
+    G.autoShieldTrackTimer = 15000;
+  }, 'nog', "Auto shield tracking active for 15 seconds, Captain. Presenting strongest face.");
+}
+
+// Silent Running: cut engine profile — enemy lock rate −40% for 12s
+function capSilentRunning() {
+  _order('silent_running', () => {
+    G.silentRunning      = true;
+    G.silentRunningTimer = 12000;
+    // Also step down to maneuvering speed if at full/half — silent running and full impulse don't mix
+    if (G.helmSpeed === 'full' || G.helmSpeed === 'half') setHelmSpeed('maneuvering');
+  }, 'nog', "Silent running engaged. Cutting engine output — enemy targeting degraded, Captain.");
+}
+
+// Emergency Thrusters: sudden lateral burst — drops enemy lock 35%, stresses engines
+function capEmergThrusters() {
+  _order('emerg_thrusters', () => {
+    G.enemyLockProgress    = Math.max(0, G.enemyLockProgress    - 35);
+    G.lockProgress         = Math.max(0, G.lockProgress         - 15); // our lock jolts too
+    G.systems.engines.stress = Math.min(100, G.systems.engines.stress + 20);
+    postLogEvent("Emergency thrusters — lateral burst! Enemy targeting disrupted.", 'good');
+  }, 'nog', "Emergency thrusters firing, Captain. Hard to port!");
+}
+
+// ── Captain Manoeuvre Ticker (called each frame from main loop) ───
+
+function tickCaptainManoeuvres(dt) {
+  if (!G.running) return;
+
+  // Hold Fire countdown
+  if (G.holdFire) {
+    G.holdFireTimer -= dt;
+    if (G.holdFireTimer <= 0) {
+      G.holdFire = false;
+      postLogEvent("Hold fire order expired — weapons free.", 'info');
+      postCrewReport('worf', "Weapons free, Captain. Resuming fire on your order.", 'status');
+    }
+  }
+
+  // Auto Shield Tracking — present strongest sector each second
+  if (G.autoShieldTrack) {
+    G.autoShieldTrackTimer -= dt;
+    if (G.autoShieldTrackTimer <= 0) {
+      G.autoShieldTrack = false;
+      postLogEvent("Auto shield tracking complete.", 'info');
+      postCrewReport('nog', "Auto shield tracking complete, Captain. Helm returning to manual vector.", 'status');
+    } else {
+      // Update attack vector to strongest shield every tick
+      const strongest = ['fore','port','starboard','aft'].reduce(
+        (best, s) => G.player.shields[s] > G.player.shields[best] ? s : best, 'fore');
+      if (strongest !== G.helmAttackVector) {
+        G.helmAttackVector = strongest;
+      }
+    }
+  }
+
+  // Silent Running countdown
+  if (G.silentRunning) {
+    G.silentRunningTimer -= dt;
+    if (G.silentRunningTimer <= 0) {
+      G.silentRunning = false;
+      postLogEvent("Silent running complete — normal engine profile restored.", 'info');
+      postCrewReport('nog', "Silent running complete, Captain. Normal engine profile restored.", 'status');
+    }
+  }
+}
 
 // ── Engineering wrappers (bypass station guards) ──────────────
 

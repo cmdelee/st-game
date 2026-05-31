@@ -62,6 +62,7 @@ function masterSimulationCoreLoop(ts) {
   processEnemyAI(dt);
   tickCaptainCooldowns(dt);
   tickCaptainPeriodicReports(dt);
+  tickCaptainManoeuvres(dt);
 
   // Player sensor lock build-up
   if (G.cloakVulnTimer <= 0 && !G.cloaked) {
@@ -196,6 +197,12 @@ function initiateVesselSimulation(station) {
   G.evasiveAlphaCooldown     = 0;
   G.evasiveActive            = false;
   G.evasiveCooldown          = 0;
+  G.holdFire                 = false;
+  G.holdFireTimer            = 0;
+  G.autoShieldTrack          = false;
+  G.autoShieldTrackTimer     = 0;
+  G.silentRunning            = false;
+  G.silentRunningTimer       = 0;
   G.epsHeat                  = 0;
   G.shieldTransferInProgress = false;
   G.lastPlayerFireTime       = 0;

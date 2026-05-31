@@ -410,6 +410,11 @@ const G = {
   captainOrderCooldowns:{},
   captainPeriodicTimer:0,
 
+  // Captain manoeuvre states
+  holdFire:false,         holdFireTimer:0,
+  autoShieldTrack:false,  autoShieldTrackTimer:0,
+  silentRunning:false,    silentRunningTimer:0,
+
   // Scoring
   score:{ totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false },
 
