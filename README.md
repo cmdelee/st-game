@@ -1,178 +1,187 @@
 # 🖖 USS Defiant Battle Simulator
 
-A Star Trek: Deep Space Nine tactical combat game featuring the USS Defiant in intense one-on-one starship battles against iconic Federation adversaries.
+A Star Trek: Deep Space Nine tactical combat game featuring the USS Defiant in intense one-on-one starship battles against iconic adversaries.
 
 **[Play Now →](https://cmdelee.github.io/st-game/)**
 
+---
+
 ## Overview
 
-You command the USS Defiant, the Federation's most advanced tactical starship, in dynamic real-time combat encounters. Choose your operational station and engage enemy vessels across three difficulty levels while managing weapons, shields, cloaking systems, and crew casualties.
+You command the USS Defiant NX-74205 in real-time combat. Choose your operational station — **Tactical**, **Engineering**, or **Helm** — and the computer automatically handles the stations you don't occupy. Fight across three difficulty levels while managing weapons, shields, power, cloaking systems, navigation, and crew casualties.
 
-### Features
+---
 
-- **Dual-Station Command**: Control from **Tactical** (weapons & maneuvers) or **Engineering** (power distribution & repairs)
-- **Authentic DS9 Design**: LCARS-styled interface with Star Trek canon ships from the Federation, Klingons, Romulans, Cardassians, Borg, and Jem'Hadar
-- **Advanced Combat Mechanics**:
-  - Real-time shield sector management (Fore/Port/Starboard/Aft)
-  - Cloaking device with vulnerability windows
-  - Burst fire salvos and shield frequency rotation
-  - Evasive pattern maneuvers
-  - Sensor scanning profiles
-  - Enemy adaptive AI with faction-specific behaviors
-- **Dynamic Difficulty**: Normal, Hard (system targeting), Elite (aggressive adaptation)
-- **Persistent Crew Roster**: Named officers with casualty tracking and role-specific penalties
-- **Ablative Armor System**: 6-layer armor that regenerates between hits
-- **Subsystem Targeting**: Disable enemy weapons, shields, engines, sensors, and more
+## Features
+
+- **Three Command Stations**: Tactical (weapons), Engineering (power & repairs), or Helm (navigation & manoeuvres)
+- **Authentic DS9 Interface**: Full LCARS styling with canon ships from Klingons, Romulans, Cardassians, Dominion, and Borg
+- **9 Enemy Vessels**: Each with faction-specific AI, weapons, and unique mechanics
+- **3D Spatial Battle View**: Three.js WebGL rendering — ships move, bank, and close range dynamically
+- **Advanced Combat**:
+  - Real-time four-sector shield management
+  - Cloaking device with vulnerability windows (player and enemy)
+  - Burst-fire salvos overwhelming enemy shield regen
+  - Shield frequency rotation countering weapon types
+  - Evasive Pattern Delta reducing enemy lock rate
+  - Four sensor scan profiles (shields / hull fissures / disrupt / tetryon ECM)
+  - Enemy subsystem targeting
+  - Ablative armour (6 regenerating layers)
+- **Helm Controls**: Speed setting, attack vector, engagement range, attack runs, come-about
+- **Dynamic AI**: Klingons close range over time; Romulans generate sensor ghosts; Borg adapt per weapon; Jem'Hadar can ram
+- **Named Crew**: Worf, O'Brien, Bashir, Nog — casualties degrade their station's effectiveness
 - **Emergency Systems**: Battery backup, emergency warp escape, damage control
 
-## Getting Started
+---
 
-### Quick Play (No Installation)
-Simply visit **[https://cmdelee.github.io/st-game/](https://cmdelee.github.io/st-game/)** in your web browser and select your station!
+## Quick Start
+
+**No installation** — visit **[https://cmdelee.github.io/st-game/](https://cmdelee.github.io/st-game/)** and pick your station.
 
 ### Local Development
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/cmdelee/st-game.git
-   cd st-game
-   ```
+```bash
+git clone https://github.com/cmdelee/st-game.git
+cd st-game
+python -m http.server 8000   # or: npx serve .
+```
 
-2. Start a local web server:
-   ```bash
-   python -m http.server 8000
-   # or: npx http-server
-   ```
+Open `http://localhost:8000`. No build step, no bundler.
 
-3. Open your browser to `http://localhost:8000`
+---
 
-## How to Play
+## Stations
 
-### Station Selection
-Choose your command position at game start:
-- **Tactical**: Direct weapons, manage evasive maneuvers, and coordinate sensor sweeps
-- **Engineering**: Allocate power distribution, perform repairs, and monitor subsystem health
+### 🔴 Tactical
+Direct weapons fire, manage evasive manoeuvres, operate the cloaking device, and run sensor sweeps. Engineering runs on auto-delegation.
 
-### Tactical Controls
-- **Fire Weapons**: Pulse cannons, nose beam phaser, quantum torpedoes
-- **Burst Salvo**: All-cannon barrage (12s cooldown)
-- **Shield Frequency**: Counter incoming weapon types (30s cooldown)
-- **Evasive Pattern**: Reduce enemy lock rate 60% for 8 seconds
-- **Cloaking**: Go dark with vulnerability window on decloak
-- **Sensor Scans**: Profile enemy shields, hull, weapons, or tetryon ECM
+| Control | Effect |
+|---|---|
+| All Pulse Cannons | Fire all 4 cannons simultaneously |
+| Nose Beam | Heavy fore emitter — 55-unit yield |
+| Quantum Torpedo | Binary damage — full yield at ≥60% lock |
+| Photon Torpedo | Reliable flat damage, no lock required |
+| ⚡⚡ Burst Salvo | 4-cannon 800ms barrage; overwhelms shield regen |
+| 🛡 Rotate Frequency | 25% incoming reduction for 12s; counters enemy weapon type |
+| ◈ Evasive Delta | Enemy lock rate −60% for 8s; 20s cooldown |
+| Cloak | 1200ms vulnerability on engage/disengage; regen credit accumulates |
+| Alpha Salvo | All weapons at once |
+| Sensor Scans | +25% vs shields / +35% all dmg / −50% enemy fire / −70% enemy lock |
+| Subsystem Grid | Target enemy weapons, shields, engines, sensors individually |
+| Emergency Warp | Escape at hull ≤35% — costs torpedoes |
 
-### Engineering Controls
-- **Power Allocation**: Distribute 120MW across weapons, shields, sensors, engines, warp core
-- **Repair Queue**: Prioritize damaged systems
-- **Shield Regen**: Manage shield regeneration rate (normal/boost modes)
-- **Emergency Battery**: Backup power when warp core trips
-- **Ablative Armor**: Monitor 6-layer ablative armor regeneration
+### 🟣 Engineering
+Allocate power, manage repairs, and run the cloaking device. Auto-tactical fires weapons on a 2.4s clock.
 
-### Combat Tips
+| Control | Effect |
+|---|---|
+| EPS Allocation | Distribute up to 120MW across 11 systems (zero-sum) |
+| Repair Teams | Alpha and Beta teams independently dispatched to damaged systems |
+| Shield Regen | Boost or normalise shield power |
+| Emergency Battery | Backup power when warp core trips |
+| Breaker Grid | Re-latch tripped EPS conduits |
+| Flush All | Clear all conduit stress instantly |
+| Damage Control | Emergency +30% repair to weapons or systems (costs battery) |
 
-1. **Manage Power**: Don't max out all systems—focus power on your tactical priorities
-2. **Shield Sectors**: Rotate incoming fire across shield sectors to spread damage
-3. **Cloaking**: Use cloak strategically during repairs, but watch for vulnerability
-4. **Enemy Adaptation**: Borg probes adapt to repeated weapons—**switch frequently**
-5. **Crew Casualties**: Losing key crew (Worf, O'Brien, Bashir, Nog) reduces effectiveness
-6. **Burst Fire**: Overwhelms enemy shield regeneration when lock is good (20%+)
-7. **Emergency Warp**: Only available below 35% hull—escape with honor!
+### 🩷 Helm
+Navigate the ship and control the engagement. Both auto-tactical (weapons) and auto-engineering (repairs/power) run simultaneously.
+
+| Control | Options | Effect |
+|---|---|---|
+| Speed | Stop / Maneuvering / Half / Full Impulse | Scales enemy lock rate (×0.65–1.35) and player weapon yield (×0.88–1.10). Engine glow and Defiant drift reflect current speed in 3D view. |
+| Attack Vector | Fore / Port / Stbd / Aft | 65% chance enemy fire hits the selected shield sector. Shows live MW on each button. |
+| Engagement Range | Long / Medium / Close | Torpedoes +15% at long; cannons +20% at close. Moves ships in 3D view. |
+| Attack Run | — | 8s cannon +20% boost, closes to combat range; resets to medium on expiry. 20s CD. |
+| Come About | — | 3s rotation (all sectors exposed); auto-presents strongest shields on completion. 18s CD. |
+| Evasive Delta | — | Same as tactical station. |
+| Emergency Warp | — | Same as tactical station. |
+
+---
 
 ## Enemy Vessels
 
-Each enemy has unique characteristics:
+| Vessel | Faction | Signature Mechanic |
+|---|---|---|
+| K'Tinga Battle Cruiser | Klingon | Closes to disruptor range over 45s (+40% damage at close) |
+| Vor'Cha Attack Cruiser | Klingon | Heavier close-range disruptors (+35%), cloak |
+| Romulan Bird-of-Prey | Romulan | Plasma torpedo (18s reload), sensor ghosts while cloaked |
+| D'Deridex Warbird | Romulan | Heaviest plasma banks (22s reload), sensor ghosts, massive hull |
+| Cardassian Scout | Cardassian | Fast lock (7.5/s), frequent harassment fire |
+| Galor-Class Warship | Cardassian | Balanced weapons, photon torpedoes |
+| Jem'Hadar Attack Ship | Dominion | Polaron bypass (30% of shots penetrate shields), will **ram** at <20% hull |
+| Jem'Hadar Battle Cruiser | Dominion | Heavy polaron, ram damage 380, elite pool only |
+| Borg Probe | Borg | Per-weapon resistance 0–75%, tractor beam, escalating damage |
 
-- **Klingon D'deridex (Vor'cha)**: Heavy armor, close-range disruptor bonus, ramming threat
-- **Romulan Warbird**: Cloaking device, plasma torpedoes, sensor ghosts
-- **Cardassian Galor**: Balanced weapons, system-targeting AI
-- **Borg Cube/Probe**: Adaptive shielding (switch weapons!), tractor beam, tetryon attacks
-- **Jem'Hadar Fighter**: Can ram at low hull, unpredictable maneuvers
-- **Romulan Bird of Prey**: Sensor decoys, hit-and-fade tactics
+---
 
-## Game Mechanics
+## Combat Tips
 
-### Shield System
-- Four sectors (Fore/Port/Starboard/Aft) regenerate separately
-- Shield frequency rotation provides 25% damage reduction vs. specific weapon types
-- Cloaking disables shields but accumulates regeneration credit
+1. **Attack Vector (Helm)**: Angle your strongest shields toward incoming fire — fore (320MW) is strongest
+2. **Burst Fire**: Use when lock is ≥20% to overwhelm enemy shield regen before it recovers
+3. **Cloak timing**: Engage cloak during a lull; regen credit accrues while cloaked
+4. **Borg weapons**: Rotate through all weapon types — each builds resistance independently
+5. **Klingons**: Stay at long range or use Evasive Pattern when they close to brawling distance
+6. **Romulan ghosts**: False sensor contact while cloaked — ignore and await the real decloak window
+7. **Jem'Hadar ram**: Pump fore shields and activate Evasive Pattern when you see "RAMMING RUN"
+8. **EPS heat**: Sustained fire heats conduits — above 70% reduces capacitor recharge rate
+9. **Subsystem targeting**: Destroying enemy weapons or cloak changes the whole fight
 
-### Power Management
-- Zero-sum system: Total allocated power cannot exceed 120MW (150MW with battery)
-- System stress accumulates with heavy load—can cause overheating/burnout
-- Conduit breakers trip systems when stress maxes out
+---
 
-### Crew Status
-Each crew member affects combat:
-- **Worf (Tactical)**: Reduces targeting accuracy when wounded/incapacitated
-- **O'Brien (Engineering)**: Slows repair speed when incapacitated
-- **Bashir (Medical)**: Affects casualty rates and crew recovery
-- **Nog (Helm)**: Reduces evasive maneuver effectiveness when injured
+## Crew
 
-### Scoring
-
-Points awarded for:
-- Time survived (difficulty multiplier)
-- Damage dealt
-- Enemy subsystems destroyed
-- Successful repairs
-- Hull integrity (victory bonus)
-- Penalties for breaches, casualties, emergency warp
-
-## Difficulty Levels
-
-| Difficulty | Enemy Health | Fire Rate | Features |
+| Officer | Station | Wounded | Incapacitated |
 |---|---|---|---|
-| **Normal** | ×1.0 | ×1.0 | Basic engagement |
-| **Hard** | ×1.3 | ×0.8 | System targeting AI |
-| **Elite** | ×1.6 | ×0.7 | Aggressive adaptation, precise strikes |
+| Lt. Cmdr Worf | Tactical | 65% targeting accuracy | 30% accuracy |
+| Chief O'Brien | Engineering | 65% repair speed | 30% repair speed |
+| Ensign Nog | Helm | Evasive: 40% lock reduction | Evasive: 20% lock reduction |
+| Dr. Bashir | Medical | Casualty threshold ×0.7 | Casualty threshold ×0.4 |
+
+---
+
+## Difficulty
+
+| Level | Enemy Hull | Enemy Damage | Enemy Lock | Features |
+|---|---|---|---|---|
+| Normal | ×1.0 | ×1.0 | ×1.0 | Hull-sector targeting only |
+| Hard | ×1.3 | ×1.25 | ×1.4 | AI targets player subsystems (25%) |
+| Elite | ×1.6 | ×1.5 | ×1.8 | Precise subsystem strikes (45%), slower repairs |
+
+---
 
 ## Architecture
 
-- **main.js**: Master game loop, initialization
-- **state.js**: Global game state, subsystems, crew data
-- **tactical.js**: Weapons, cloaking, enemy AI, combat logic
-- **engineering.js**: Power allocation, repairs, damage control
-- **canvas.js**: Rendering (spatial view, hull schematic, power distribution)
-- **ui.js**: UI synchronization, deck switching, scoring
-- **lcars.css**: LCARS-themed styling
+No build step. Nine plain JS files loaded in order:
+
+```
+state.js        — constants (HELM_SPEED_CONFIG, DIFFICULTY, ENEMY_CONFIGS, …), G state object
+engineering.js  — power allocation, repairs, EPS conduit, ablative armour
+tactical.js     — weapons, enemy AI, cloaking, scanning, auto-delegation
+helm.js         — speed control, attack vector, engagement range, attack run, come-about
+canvas.js       — Three.js 3D battle view + 2D enemy schematic / hull / power canvases
+ui.js           — deck switching, global UI sync, scoring, end-game
+main.js         — game loop, simulation init, boot sequence
+lcars.css       — LCARS styling
+index.html      — shell + script tags
+```
+
+---
 
 ## Browser Compatibility
 
-- Chrome/Chromium ✓
+Requires WebGL for the 3D spatial view (Three.js r128).
+
+- Chrome / Chromium ✓
 - Firefox ✓
-- Safari ✓
 - Edge ✓
-- Requires modern browser with HTML5 Canvas support
+- Safari ✓ (WebGL must be enabled)
 
-## Development
-
-### Adding Features
-1. Game state lives in `state.js`
-2. Combat logic in `tactical.js`
-3. Systems management in `engineering.js`
-4. UI updates in `ui.js`
-5. Canvas rendering in `canvas.js`
-
-### Running Tests
-No external dependencies—just serve files via HTTP.
-
-## Known Limitations
-
-- No keyboard shortcuts (button-click interface only)
-- Single-player only
-- No save/load between sessions
-- Mobile optimization in progress
+---
 
 ## Credits
 
-Inspired by Star Trek: Deep Space Nine tactical gameplay. Ship designs and factions based on canon Federation encounters.
-
-## License
-
-Open source. Feel free to fork, modify, and contribute!
+Inspired by Star Trek: Deep Space Nine. Ship designs and faction mechanics based on canon DS9/TNG/TOS encounters.
 
 ---
 
 **Engage!** 🖖
-
-*"Never give up. Never surrender."* — USS Defiant Motto
