@@ -429,6 +429,17 @@
 
       </div><!-- /row2 -->
 
+      <!-- EPS Power Presets (helm override) -->
+      <div style="background:#070d1a; border:1px solid var(--o); padding:8px; border-radius:4px; margin-bottom:8px;">
+        <div style="font-family:'Antonio'; color:var(--o); font-size:11px; margin-bottom:6px; border-bottom:1px solid var(--dim2); padding-bottom:3px;">EPS POWER OVERRIDE</div>
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px;">
+          <button class="pill-action-btn warn-btn"  style="padding:6px; font-size:12px;" onclick="applyPowerPreset('attack')">⚡ ATTACK <span style="font-size:10px; opacity:0.8;">Wpn max</span></button>
+          <button class="pill-action-btn p-btn"     style="padding:6px; font-size:12px;" onclick="applyPowerPreset('silent')">◉ SILENT <span style="font-size:10px; opacity:0.8;">Cloak ready</span></button>
+          <button class="pill-action-btn green-btn" style="padding:6px; font-size:12px;" onclick="applyPowerPreset('evasive')">◈ EVASIVE <span style="font-size:10px; opacity:0.8;">Eng max</span></button>
+          <button class="pill-action-btn"           style="padding:6px; font-size:12px;" onclick="applyPowerPreset('damage_control')">🛡 DMG CTRL <span style="font-size:10px; opacity:0.8;">Shld max</span></button>
+        </div>
+      </div>
+
       <!-- Auto-delegation status -->
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
         <div style="background:#070d1a; border:1px solid var(--dim2); padding:8px; border-radius:4px;">
@@ -511,14 +522,14 @@
 <!-- ═══════════════════════════════════════════════════════════
      SCRIPTS — load order: state → engineering → tactical → canvas → ui → main
 ════════════════════════════════════════════════════════════ -->
-<script src="state.js?v=5"></script>
-<script src="engineering.js?v=5"></script>
-<script src="tactical.js?v=5"></script>
-<script src="helm.js?v=5"></script>
-<script src="canvas-three.js?v=5"></script>
-<script src="canvas-2d.js?v=5"></script>
-<script src="ui.js?v=5"></script>
-<script src="main.js?v=5"></script>
+<script src="state.js?v=6"></script>
+<script src="engineering.js?v=6"></script>
+<script src="tactical.js?v=6"></script>
+<script src="helm.js?v=6"></script>
+<script src="canvas-three.js?v=6"></script>
+<script src="canvas-2d.js?v=6"></script>
+<script src="ui.js?v=6"></script>
+<script src="main.js?v=6"></script>
 
 </body>
 </html>
