@@ -165,9 +165,15 @@ function capRotateFreq()   { _order('rotate_freq',   rotateShieldFrequency,     
 function capEvasive()      { _order('evasive',       executeEvasivePattern,                        'worf',   "Evasive Pattern Delta, aye."); }
 
 // Cloak / Decloak — single toggle, label updates with state
+// Decloaking has no captain-side cooldown; cloaking uses the 28s CD.
 function capCloakToggle() {
-  const msg = G.cloaked ? "Decloaking on your order, Captain." : "Engaging cloaking device, Captain.";
-  _order('cloak', toggleCloakingDevice, 'worf', msg);
+  if (G.cloaked) {
+    // Decloak — no cooldown, execute immediately
+    postCrewReport('worf', "Decloaking on your order, Captain.", 'status');
+    setTimeout(() => { try { toggleCloakingDevice(); } catch(e) {} }, 350);
+  } else {
+    _order('cloak', toggleCloakingDevice, 'worf', "Engaging cloaking device, Captain.");
+  }
 }
 
 function _updateCloakButtonLabel() {
