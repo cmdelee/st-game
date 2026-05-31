@@ -53,7 +53,8 @@ Systems & Engineering Improvements
 [x] Give every faction signature mechanics.
     -- Klingon: close-range, Romulan: cloak/plasma/ghosts, Cardassian: fast lock,
     -- Dominion: polaron/ram, Borg: adaptation + tractor beam.
-[ ] Add engineering power-routing presets: attack mode, silent running, evasive, damage control.
+[x] Add engineering power-routing presets: attack mode, silent running, evasive, damage control.
+    -- applyPowerPreset() with POWER_PRESETS config; buttons on engineering deck and helm panel.
 [ ] Add boarding actions: security response, sealed bulkheads, internal forcefields.
 [~] Add internal ship topology: engineering section, bow, port/starboard spine, dorsal/ventral regions.
     -- Sector-weighted internal damage pools (fore/port/starboard/aft → specific system targets).
