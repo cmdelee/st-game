@@ -8,7 +8,8 @@ const STARS = [];
 
 function handleHighDpiCanvasResizing() {
   const dpr = window.devicePixelRatio || 1;
-  [[spatialCanvas, spatialCtx],[hullCanvas, hullCtx],[enemyCanvas, enemyCtx],[powerCanvas, powerCtx]].forEach(([c, ctx]) => {
+  // 2D canvases (engineering views)
+  [[hullCanvas, hullCtx],[enemyCanvas, enemyCtx],[powerCanvas, powerCtx]].forEach(([c, ctx]) => {
     if (!c || !c.parentElement) return;
     const bb = c.parentElement.getBoundingClientRect();
     if (bb.width === 0 || bb.height === 0) return;
@@ -18,406 +19,365 @@ function handleHighDpiCanvasResizing() {
     c.style.height = `${bb.height}px`;
     if (ctx) { ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr, dpr); }
   });
+  // Three.js resize
+  resizeThreeRenderer();
 }
 
+
 // ============================================================
-// SPATIAL VIEW CANVAS — fully enhanced battle display
+// THREE.JS 3D SPATIAL BATTLE VIEW — WebGL renderer
+// Ships are genuine 3D meshes; camera follows Defiant.
+// Designed for helm expansion: move mesh_defiant, camera follows.
 // ============================================================
-function renderSpatialViewCanvas() {
-  if (!spatialCanvas || !spatialCtx) return;
-  const bb = spatialCanvas.parentElement.getBoundingClientRect();
-  const w = bb.width, h = bb.height; if (w <= 0 || h <= 0) return;
-  const ctx = spatialCtx;
-  const now = performance.now();
+let THREE_scene, THREE_camera, THREE_renderer, THREE_clock;
+let mesh_defiant, mesh_enemy, mesh_enemyGroup;
+let shield_player, shield_enemy;
+let grid_helper;
+let beam_lines = [];
+let torp_meshes = [];
+let particle_system, particle_positions, particle_colours, particle_velocities, particle_life;
+const PARTICLE_COUNT = 300;
+let engine_glow_player, engine_glow_enemy;
+let THREE_ready = false;
 
-  // ── 5: Nebula/deep-space gradient background ──
-  const grad = ctx.createRadialGradient(w*0.5, h*0.5, 10, w*0.5, h*0.5, w*0.75);
-  grad.addColorStop(0,   '#000510');
-  grad.addColorStop(0.4, '#000208');
-  grad.addColorStop(0.75,'#050012');
-  grad.addColorStop(1,   '#000000');
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
-
-  // Distant star cluster (static decorative)
-  ctx.fillStyle = 'rgba(100,120,180,0.12)';
-  ctx.beginPath(); ctx.arc(w*0.65, h*0.2, 40, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = 'rgba(80,100,160,0.06)';
-  ctx.beginPath(); ctx.arc(w*0.62, h*0.22, 65, 0, Math.PI*2); ctx.fill();
-
-  // Scrolling starfield
-  STARS.forEach(s => {
-    s.x -= G.velocitySpeedRating * 0.03;
-    if (s.x < 0) s.x = w;
-    ctx.globalAlpha = s.o;
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(s.x, s.y % h, s.d, s.d);
+function buildDefiantGeometry() {
+  const group = new THREE.Group();
+  const hullMat = new THREE.MeshPhongMaterial({ color:0x1a2a50, emissive:0x0a1428, specular:0x4466cc, shininess:60 });
+  const nacMat  = new THREE.MeshPhongMaterial({ color:0x112244, emissive:0x0a1428, specular:0x4466cc, shininess:40 });
+  // Main hull
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(9,1.8,3.5), hullMat);
+  group.add(hull);
+  // Bridge
+  const bridge = new THREE.Mesh(new THREE.SphereGeometry(0.9,8,6), new THREE.MeshPhongMaterial({ color:0x223366, emissive:0x112244, specular:0x6688ff, shininess:80 }));
+  bridge.position.set(2.5,1.1,0); bridge.scale.set(1,0.5,0.8);
+  group.add(bridge);
+  // Nacelles
+  const nacGeo = new THREE.CylinderGeometry(0.4,0.5,4.5,8);
+  [2.8,-2.8].forEach(z => {
+    const n = new THREE.Mesh(nacGeo, nacMat); n.rotation.z = Math.PI/2; n.position.set(-1.5,-0.2,z); group.add(n);
+    const g = new THREE.Mesh(new THREE.SphereGeometry(0.45,8,6), new THREE.MeshPhongMaterial({ color:0x4477ff, emissive:0x2244cc, emissiveIntensity:2 }));
+    g.position.set(-3.5,-0.2,z); group.add(g);
   });
-  ctx.globalAlpha = 1;
+  return group;
+}
 
-  const px = w * 0.22, py = h * 0.58;  // player lower-left
-  const ex = w * 0.75, ey = h * 0.38;  // enemy upper-right
+function buildEnemyGeometry(archetype) {
+  const cfg = ENEMY_CONFIGS[archetype];
+  const fCol = { Klingon:0x3a0a0a, Romulan:0x0a200a, Cardassian:0x2a1a00, Dominion:0x1a0a2a, Borg:0x001a10 };
+  const fEmi = { Klingon:0x1a0000, Romulan:0x001a00, Cardassian:0x1a0a00, Dominion:0x0a001a, Borg:0x002010 };
+  const mat  = new THREE.MeshPhongMaterial({ color:fCol[cfg.faction]||0x1a0808, emissive:fEmi[cfg.faction]||0x0a0000, specular:0x882222, shininess:40, transparent:true, opacity:1 });
+  const group = new THREE.Group();
+  if (archetype === 'borg_probe') {
+    const cube = new THREE.Mesh(new THREE.BoxGeometry(7,7,7), new THREE.MeshPhongMaterial({ color:0x001a10, emissive:0x003020, specular:0x00cc66, shininess:30 }));
+    group.add(cube);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(7.1,7.1,7.1)), new THREE.LineBasicMaterial({ color:0x00cc66, transparent:true, opacity:0.6 }));
+    group.add(edges);
+  } else {
+    const sz = { romulan_warbird:10, ktinga:8, vor_cha:9, romulan_bop:7, jem_hadar_battleship:9 }[archetype] || 7;
+    const body = new THREE.Mesh(new THREE.ConeGeometry(1.4,sz,6), mat);
+    body.rotation.z = Math.PI/2;
+    group.add(body);
+    if (['ktinga','vor_cha','romulan_bop','romulan_warbird'].includes(archetype)) {
+      const wSz = archetype === 'romulan_warbird' ? 10 : 7;
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(sz*0.5, 0.5, wSz), mat.clone());
+      wing.position.set(-sz*0.15, 0, 0);
+      group.add(wing);
+    }
+  }
+  return group;
+}
+
+function buildShieldMesh(col) {
+  return new THREE.Mesh(
+    new THREE.IcosahedronGeometry(6,2),
+    new THREE.MeshPhongMaterial({ color:col, emissive:col, emissiveIntensity:0.3, transparent:true, opacity:0.08, side:THREE.DoubleSide, depthWrite:false })
+  );
+}
+
+function buildParticleSystem() {
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(PARTICLE_COUNT*3);
+  const col = new Float32Array(PARTICLE_COUNT*3);
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+  const mat = new THREE.PointsMaterial({ size:0.4, vertexColors:true, transparent:true, opacity:0.85, sizeAttenuation:true });
+  particle_positions  = pos; particle_colours    = col;
+  particle_velocities = new Float32Array(PARTICLE_COUNT*3);
+  particle_life       = new Float32Array(PARTICLE_COUNT);
+  for (let i = 0; i < PARTICLE_COUNT; i++) { pos[i*3+1] = -999; particle_life[i] = 0; }
+  return new THREE.Points(geo, mat);
+}
+
+function spawnThreeParticles(x, y, z, colR, colG, colB, count) {
+  let spawned = 0;
+  for (let i = 0; i < PARTICLE_COUNT && spawned < count; i++) {
+    if (particle_life[i] <= 0) {
+      particle_positions[i*3]=x; particle_positions[i*3+1]=y; particle_positions[i*3+2]=z;
+      const spd=0.5+Math.random()*1.5, theta=Math.random()*Math.PI*2, phi=Math.random()*Math.PI;
+      particle_velocities[i*3]=Math.sin(phi)*Math.cos(theta)*spd;
+      particle_velocities[i*3+1]=Math.sin(phi)*Math.sin(theta)*spd;
+      particle_velocities[i*3+2]=Math.cos(phi)*spd;
+      particle_colours[i*3]=colR; particle_colours[i*3+1]=colG; particle_colours[i*3+2]=colB;
+      particle_life[i]=1.0+Math.random()*0.8; spawned++;
+    }
+  }
+}
+
+function buildStarfield() {
+  const N=1500, pos=new Float32Array(N*3), col=new Float32Array(N*3);
+  for (let i=0;i<N;i++) {
+    const r=400+Math.random()*200, t=Math.random()*Math.PI*2, p=Math.random()*Math.PI;
+    pos[i*3]=r*Math.sin(p)*Math.cos(t); pos[i*3+1]=r*Math.sin(p)*Math.sin(t); pos[i*3+2]=r*Math.cos(p);
+    const br=0.5+Math.random()*0.5, tint=Math.random();
+    col[i*3]=br*(tint>0.7?0.7:1); col[i*3+1]=br*(tint>0.8?0.7:1); col[i*3+2]=br*(tint<0.3?0.7:1);
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',   new THREE.BufferAttribute(col,3));
+  return new THREE.Points(geo, new THREE.PointsMaterial({ size:0.8, vertexColors:true, sizeAttenuation:true }));
+}
+
+function initThreeScene() {
+  const mount = document.getElementById('spatial-3d-mount');
+  if (!mount || typeof THREE === 'undefined') { console.warn('Three.js not available'); return; }
+  const w = mount.clientWidth || 500, h = mount.clientHeight || 300;
+
+  THREE_scene  = new THREE.Scene();
+  THREE_scene.background = new THREE.Color(0x000008);
+  THREE_scene.fog        = new THREE.FogExp2(0x000010, 0.0018);
+  THREE_clock  = new THREE.Clock();
+
+  THREE_camera = new THREE.PerspectiveCamera(55, w/h, 0.1, 1000);
+  THREE_camera.position.set(-55, 28, 0);
+  THREE_camera.lookAt(30, 0, 0);
+
+  THREE_renderer = new THREE.WebGLRenderer({ antialias:true });
+  THREE_renderer.setPixelRatio(window.devicePixelRatio || 1);
+  THREE_renderer.setSize(w, h);
+  THREE_renderer.shadowMap.enabled = true;
+  mount.appendChild(THREE_renderer.domElement);
+  THREE_renderer.domElement.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;';
+
+  // Lighting
+  THREE_scene.add(new THREE.AmbientLight(0x0a1020, 0.8));
+  const keyL = new THREE.DirectionalLight(0xfff8f0, 1.2); keyL.position.set(80,60,20); keyL.castShadow=true; THREE_scene.add(keyL);
+  const rimL = new THREE.DirectionalLight(0x1133ff, 0.4); rimL.position.set(-40,-10,0); THREE_scene.add(rimL);
+  const redF = new THREE.PointLight(0xff2200, 1.5, 80); redF.position.set(35,5,0); THREE_scene.add(redF);
+
+  // Static scene
+  THREE_scene.add(buildStarfield());
+  grid_helper = new THREE.GridHelper(200, 40, 0x1133aa, 0x0a1a44);
+  grid_helper.position.y = -8; grid_helper.material.transparent=true; grid_helper.material.opacity=0.35;
+  THREE_scene.add(grid_helper);
+
+  // Nebula planes
+  [[0x200040,-0.06,60,30,0],[0x002040,-0.04,50,25,1]].forEach(([col,y,sx,sy,side]) => {
+    const neb = new THREE.Mesh(new THREE.PlaneGeometry(sx,sy), new THREE.MeshBasicMaterial({ color:col, transparent:true, opacity:0.12, side:THREE.DoubleSide, depthWrite:false }));
+    neb.position.set(20+side*30, y*80+60, -80+side*40); neb.rotation.x=-Math.PI/8;
+    THREE_scene.add(neb);
+  });
+
+  // Player
+  mesh_defiant = buildDefiantGeometry();
+  mesh_defiant.position.set(-28,0,0);
+  THREE_scene.add(mesh_defiant);
+  engine_glow_player = new THREE.PointLight(0x4477ff, 2.5, 20); engine_glow_player.position.set(-33,0,0); THREE_scene.add(engine_glow_player);
+  shield_player = buildShieldMesh(0x4477ff); shield_player.position.copy(mesh_defiant.position); THREE_scene.add(shield_player);
+
+  // Enemy (placeholder — rebuilt on game start)
+  mesh_enemyGroup = new THREE.Group();
+  mesh_enemy = buildEnemyGeometry('ktinga');
+  mesh_enemyGroup.add(mesh_enemy);
+  mesh_enemyGroup.position.set(35,0,0); mesh_enemyGroup.rotation.y=Math.PI;
+  THREE_scene.add(mesh_enemyGroup);
+  engine_glow_enemy = new THREE.PointLight(0xff2200, 2.0, 18); engine_glow_enemy.position.set(42,0,0); THREE_scene.add(engine_glow_enemy);
+  shield_enemy = buildShieldMesh(0xff3333); shield_enemy.position.copy(mesh_enemyGroup.position); THREE_scene.add(shield_enemy);
+
+  // Particles
+  particle_system = buildParticleSystem(); THREE_scene.add(particle_system);
+
+  THREE_ready = true;
+}
+
+function resizeThreeRenderer() {
+  const mount = document.getElementById('spatial-3d-mount');
+  if (!mount || !THREE_renderer || !THREE_camera) return;
+  const w=mount.clientWidth, h=mount.clientHeight;
+  if (w<=0||h<=0) return;
+  THREE_camera.aspect=w/h; THREE_camera.updateProjectionMatrix();
+  THREE_renderer.setSize(w,h);
+}
+
+function rebuildEnemyMesh() {
+  if (!THREE_ready || !mesh_enemyGroup) return;
+  while (mesh_enemyGroup.children.length) mesh_enemyGroup.remove(mesh_enemyGroup.children[0]);
+  mesh_enemy = buildEnemyGeometry(G.enemyArchetype);
+  mesh_enemyGroup.add(mesh_enemy);
+  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
+  const glow = { Klingon:0xff2200, Romulan:0x00cc44, Cardassian:0xffaa00, Dominion:0x8822ff, Borg:0x00cc66 };
+  engine_glow_enemy.color.setHex(glow[cfg.faction] || 0xff2200);
+}
+
+function renderSpatialViewCanvas() {
+  if (!THREE_ready || !THREE_renderer) return;
+  const dt  = Math.min(THREE_clock.getDelta(), 0.05);
+  const now = THREE_clock.getElapsedTime();
   const cfg = ENEMY_CONFIGS[G.enemyArchetype];
 
-  // ── 6: Range indicator between ships ──
-  if (!G.enemyCloaked) {
-    const rangeY  = h * 0.88;
-    const rx1     = px + 20, rx2 = ex - 20;
-    // Track line
-    ctx.strokeStyle = 'rgba(68,119,255,0.15)'; ctx.lineWidth = 1; ctx.setLineDash([4,8]);
-    ctx.beginPath(); ctx.moveTo(rx1, rangeY); ctx.lineTo(rx2, rangeY); ctx.stroke(); ctx.setLineDash([]);
-    // Bracket ticks
-    const brackets = [
-      { label:'CLOSE',  pct: 0.15, col: cfg.prefersCloseRange ? C.red   : '#446688' },
-      { label:'MEDIUM', pct: 0.45, col: cfg.prefersCloseRange ? C.warn  : '#446688' },
-      { label:'LONG',   pct: 0.80, col: '#446688' },
-    ];
-    brackets.forEach(br => {
-      const bx = rx1 + (rx2 - rx1) * br.pct;
-      ctx.strokeStyle = br.col; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(bx, rangeY-6); ctx.lineTo(bx, rangeY+6); ctx.stroke();
-      ctx.fillStyle = br.col; ctx.font = '7px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillText(br.label, bx, rangeY+8);
-    });
-    // Current position indicator
-    const rangePct = G.enemyRangeBracket === 'close' ? 0.12 : G.enemyRangeBracket === 'medium' ? 0.42 : 0.78;
-    const markerX  = rx1 + (rx2 - rx1) * rangePct;
-    const markerCol = G.enemyRangeBracket === 'close' ? C.red : G.enemyRangeBracket === 'medium' ? C.warn : C.green;
-    ctx.fillStyle = markerCol; ctx.beginPath(); ctx.arc(markerX, rangeY, 4, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = markerCol; ctx.font = 'bold 8px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.fillText(`▼ ${(G.enemyRangeBracket || 'long').toUpperCase()}`, markerX, rangeY - 6);
-    // Range label (right side)
-    ctx.fillStyle = '#aabbcc'; ctx.font = '8px Antonio'; ctx.textAlign = 'left';
-    ctx.fillText('RANGE', rx2 + 6, rangeY - 4);
+  // Camera follow
+  const desiredCam = new THREE.Vector3(mesh_defiant.position.x-55, mesh_defiant.position.y+28, mesh_defiant.position.z);
+  THREE_camera.position.lerp(desiredCam, 0.04);
+  THREE_camera.lookAt(new THREE.Vector3(mesh_enemyGroup.position.x*0.4+mesh_defiant.position.x*0.6, 0, 0));
+
+  // Defiant drift
+  mesh_defiant.position.y = Math.sin(now*0.4)*0.6;
+  mesh_defiant.position.z = Math.sin(now*0.25)*0.8;
+  mesh_defiant.rotation.z = Math.sin(now*0.3)*0.03;
+
+  // Hull damage colouring
+  const hullPct = G.player.hull / G.player.maxHull;
+  mesh_defiant.traverse(child => {
+    if (child.isMesh && child.material && child.material.emissive) {
+      child.material.emissive.setRGB(hullPct<0.35?0.12+(1-hullPct)*0.1:0.04, hullPct<0.35?0.02:0.08, hullPct<0.35?0.02:0.16);
+    }
+  });
+
+  // Engine glow
+  engine_glow_player.intensity = G.cloaked ? 0.1 : 1.5+Math.sin(now*3)*0.8*(G.systems.engines.health/100);
+  engine_glow_enemy.intensity  = G.enemyCloaked ? 0.1 : 1.5+Math.sin(now*2.8)*0.6;
+
+  // Cloaking — fade Defiant
+  const tOp = G.cloaked ? 0.0 : G.cloakVulnTimer>0 ? 0.3+Math.sin(now*20)*0.3 : 1.0;
+  mesh_defiant.traverse(child => { if (child.isMesh) { child.material.transparent=tOp<1; child.material.opacity=THREE.MathUtils.lerp(child.material.opacity??1, tOp, 0.12); } });
+
+  // Player shield bubble
+  shield_player.position.copy(mesh_defiant.position); shield_player.rotation.y=now*0.3;
+  if (G.cloaked) { shield_player.material.opacity=0; }
+  else if (G.shieldHitFlash.player.timer>0) {
+    const f=G.shieldHitFlash.player.timer/600; shield_player.material.opacity=0.35*f;
+    shield_player.material.emissive.setRGB(f*0.6,f*0.6,1.0); shield_player.material.color.setRGB(0.3,0.5,1.0);
+  } else {
+    const shAvg=['fore','port','starboard','aft'].reduce((a,s)=>a+G.player.shields[s],0)/4;
+    shield_player.material.opacity=0.04+(shAvg/G.player.shields.maxSectorValue)*0.06;
+    shield_player.material.emissive.setRGB(0.1,0.2,0.6);
   }
 
-  // ── 1: Weapon beams — drawn BEFORE ships so ships render on top ──
-  const beamMap = {
-    cannon_pu: { col:'#88ccff', width:1.5, dash:[], style:'streak' },
-    cannon_pl: { col:'#88ccff', width:1.5, dash:[], style:'streak' },
-    cannon_su: { col:'#88ccff', width:1.5, dash:[], style:'streak' },
-    cannon_sl: { col:'#88ccff', width:1.5, dash:[], style:'streak' },
-    nose_beam: { col:'#ff9900', width:2.5, dash:[], style:'beam'   },
-    torpedoes: { col:'#cc66ff', width:1.5, dash:[4,3], style:'streak' },
-    photon:    { col:'#4477ff', width:1.5, dash:[3,4], style:'streak' },
-  };
-  G.renderedBeamsVector.forEach(b => {
-    if (b.type === 'burst_flash') return;
-    const bDef = beamMap[b.type]; if (!bDef) return;
-    const age  = now - b.trackingStartTime;
-    const fade = Math.max(0, 1 - age / b.duration);
-    ctx.save();
-    ctx.globalAlpha = fade * 0.9;
-    if (bDef.style === 'beam') {
-      // Nose beam — sustained line from player to enemy
-      const grad2 = ctx.createLinearGradient(px, py, ex, ey);
-      grad2.addColorStop(0,   bDef.col);
-      grad2.addColorStop(0.6, bDef.col);
-      grad2.addColorStop(1,   'transparent');
-      ctx.strokeStyle = grad2; ctx.lineWidth = bDef.width + (1-fade)*1.5;
-      ctx.setLineDash(bDef.dash);
-      ctx.beginPath(); ctx.moveTo(px+18, py); ctx.lineTo(ex-18, ey); ctx.stroke();
-      // Glow effect
-      ctx.lineWidth = bDef.width + 3; ctx.globalAlpha = fade * 0.25;
-      ctx.strokeStyle = bDef.col;
-      ctx.beginPath(); ctx.moveTo(px+18, py); ctx.lineTo(ex-18, ey); ctx.stroke();
+  // Enemy movement
+  if (G.running) {
+    const rangeDist = G.enemyRangeBracket==='close'?22:G.enemyRangeBracket==='medium'?38:55;
+    mesh_enemyGroup.position.x = THREE.MathUtils.lerp(mesh_enemyGroup.position.x, mesh_defiant.position.x+rangeDist, 0.008);
+    mesh_enemyGroup.position.y = Math.sin(now*0.35+1.2)*0.7;
+    mesh_enemyGroup.position.z = Math.sin(now*0.22+0.7)*1.1;
+
+    if (G.enemyManeuverState==='angling') {
+      const roll={fore:0,aft:Math.PI*0.15,port:0.2,starboard:-0.2}[G.enemyPreferredSector]||0;
+      mesh_enemyGroup.rotation.y=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.y,Math.PI+roll*0.5,0.04);
+      mesh_enemyGroup.rotation.z=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.z,roll*0.4,0.04);
+    } else if (G.enemyManeuverState==='torpedocharge') {
+      mesh_enemyGroup.rotation.z=Math.sin(now*8)*0.06;
     } else {
-      // Pulse/streak — short animated dash travelling toward target
-      const prog = Math.min(1, age / (b.duration * 0.6));
-      const sx   = px + (ex - px) * (prog * 0.5);
-      const sy   = py + (ey - py) * (prog * 0.5);
-      const ex2  = px + (ex - px) * Math.min(1, prog * 0.5 + 0.12);
-      const ey2  = py + (ey - py) * Math.min(1, prog * 0.5 + 0.12);
-      ctx.strokeStyle = bDef.col; ctx.lineWidth = bDef.width;
-      ctx.setLineDash(bDef.dash);
-      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex2, ey2); ctx.stroke();
+      mesh_enemyGroup.rotation.y=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.y,Math.PI,0.03);
+      mesh_enemyGroup.rotation.z=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.z,0,0.03);
     }
-    ctx.setLineDash([]); ctx.restore();
-  });
-
-  // ── 7: Torpedo wake trails ──
-  G.inFlightTorpedoes.forEach(t => {
-    const prog  = 1 - (t.timeToImpact / 3500);
-    const tx    = t.fromEnemy ? ex + (px - ex) * prog : px + (ex - px) * prog;
-    const ty    = t.fromEnemy ? ey + (py - ey) * prog : py + (ey - py) * prog;
-    const tCol  = t.fromEnemy ? C.red : (t.isPhoton ? '#4488ff' : C.t);
-    const tSize = t.fromEnemy ? 4 : 3.5;
-    // Wake trail
-    for (let i = 1; i <= 5; i++) {
-      const trailProg = prog - i * 0.04;
-      if (trailProg < 0) continue;
-      const trailX = t.fromEnemy ? ex + (px - ex) * trailProg : px + (ex - px) * trailProg;
-      const trailY = t.fromEnemy ? ey + (py - ey) * trailProg : py + (ey - py) * trailProg;
-      ctx.globalAlpha = (1 - i * 0.18) * 0.6;
-      ctx.fillStyle = tCol;
-      ctx.beginPath(); ctx.arc(trailX, trailY, tSize - i * 0.4, 0, Math.PI*2); ctx.fill();
+    if (G.enemyRammingRun) {
+      const rp=1-G.enemyRammingTimer/4000;
+      mesh_enemyGroup.position.x=THREE.MathUtils.lerp(mesh_enemyGroup.position.x,mesh_defiant.position.x+8,rp*0.08);
     }
-    ctx.globalAlpha = 1;
-    // Torpedo body
-    ctx.fillStyle = tCol;
-    ctx.beginPath(); ctx.arc(tx, ty, tSize, 0, Math.PI*2); ctx.fill();
-    // Bright core
-    ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.7;
-    ctx.beginPath(); ctx.arc(tx, ty, 1.5, 0, Math.PI*2); ctx.fill();
-    ctx.globalAlpha = 1;
-  });
 
-  // ── Damage particles ──
-  G.damageParticles = G.damageParticles.filter(p => {
-    p.life += 16;
-    if (p.life > p.maxLife) return false;
-    const fade = 1 - p.life / p.maxLife;
-    const ox = p.target === 'player' ? px : ex;
-    const oy = p.target === 'player' ? py : ey;
-    const dx = ox + p.vx * p.life * 0.06;
-    const dy = oy + p.vy * p.life * 0.06;
-    ctx.globalAlpha = fade;
-    ctx.fillStyle = p.col;
-    ctx.fillRect(dx - 1, dy - 1, 2, 2);
-    ctx.globalAlpha = 1;
+    // Enemy cloaking
+    const eOp=G.enemyCloaked?0.0:G.enemyCloakVulnTimer>0?0.25+Math.sin(now*18)*0.25:1.0;
+    mesh_enemyGroup.traverse(child=>{ if(child.isMesh&&child.material){child.material.transparent=eOp<1;child.material.opacity=THREE.MathUtils.lerp(child.material.opacity??1,eOp,0.10);} });
+
+    // Enemy hull damage
+    const eHullPct=G.running&&G.threat.hull?G.threat.hull/G.threat.maxHull:1;
+    if (eHullPct<0.30) {
+      mesh_enemyGroup.traverse(child=>{ if(child.isMesh&&child.material&&child.material.emissive) child.material.emissive.setRGB(0.25+Math.sin(now*4)*0.1,0.04,0.04); });
+    }
+
+    // Enemy shield bubble
+    shield_enemy.position.copy(mesh_enemyGroup.position); shield_enemy.rotation.y=-now*0.25;
+    if (G.enemyCloaked) { shield_enemy.material.opacity=0; }
+    else if (G.shieldHitFlash.enemy.timer>0) {
+      const f=G.shieldHitFlash.enemy.timer/600; shield_enemy.material.opacity=0.40*f;
+      shield_enemy.material.emissive.setRGB(1.0,f*0.3,f*0.1); shield_enemy.material.color.setRGB(1.0,0.3,0.1);
+    } else {
+      const eShAvg=G.threat.shields?['fore','port','starboard','aft'].reduce((a,s)=>a+(G.threat.shields[s]||0),0)/4:0;
+      shield_enemy.material.opacity=0.04+(G.running&&cfg.shields?eShAvg/cfg.shields.fore:0)*0.07;
+      shield_enemy.material.emissive.setRGB(0.5,0.1,0.1);
+    }
+    engine_glow_enemy.position.copy(mesh_enemyGroup.position); engine_glow_enemy.position.x+=10;
+  }
+
+  // Weapon beams
+  const elapsed=THREE_clock.getElapsedTime();
+  G.renderedBeamsVector.forEach(b=>{
+    if (b._three_spawned||b.type==='burst_flash') return;
+    b._three_spawned=true;
+    const fromV=mesh_defiant.position.clone().add(new THREE.Vector3(5,0,0));
+    const toV=mesh_enemyGroup.position.clone().add(new THREE.Vector3(-5,0,0));
+    const bCols={cannon_pu:0x66ccff,cannon_pl:0x66ccff,cannon_su:0x66ccff,cannon_sl:0x66ccff,nose_beam:0xff9900,torpedoes:0xcc66ff,photon:0x4488ff};
+    const geo=new THREE.BufferGeometry().setFromPoints([fromV,toV]);
+    const mat=new THREE.LineBasicMaterial({color:bCols[b.type]||0xffffff,transparent:true,opacity:0.9});
+    const line=new THREE.Line(geo,mat); line._bornAt=elapsed; line._duration=b.duration/1000;
+    THREE_scene.add(line); beam_lines.push(line);
+  });
+  beam_lines=beam_lines.filter(line=>{
+    const f=Math.max(0,1-(elapsed-line._bornAt)/line._duration);
+    line.material.opacity=f*0.9;
+    if (f<=0){THREE_scene.remove(line);line.geometry.dispose();line.material.dispose();return false;}
     return true;
   });
 
-  // ── Player vessel ──
-  if (G.cloakVulnTimer > 0) {
-    const a = 0.4 + Math.sin(now * 0.02) * 0.3;
-    ctx.strokeStyle = `rgba(153,102,204,${a})`; ctx.lineWidth = 2; ctx.setLineDash([3,3]);
-    ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
-  } else if (G.cloaked) {
-    const s = 0.15 + Math.sin(now * 0.008) * 0.1;
-    ctx.strokeStyle = `rgba(153,102,204,${s+0.2})`; ctx.lineWidth = 1.5; ctx.setLineDash([3,3]);
-    ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = `rgba(153,102,204,${s*0.4})`; ctx.fill();
-    ctx.fillStyle = `rgba(153,102,204,${s+0.3})`; ctx.font = 'bold 10px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('◉', px, py);
-  } else {
-    // ── 8: Ablative armour segmented arc (replaces text) ──
-    const ab = G.ablative;
-    ab.layerHealth.forEach((lh, i) => {
-      const segStart = -Math.PI * 0.9 + i * (Math.PI * 1.8 / ABLATIVE_ARMOUR.maxLayers);
-      const segEnd   = segStart + (Math.PI * 1.8 / ABLATIVE_ARMOUR.maxLayers) - 0.08;
-      const regen    = ab.regenTimers[i] <= 0 && ab.regenProgress[i] > 0;
-      ctx.strokeStyle = lh > 0 ? `rgba(0,204,102,${0.4 + (lh/100)*0.5})` :
-                        regen  ? `rgba(255,170,0,0.35)` : `rgba(255,255,255,0.08)`;
-      ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(px, py, 26, segStart, segEnd); ctx.stroke();
+  // Torpedoes
+  G.inFlightTorpedoes.forEach(t=>{
+    if (t._three_mesh) return;
+    const fromV=t.fromEnemy?mesh_enemyGroup.position.clone():mesh_defiant.position.clone();
+    const toV  =t.fromEnemy?mesh_defiant.position.clone():mesh_enemyGroup.position.clone();
+    const col  =t.fromEnemy?0xff3333:(t.isPhoton?0x4488ff:0xcc66ff);
+    const geo  =new THREE.SphereGeometry(0.5,8,6);
+    const mat  =new THREE.MeshPhongMaterial({color:col,emissive:col,emissiveIntensity:2,transparent:true,opacity:0.9});
+    const mesh =new THREE.Mesh(geo,mat);
+    mesh.position.copy(fromV); mesh._target=toV.clone(); mesh._origin=fromV.clone(); mesh._progress=0;
+    THREE_scene.add(mesh); t._three_mesh=mesh; torp_meshes.push(mesh);
+  });
+  torp_meshes=torp_meshes.filter(m=>{
+    const gt=G.inFlightTorpedoes.find(t=>t._three_mesh===m);
+    if (!gt){THREE_scene.remove(m);m.geometry.dispose();m.material.dispose();return false;}
+    m._progress=1-(gt.timeToImpact/3500);
+    m.position.lerpVectors(m._origin,m._target,Math.max(0,Math.min(1,m._progress)));
+    m.position.y+=Math.sin(m._progress*Math.PI)*2;
+    return true;
+  });
+
+  // Particles
+  let pDirty=false;
+  for (let i=0;i<PARTICLE_COUNT;i++){
+    if (particle_life[i]>0){
+      particle_life[i]-=dt;
+      particle_positions[i*3]  +=particle_velocities[i*3]  *dt*8;
+      particle_positions[i*3+1]+=particle_velocities[i*3+1]*dt*8;
+      particle_positions[i*3+2]+=particle_velocities[i*3+2]*dt*8;
+      const f=Math.max(0,particle_life[i]);
+      particle_colours[i*3]*=f<0.1?0.8:1; particle_colours[i*3+1]*=f<0.1?0.8:1; particle_colours[i*3+2]*=f<0.1?0.8:1;
+      pDirty=true;
+    }
+  }
+  if (pDirty){particle_system.geometry.attributes.position.needsUpdate=true;particle_system.geometry.attributes.color.needsUpdate=true;}
+
+  // Consume G.damageParticles → Three.js particles
+  if (G.damageParticles.length>0){
+    G.damageParticles.forEach(p=>{
+      const ox=p.target==='player'?mesh_defiant.position.x:mesh_enemyGroup.position.x;
+      const oz=p.target==='player'?mesh_defiant.position.z:mesh_enemyGroup.position.z;
+      const isRed=p.col===C.red;
+      spawnThreeParticles(ox,0,oz,isRed?1:1,isRed?0.2:0.6,isRed?0.1:0.1,3);
     });
-
-    // ── 3: Shield sector glow rings ──
-    const sectorAngles = { fore:0, starboard:Math.PI*0.5, aft:Math.PI, port:-Math.PI*0.5 };
-    Object.entries(sectorAngles).forEach(([s, angle]) => {
-      const sv   = G.player.shields[s] || 0;
-      const pct  = sv / G.player.shields.maxSectorValue;
-      const isHit = G.shieldHitFlash.player.sector === s && G.shieldHitFlash.player.timer > 0;
-      if (isHit) {
-        const hitAlpha = Math.min(1, G.shieldHitFlash.player.timer / 200);
-        ctx.strokeStyle = `rgba(255,255,255,${hitAlpha * 0.85})`;
-        ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.arc(px, py, 22 + hitAlpha*4, angle - 0.4, angle + 0.4); ctx.stroke();
-      } else if (pct > 0.05) {
-        ctx.strokeStyle = pct > 0.5 ? `rgba(68,200,255,${0.1 + pct*0.35})` : `rgba(255,170,0,${0.1 + pct*0.3})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(px, py, 22, angle - 0.4, angle + 0.4); ctx.stroke();
-      }
-    });
-    if (G.shieldHitFlash.player.timer > 0) G.shieldHitFlash.player.timer -= 16;
-
-    // ── 7: Faction engine glow — Federation blue ──
-    const engHealth = G.systems.engines.health / 100;
-    const engPulse  = 0.3 + Math.sin(now * 0.005) * 0.2 * engHealth;
-    ctx.strokeStyle = `rgba(68,119,255,${engPulse})`; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(px - 12, py, 8, Math.PI*0.6, Math.PI*1.4); ctx.stroke();
-    ctx.fillStyle = `rgba(68,119,255,${engPulse * 0.4})`;
-    ctx.beginPath(); ctx.arc(px - 14, py, 4, 0, Math.PI*2); ctx.fill();
-
-    // Hull outline — larger (20px)
-    const hullPct = G.player.hull / G.player.maxHull;
-    const baseCol = G.systems.warp_core.tripped ? C.warn : C.b;
-    // ── 4: Hull state colouring — darken as hull drops ──
-    ctx.strokeStyle = hullPct < 0.35 ? `rgba(255,100,60,0.9)` : baseCol;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI*2); ctx.stroke();
-    ctx.fillStyle = hullPct < 0.35 ? `rgba(80,10,5,0.5)` : '#0a1224'; ctx.fill();
-
-    // Bow nacelle detail
-    ctx.strokeStyle = baseCol; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(px+18,py); ctx.lineTo(px+32,py-7); ctx.lineTo(px+32,py+7); ctx.closePath(); ctx.stroke();
-
-    // Firing arc wedges
-    const arcDefs = [
-      { label:'FORE', startAngle:-Math.PI*0.35, endAngle:Math.PI*0.35,  systems:['cannon_pu','cannon_su','nose_beam','torpedoes'] },
-      { label:'PORT', startAngle:-Math.PI*0.90, endAngle:-Math.PI*0.35, systems:['cannon_pu','cannon_pl'] },
-      { label:'STBD', startAngle: Math.PI*0.35, endAngle: Math.PI*0.85, systems:['cannon_su','cannon_sl'] },
-      { label:'AFT',  startAngle: Math.PI*1.00, endAngle: Math.PI*1.40, systems:['cannon_pl','cannon_sl'] },
-    ];
-    arcDefs.forEach(arc => {
-      const recentFire = G.renderedBeamsVector.find(b =>
-        b.type !== 'burst_flash' && arc.systems.includes(b.type) && now - b.trackingStartTime < b.duration
-      );
-      const allOffline = arc.systems.every(k => G.systems[k] && (G.systems[k].tripped || G.systems[k].health < 10));
-      ctx.beginPath(); ctx.moveTo(px, py);
-      ctx.arc(px, py, 52, arc.startAngle, arc.endAngle); ctx.closePath();
-      ctx.fillStyle = recentFire ? `rgba(68,119,255,0.45)` : allOffline ? `rgba(255,51,51,0.07)` : `rgba(68,119,255,0.12)`;
-      ctx.fill();
-      if (recentFire) { ctx.strokeStyle = C.b; ctx.lineWidth = 1.5; ctx.stroke(); }
-      const midAngle = (arc.startAngle + arc.endAngle) / 2;
-      ctx.fillStyle = recentFire ? C.b : allOffline ? C.red : 'rgba(68,119,255,0.5)';
-      ctx.font = 'bold 7px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(arc.label, px + Math.cos(midAngle) * 63, py + Math.sin(midAngle) * 63);
-    });
-
-    if (G.batteryActive) {
-      const ba = 0.4 + Math.sin(now * 0.015) * 0.3;
-      ctx.strokeStyle = `rgba(255,170,0,${ba})`; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(px, py, 30, 0, Math.PI*2); ctx.stroke();
-    }
-    if (G.systems.warp_core.tripped) {
-      ctx.fillStyle = 'rgba(255,170,0,0.75)'; ctx.font = 'bold 8px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(G.batteryActive ? '⚡ BATTERY' : '⊗ WARP OFFLINE', px, py - 38);
-    }
+    G.damageParticles=[];
   }
 
-  // ── Enemy vessel ──
-  if (G.enemyCloaked && G.enemyCloakVulnTimer === 0) {
-    ctx.strokeStyle = 'rgba(153,102,204,0.1)'; ctx.lineWidth = 1; ctx.setLineDash([5,8]);
-    ctx.beginPath(); ctx.arc(ex, ey, 22, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
-    if (G.sensorGhostActive) {
-      const ga = 0.3 + Math.sin(now * 0.02) * 0.2;
-      const gx = ex + Math.sin(now * 0.003) * 40, gy = ey + Math.cos(now * 0.004) * 28;
-      ctx.strokeStyle = `rgba(255,170,0,${ga})`; ctx.lineWidth = 1; ctx.setLineDash([3,6]);
-      ctx.beginPath(); ctx.arc(gx, gy, 14, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = `rgba(255,170,0,${ga*0.7})`; ctx.font = 'bold 9px Antonio'; ctx.textAlign = 'center'; ctx.fillText('?', gx, gy-20);
-    }
-  } else {
-    // ── 3: Enemy shield sector glow ──
-    if (G.running && G.threat.shields) {
-      const eSectorAngles = { fore:Math.PI, port:-Math.PI*0.5, starboard:Math.PI*0.5, aft:0 };
-      Object.entries(eSectorAngles).forEach(([s, angle]) => {
-        const sv   = G.threat.shields[s] || 0;
-        const cfg2 = ENEMY_CONFIGS[G.enemyArchetype];
-        const pct  = sv / (cfg2.shields[s] || 200);
-        const isHit = G.shieldHitFlash.enemy.sector === s && G.shieldHitFlash.enemy.timer > 0;
-        if (isHit) {
-          const hitAlpha = Math.min(1, G.shieldHitFlash.enemy.timer / 200);
-          ctx.strokeStyle = `rgba(255,100,80,${hitAlpha * 0.9})`; ctx.lineWidth = 4;
-          ctx.beginPath(); ctx.arc(ex, ey, 26 + hitAlpha*5, angle - 0.4, angle + 0.4); ctx.stroke();
-        } else if (pct > 0.05) {
-          ctx.strokeStyle = pct > 0.5 ? `rgba(255,80,80,${0.12 + pct*0.3})` : `rgba(255,170,0,${0.12 + pct*0.25})`;
-          ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.arc(ex, ey, 26, angle - 0.4, angle + 0.4); ctx.stroke();
-        }
-      });
-      if (G.shieldHitFlash.enemy.timer > 0) G.shieldHitFlash.enemy.timer -= 16;
-    }
-
-    // ── 7: Faction engine glow ──
-    const factionGlow = { Klingon:'rgba(255,60,40,', Romulan:'rgba(100,255,100,', Cardassian:'rgba(255,200,60,', Dominion:'rgba(180,60,255,', Borg:'rgba(0,200,100,' };
-    const fGlow = (factionGlow[cfg.faction] || 'rgba(200,100,100,') + `${0.3 + Math.sin(now*0.006)*0.2})`;
-    ctx.strokeStyle = fGlow; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(ex + 14, ey, 8, Math.PI*-0.4, Math.PI*0.4); ctx.stroke();
-    ctx.fillStyle = (factionGlow[cfg.faction] || 'rgba(200,100,100,') + '0.25)';
-    ctx.beginPath(); ctx.arc(ex + 16, ey, 4, 0, Math.PI*2); ctx.fill();
-
-    ctx.save(); ctx.translate(ex, ey);
-    const rangeScale = (cfg.prefersCloseRange && G.enemyRangeBracket === 'close') ? 1.4 :
-                       (cfg.prefersCloseRange && G.enemyRangeBracket === 'medium') ? 1.2 : 1.0;
-    if (rangeScale !== 1.0) ctx.scale(rangeScale, rangeScale);
-    if (G.enemyManeuverState === 'angling') {
-      const am = { fore:0, aft:Math.PI, port:-Math.PI/4, starboard:Math.PI/4 };
-      ctx.rotate(am[G.enemyPreferredSector] || 0);
-    } else if (G.enemyManeuverState === 'torpedocharge') {
-      ctx.rotate(Math.sin(now * 0.01) * 0.12);
-    }
-
-    // ── 4: Hull damage state — enemy silhouette darkens at low hull ──
-    const eHullPct  = G.threat.hull / G.threat.maxHull;
-    const critColor = eHullPct < 0.3;
-    ctx.strokeStyle = G.enemyManeuverState === 'torpedocharge' ? '#ff2200' : critColor ? '#ff6633' : C.red;
-    ctx.lineWidth   = 2.5;
-    ctx.fillStyle   = critColor ? 'rgba(255,60,20,0.25)' :
-                      G.enemyManeuverState === 'torpedocharge' ? 'rgba(255,0,0,0.2)' : 'rgba(230,40,40,0.08)';
-
-    ctx.beginPath();
-    switch (G.enemyArchetype) {
-      case 'ktinga':              ctx.moveTo(-5,-18);ctx.lineTo(8,0);ctx.lineTo(-5,18);ctx.lineTo(-18,10);ctx.lineTo(-12,0);ctx.lineTo(-18,-10);break;
-      case 'vor_cha':             ctx.moveTo(-6,-20);ctx.lineTo(10,0);ctx.lineTo(-6,20);ctx.lineTo(-20,12);ctx.lineTo(-16,0);ctx.lineTo(-20,-12);break;
-      case 'romulan_bop':         ctx.moveTo(10,0);ctx.lineTo(-10,-22);ctx.lineTo(-18,0);ctx.lineTo(-10,22);break;
-      case 'romulan_warbird':     ctx.moveTo(16,0);ctx.lineTo(-8,-26);ctx.lineTo(-24,0);ctx.lineTo(-8,26);break;
-      case 'cardassian_scout':    ctx.moveTo(-6,-10);ctx.lineTo(7,0);ctx.lineTo(-6,10);break;
-      case 'galor_class':         ctx.moveTo(-10,-15);ctx.lineTo(13,0);ctx.lineTo(-10,15);ctx.lineTo(-18,8);ctx.lineTo(-13,0);ctx.lineTo(-18,-8);break;
-      case 'jem_hadar_fighter':   ctx.moveTo(-5,-12);ctx.lineTo(8,0);ctx.lineTo(-5,12);break;
-      case 'jem_hadar_battleship':ctx.moveTo(-10,-18);ctx.lineTo(13,0);ctx.lineTo(-10,18);ctx.lineTo(-20,12);ctx.lineTo(-15,0);ctx.lineTo(-20,-12);break;
-      case 'borg_probe':          ctx.strokeStyle=C.green;ctx.fillStyle=`rgba(0,204,102,${0.1 + (1-eHullPct)*0.2})`;ctx.rect(-14,-14,28,28);break;
-      default:                    ctx.arc(0,0,12,0,Math.PI*2);
-    }
-    ctx.closePath(); ctx.fill(); ctx.stroke();
-
-    // Critical hull sparks (static particles drawn in ship-local space)
-    if (eHullPct < 0.3) {
-      for (let i = 0; i < 3; i++) {
-        const sx = (Math.sin(now * 0.003 + i * 2.1) * 10);
-        const sy = (Math.cos(now * 0.004 + i * 1.7) * 8);
-        const sa = 0.4 + Math.sin(now * 0.02 + i) * 0.35;
-        ctx.fillStyle = `rgba(255,${140 + i*30},0,${sa})`;
-        ctx.fillRect(sx - 1.5, sy - 1.5, 3, 3);
-      }
-    }
-    ctx.restore();
-
-    // Status overlays
-    if (G.enemyTractorActive) {
-      const ta = 0.4 + Math.sin(now * 0.01) * 0.3;
-      ctx.strokeStyle = `rgba(0,204,102,${ta})`; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(ex-18, ey); ctx.lineTo(px+22, py); ctx.stroke();
-      ctx.fillStyle = 'rgba(0,204,102,0.7)'; ctx.font = '9px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText('TRACTOR', (ex+px)/2, py - 8);
-    }
-    if (G.enemyRepairQueue.length > 0 || G.enemyRepairQueue.length === 0 && G.repairTeams) {
-      ctx.fillStyle = 'rgba(255,170,0,0.75)'; ctx.font = '9px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText('🔧', ex, ey - 30);
-    }
-    if (G.enemyCloakVulnTimer > 0) {
-      const va = 0.5 + Math.sin(now * 0.025) * 0.3;
-      ctx.strokeStyle = `rgba(153,102,204,${va})`; ctx.lineWidth = 2; ctx.setLineDash([3,3]);
-      ctx.beginPath(); ctx.arc(ex, ey, 32, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = `rgba(255,170,0,0.9)`; ctx.font = 'bold 10px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillText('⚡ FIRE NOW', ex, ey + 38);
-    }
-    if (G.enemyRammingRun) {
-      const ra = 0.6 + Math.sin(now * 0.04) * 0.4;
-      ctx.strokeStyle = `rgba(255,51,51,${ra})`; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(ex, ey, 36, 0, Math.PI*2); ctx.stroke();
-      ctx.fillStyle = `rgba(255,51,51,${ra})`; ctx.font = 'bold 10px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText('⚠ RAMMING RUN', ex, ey - 42);
-      ctx.textBaseline = 'top';
-      ctx.fillText(`IMPACT: ${Math.ceil(G.enemyRammingTimer/1000)}s`, ex, ey + 42);
-      ctx.strokeStyle = `rgba(255,51,51,0.35)`; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
-      ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]);
-    }
-
-    // Enemy ship name label
-    ctx.fillStyle = `rgba(255,100,100,${eHullPct < 0.3 ? 0.9 : 0.55})`;
-    ctx.font = '8px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.fillText(cfg.label, ex, ey - 36);
-    ctx.fillStyle = `rgba(200,80,80,${eHullPct < 0.3 ? 0.8 : 0.4})`;
-    ctx.fillText(`HULL ${Math.round(eHullPct*100)}%`, ex, ey - 27);
-  }
-
-  // ── 1: Burst salvo flash ──
-  const burstFlash = G.renderedBeamsVector.find(b => b.type === 'burst_flash' && now - b.trackingStartTime < b.duration);
-  if (burstFlash) {
-    const age  = now - burstFlash.trackingStartTime;
-    const fade = 1 - (age / burstFlash.duration);
-    ctx.strokeStyle = `rgba(255,255,255,${fade * 0.9})`; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(px, py, 36 + (1 - fade) * 14, 0, Math.PI*2); ctx.stroke();
-  }
-
-  // Clean up
-  G.renderedBeamsVector = G.renderedBeamsVector.filter(b => now - b.trackingStartTime < b.duration);
-
-  // Player ship label
-  if (!G.cloaked) {
-    ctx.fillStyle = 'rgba(68,119,255,0.55)'; ctx.font = '8px Antonio'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText('USS DEFIANT', px, py + 24);
-  }
+  grid_helper.rotation.y=now*0.008;
+  G.renderedBeamsVector=G.renderedBeamsVector.filter(b=>performance.now()-b.trackingStartTime<b.duration);
+  THREE_renderer.render(THREE_scene,THREE_camera);
 }
 
 // ============================================================

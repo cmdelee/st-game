@@ -256,6 +256,8 @@ function initiateVesselSimulation(station) {
 
   // Enemy label
   const aiLbl = document.getElementById('lbl-ai-archetype'); if (aiLbl) aiLbl.textContent = cfg.label;
+  // Rebuild Three.js enemy mesh for new archetype
+  rebuildEnemyMesh();
 
   // Boot log
   postLogEvent(`[${currentDifficulty.toUpperCase()}] ${cfg.label} (${cfg.faction}) — engaging.`, 'warn');
@@ -283,7 +285,10 @@ function initiateVesselSimulation(station) {
 // BOOT SEQUENCE
 // ============================================================
 function runMasterBootSequence() {
-  spatialCanvas = document.getElementById('canvas-spatial-view');   spatialCtx = spatialCanvas ? spatialCanvas.getContext('2d') : null;
+  // Three.js spatial view replaces the old 2D canvas-spatial-view
+  initThreeScene();
+
+  // 2D canvases for engineering views only
   hullCanvas    = document.getElementById('canvas-hull-schematic'); hullCtx    = hullCanvas    ? hullCanvas.getContext('2d')    : null;
   enemyCanvas   = document.getElementById('canvas-enemy-schematic');enemyCtx   = enemyCanvas   ? enemyCanvas.getContext('2d')   : null;
   powerCanvas   = document.getElementById('canvas-power-dist');     powerCtx   = powerCanvas   ? powerCanvas.getContext('2d')   : null;

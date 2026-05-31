@@ -163,7 +163,7 @@
     <div class="top-monitor-row">
       <div class="monitor-frame active-monitor view-tactical">
         <div class="monitor-title">Spatial Intercept Coordinates Grid</div>
-        <div class="canvas-container"><canvas id="canvas-spatial-view"></canvas></div>
+        <div class="canvas-container" id="spatial-3d-mount"></div>
       </div>
       <div class="monitor-frame active-monitor view-tactical">
         <div class="monitor-title">Enemy Vessel Tactical Assessment</div>
@@ -422,8 +422,11 @@
 
 </div><!-- /main-viewport -->
 
+<!-- Three.js for 3D spatial view -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
 <!-- ═══════════════════════════════════════════════════════════
-     SCRIPTS — load order matters: state → engineering → tactical → canvas → ui → main
+     SCRIPTS — load order: state → engineering → tactical → canvas → ui → main
 ════════════════════════════════════════════════════════════ -->
 <script src="state.js"></script>
 <script src="engineering.js"></script>
