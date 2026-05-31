@@ -31,7 +31,7 @@ function postCrewReport(crew, text, type) {
 function _renderCrewComms() {
   const feed = document.getElementById('captain-comms-feed');
   if (!feed) return;
-  const lines = G.crewReports.slice(0, 10);
+  const lines = G.crewReports.slice(0, 3);
   feed.innerHTML = lines.map(r => {
     const col  = CREW_COLOURS[r.crew] || '#aabbcc';
     const lbl  = CREW_LABELS[r.crew]  || r.crew;
