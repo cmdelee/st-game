@@ -101,27 +101,37 @@ function _fillBar(id, pct) {
 // ── Order Cooldowns ───────────────────────────────────────────
 
 const _CAP_CD = {
-  // Worf — weapons & tactical
+  // Worf — weapons (captain-side rate limiter; capacitor system is the real gate)
   fire_cannons:3000,   fire_quantum:5000,   fire_photon:3000,
-  fire_burst:14000,    fire_alpha:15000,    rotate_freq:32000,  // alpha raised 9→15s
-  evasive:22000,       cloak:28000,         hold_fire:20000,
-  // Worf — targeting (2.5s debounce — targeting is a deliberate decision)
+  fire_burst:13000,    fire_alpha:15000,    // burst = 12s game CD + 1s overhead
+  // Worf — tactical (matched to full ability cycle: active + game CD)
+  rotate_freq:43000,   // 12s active + 30s CD + 1s overhead
+  evasive:29000,       // 8s active  + 20s CD + 1s overhead
+  cloak:26000,         // 25s game CD + 1s overhead
+  hold_fire:20000,
+  // Worf — targeting (2.5s deliberate debounce)
   tgt_hull:2500,       tgt_shields:2500,    tgt_weapons:2500,
   tgt_engines:2500,    tgt_cloak:2500,      tgt_sensors:2500,
   tgt_warpcore:2500,
-  // Worf — scans
-  scan_shields:30000,  scan_hull:26000,     scan_weapons:35000,  scan_tetryon:20000,
+  // Worf — scans (long enough that captain picks one profile per engagement phase)
+  scan_shields:32000,  scan_hull:28000,     scan_weapons:36000,  scan_tetryon:22000,
   // O'Brien — shields & power
   shld_equalise:8000,  shld_regen_boost:20000,
   // O'Brien — repairs & systems
   emerg_batt:22000,    repair_wpn:12000,    repair_sys:12000,
-  flush_eps:25000,     dmg_ctrl:22000,      repair_cloak:18000,  // flush raised 16→25s
-  // Nog — helm (speed/range/vector 2-2.5s — comms + response time)
+  flush_eps:25000,     dmg_ctrl:22000,      repair_cloak:18000,
+  // Nog — helm (speed/range/vector: 2s comms + helm response overhead)
   speed_full:2500,     speed_half:2500,     speed_stop:2500,
-  attack_run:22000,    come_about:20000,    emerg_warp:0,
   range_long:2000,     range_close:2000,    range_medium:2000,
   vec_fore:2000,       vec_port:2000,       vec_stbd:2000,       vec_aft:2000,
-  picard:55000,        pattern_omega:47000, evasive_alpha:35000,
+  // Nog — manoeuvres (matched to full ability cycle)
+  attack_run:29000,    // 8s active  + 20s CD + 1s overhead
+  come_about:22000,    // 3s active  + 18s CD + 1s overhead
+  picard:64000,        // 3s active  + 60s CD + 1s overhead
+  pattern_omega:56000, // 10s active + 45s CD + 1s overhead
+  evasive_alpha:21000, // 5s active  + 15s CD + 1s overhead
+  emerg_warp:0,
+  // New manoeuvres
   auto_shld_track:30000, silent_running:40000, emerg_thrusters:25000,
 };
 

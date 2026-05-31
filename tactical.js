@@ -1212,12 +1212,15 @@ function executeThreatCounterVolley() {
 }
 
 function processAutomatedDelegation(dt) {
-  const runAutoEng = G.playerChosenStation === 'tactical' || G.playerChosenStation === 'helm' || G.playerChosenStation === 'captain';
-  const runAutoTac = G.playerChosenStation === 'engineering' || G.playerChosenStation === 'helm' || G.playerChosenStation === 'captain';
+  const isCaptain  = G.playerChosenStation === 'captain';
+  const runAutoEng = G.playerChosenStation === 'tactical' || G.playerChosenStation === 'helm' || isCaptain;
+  const runAutoTac = G.playerChosenStation === 'engineering' || G.playerChosenStation === 'helm' || isCaptain;
 
+  // ── Auto-Engineering (O'Brien) ──────────────────────────────
   if (runAutoEng) {
-    // Auto-engineering: re-latch tripped breakers
     const ce = getCrewEfficiency('engineering');
+
+    // Re-latch tripped breakers
     Object.keys(G.systems).forEach(key => {
       const sys = G.systems[key];
       if (sys.tripped && Math.random() < 0.06 * ce * (dt / 1000)) {
@@ -1229,6 +1232,7 @@ function processAutomatedDelegation(dt) {
         refreshEngineeringPanelGraphics();
       }
     });
+
     // Auto-assign repair teams to damaged systems
     const damaged = Object.keys(G.systems)
       .filter(k => (G.systems[k].health < 70 || G.systems[k].tripped) &&
@@ -1247,10 +1251,33 @@ function processAutomatedDelegation(dt) {
         postLogEvent(`Computer: repair team dispatched to [${sys.label}].`, 'info');
       }
     });
+
+    // Captain: O'Brien acts autonomously on emergencies
+    if (isCaptain) {
+      // Auto-activate emergency battery when warp core trips
+      if (G.systems.warp_core.tripped && !G.batteryActive && G.batteryCharge > 20) {
+        G.batteryActive = true;
+        postLogEvent("O'Brien: Emergency battery online — warp core offline.", 'good');
+        crewReportWarpCoreTrip();
+      }
+
+      // Auto-equalise shields when one sector critically low (< 15% of max) and others have power
+      if (!G.cloaked && !G.shieldTransferInProgress) {
+        const max = G.player.shields.maxSectorValue;
+        const sectors = ['fore','port','starboard','aft'];
+        const critSector = sectors.find(s => G.player.shields[s] < max * 0.15);
+        const totalShields = sectors.reduce((sum, s) => sum + G.player.shields[s], 0);
+        if (critSector && totalShields > max * 0.5 && Math.random() < 0.01 * (dt / 1000) * 60) {
+          rebalanceShieldArrays();
+          postLogEvent(`O'Brien: Auto-equalising — ${critSector.toUpperCase()} shields critical.`, 'warn');
+        }
+      }
+    }
   }
 
+  // ── Auto-Tactical (Worf) ────────────────────────────────────
   if (runAutoTac && !G.holdFire) {
-    // Auto-tactical: fire weapons on a clock (suppressed when captain orders Hold Fire)
+    // Fire weapons on a clock
     G.autoTacticalFireClock += dt;
     if (G.autoTacticalFireClock > 2400) {
       G.autoTacticalFireClock = 0;
@@ -1270,6 +1297,59 @@ function processAutomatedDelegation(dt) {
           }
         }
       }
+    }
+
+    // Captain: Worf uses advanced tactics autonomously
+    if (isCaptain) {
+      // Auto burst-fire when ready, lock > 55%, enemy hull > 10% (save for real shots)
+      if (G.burstFireReady && G.lockProgress >= 55 && !G.cloaked &&
+          G.threat.hull / G.threat.maxHull > 0.10 &&
+          Math.random() < 0.015 * (dt / 1000) * 60) {
+        executeBurstFireSalvo();
+        crewReportShieldHit && postLogEvent("Worf: Initiating burst salvo.", 'info');
+      }
+
+      // Auto-evasive when enemy lock is critical (> 88%)
+      if (G.enemyLockProgress > 88 && !G.evasiveActive && G.evasiveCooldown === 0 &&
+          G.systems.engines.health >= 20 && Math.random() < 0.02 * (dt / 1000) * 60) {
+        executeEvasivePattern();
+        postCrewReport('worf', "Captain — enemy lock critical. Evasive manoeuvres engaged.", 'alert');
+      }
+
+      // Auto-rotate shield frequency when taking sustained fire (shieldUnderAttackTimer high)
+      if (G.shieldUnderAttackTimer > 1500 && G.shieldFreqCooldown === 0 && !G.shieldFreqActive &&
+          Math.random() < 0.008 * (dt / 1000) * 60) {
+        rotateShieldFrequency();
+        postCrewReport('worf', "Detecting sustained fire pattern — rotating shield frequencies, Captain.", 'status');
+      }
+    }
+  }
+
+  // ── Auto-Helm (Nog) — captain mode only ─────────────────────
+  if (isCaptain) {
+    // Auto come-about: present strongest shield when current attack vector sector drops < 10% of max
+    if (!G.comeAboutActive && G.comeAboutCooldown === 0 && !G.autoShieldTrack) {
+      const currentFacing = G.helmAttackVector;
+      const max = G.player.shields.maxSectorValue;
+      if (G.player.shields[currentFacing] < max * 0.10) {
+        const strongest = ['fore','port','starboard','aft'].reduce(
+          (best, s) => G.player.shields[s] > G.player.shields[best] ? s : best, 'fore');
+        if (strongest !== currentFacing) {
+          G.helmAttackVector = strongest;
+          postCrewReport('nog', `${currentFacing.toUpperCase()} shields failing — presenting ${strongest.toUpperCase()} to enemy, Captain.`, 'alert');
+          postLogEvent(`Nog: Auto-presenting ${strongest.toUpperCase()} shields.`, 'warn');
+        }
+      }
+    }
+
+    // Auto-attack run: occasionally initiate when enemy hull > 40% and conditions good
+    if (!G.attackRunActive && G.attackRunCooldown === 0 && !G.comeAboutActive &&
+        G.systems.engines.health >= 25 &&
+        G.threat.hull / G.threat.maxHull > 0.40 &&
+        G.lockProgress > 30 &&
+        Math.random() < 0.003 * (dt / 1000) * 60) {
+      executeAttackRun();
+      postCrewReport('nog', "Initiating attack run on your behalf, Captain.", 'status');
     }
   }
 }
