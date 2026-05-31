@@ -36,54 +36,274 @@ let grid_helper;
 let beam_lines = [];
 let torp_meshes = [];
 let particle_system, particle_positions, particle_colours, particle_velocities, particle_life;
-const PARTICLE_COUNT = 300;
+const PARTICLE_COUNT = 600;
 let engine_glow_player, engine_glow_enemy;
 let THREE_ready = false;
+let _camShake = 0;          // decaying shake magnitude
+let _camOrbitAngle = 0;     // slow horizontal orbit
+let _camOrbitY = 0;         // slow vertical bob
 
 function buildDefiantGeometry() {
   const group = new THREE.Group();
-  const hullMat = new THREE.MeshPhongMaterial({ color:0x1a2a50, emissive:0x0a1428, specular:0x4466cc, shininess:60 });
-  const nacMat  = new THREE.MeshPhongMaterial({ color:0x112244, emissive:0x0a1428, specular:0x4466cc, shininess:40 });
-  // Main hull
-  const hull = new THREE.Mesh(new THREE.BoxGeometry(9,1.8,3.5), hullMat);
+  const hullMat  = new THREE.MeshPhongMaterial({ color:0x1e2f5a, emissive:0x080e20, specular:0x5577dd, shininess:80 });
+  const darkMat  = new THREE.MeshPhongMaterial({ color:0x0e1a36, emissive:0x040810, specular:0x334499, shininess:40 });
+  const nacMat   = new THREE.MeshPhongMaterial({ color:0x0e1a36, emissive:0x080e1e, specular:0x4466cc, shininess:50 });
+  const glowMat  = new THREE.MeshPhongMaterial({ color:0x4488ff, emissive:0x2255cc, emissiveIntensity:3 });
+  const detailMat= new THREE.MeshPhongMaterial({ color:0x283860, emissive:0x0a1228, specular:0x667799, shininess:120 });
+
+  // Main saucer-like hull — flattened box, tapered at bow
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(11, 1.6, 4.5), hullMat);
   group.add(hull);
-  // Bridge
-  const bridge = new THREE.Mesh(new THREE.SphereGeometry(0.9,8,6), new THREE.MeshPhongMaterial({ color:0x223366, emissive:0x112244, specular:0x6688ff, shininess:80 }));
-  bridge.position.set(2.5,1.1,0); bridge.scale.set(1,0.5,0.8);
+
+  // Bow wedge (forward taper)
+  const bowGeo = new THREE.CylinderGeometry(0, 2.5, 5, 4);
+  const bow = new THREE.Mesh(bowGeo, hullMat);
+  bow.rotation.z = -Math.PI/2; bow.position.set(6.5, 0, 0);
+  bow.scale.set(1, 0.32, 0.9);
+  group.add(bow);
+
+  // Aft section — thicker engineering hull
+  const aft = new THREE.Mesh(new THREE.BoxGeometry(4.5, 2.2, 3.8), darkMat);
+  aft.position.set(-4, 0.1, 0);
+  group.add(aft);
+
+  // Ventral connector strut
+  const strut = new THREE.Mesh(new THREE.BoxGeometry(5, 0.5, 1.2), darkMat);
+  strut.position.set(-1, -1.1, 0);
+  group.add(strut);
+
+  // Bridge module
+  const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.1, 1.0, 8), detailMat);
+  bridge.position.set(3.5, 1.1, 0); bridge.scale.set(1, 1, 0.8);
   group.add(bridge);
-  // Nacelles
-  const nacGeo = new THREE.CylinderGeometry(0.4,0.5,4.5,8);
-  [2.8,-2.8].forEach(z => {
-    const n = new THREE.Mesh(nacGeo, nacMat); n.rotation.z = Math.PI/2; n.position.set(-1.5,-0.2,z); group.add(n);
-    const g = new THREE.Mesh(new THREE.SphereGeometry(0.45,8,6), new THREE.MeshPhongMaterial({ color:0x4477ff, emissive:0x2244cc, emissiveIntensity:2 }));
-    g.position.set(-3.5,-0.2,z); group.add(g);
+
+  // Phaser emitter strip along bow
+  const emitter = new THREE.Mesh(new THREE.BoxGeometry(3, 0.2, 0.3), new THREE.MeshPhongMaterial({ color:0xcc4400, emissive:0x881100, emissiveIntensity:1.5 }));
+  emitter.position.set(5, 0.9, 0);
+  group.add(emitter);
+
+  // Warp nacelles — swept aft
+  const nacGeo = new THREE.CylinderGeometry(0.35, 0.5, 5.5, 10);
+  [-3.0, 3.0].forEach(z => {
+    const pylon = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.35, 1.8), darkMat);
+    pylon.position.set(-2.5, -0.6, z * 0.7);
+    group.add(pylon);
+
+    const nac = new THREE.Mesh(nacGeo, nacMat);
+    nac.rotation.z = Math.PI/2; nac.position.set(-2.5, -0.5, z);
+    group.add(nac);
+
+    // Bussard collector
+    const buss = new THREE.Mesh(new THREE.SphereGeometry(0.42, 8, 6), new THREE.MeshPhongMaterial({ color:0xff4400, emissive:0xcc2200, emissiveIntensity:2 }));
+    buss.position.set(0.2, -0.5, z); group.add(buss);
+
+    // Warp field grille glow
+    const grille = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.18, 0.55), glowMat);
+    grille.position.set(-2.5, -0.5, z);
+    group.add(grille);
+
+    // Nacelle end cap glow
+    const endGlow = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), glowMat);
+    endGlow.position.set(-5.2, -0.5, z); group.add(endGlow);
   });
+
+  // Torpedo launcher housing
+  const tLaunch = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.7), detailMat);
+  tLaunch.position.set(5.5, -0.5, 0);
+  group.add(tLaunch);
+
+  return group;
+}
+
+function buildKlingonBoPGeometry(sz) {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshPhongMaterial({ color:0x2a0808, emissive:0x180202, specular:0x882222, shininess:50, transparent:true, opacity:1 });
+  const darkMat = new THREE.MeshPhongMaterial({ color:0x1a0404, emissive:0x0e0101, specular:0x661111, shininess:30, transparent:true, opacity:1 });
+  const glowMat = new THREE.MeshPhongMaterial({ color:0xff2200, emissive:0xcc1100, emissiveIntensity:2 });
+
+  // Central neck + body
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.9, sz * 0.55, 6), mat);
+  neck.rotation.z = Math.PI/2; group.add(neck);
+
+  // Forward head
+  const head = new THREE.Mesh(new THREE.BoxGeometry(sz * 0.28, sz * 0.12, sz * 0.18), mat);
+  head.position.set(sz * 0.35, 0, 0); group.add(head);
+
+  // Swept wings — angled dramatically
+  [1, -1].forEach(side => {
+    const wGeo = new THREE.BufferGeometry();
+    const w = sz * 0.55, d = sz * 0.42;
+    const verts = new Float32Array([
+      0, 0, 0,
+      -sz*0.3, -sz*0.08, side*w,
+      sz*0.1, 0, side*d*0.45,
+    ]);
+    wGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+    wGeo.computeVertexNormals();
+    const wing = new THREE.Mesh(wGeo, mat);
+    group.add(wing);
+
+    // Wing cannon pod
+    const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, sz*0.18, 6), darkMat);
+    pod.rotation.z = Math.PI/2;
+    pod.position.set(-sz*0.12, -sz*0.06, side*w*0.7);
+    group.add(pod);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.28, 6, 5), glowMat);
+    tip.position.set(sz*0.07, -sz*0.06, side*w*0.7);
+    group.add(tip);
+  });
+
+  // Aft impulse glow
+  const imp = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 1.2), new THREE.MeshPhongMaterial({ color:0xff4400, emissive:0xdd2200, emissiveIntensity:3 }));
+  imp.position.set(-sz*0.3, 0, 0); group.add(imp);
+
+  return group;
+}
+
+function buildRomulanWarbirdGeometry(sz) {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshPhongMaterial({ color:0x0a2a0a, emissive:0x021402, specular:0x224422, shininess:40, transparent:true, opacity:1 });
+  const plasMat = new THREE.MeshPhongMaterial({ color:0x00cc44, emissive:0x008833, emissiveIntensity:2 });
+
+  // Main crescent body
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(sz*0.12, sz*0.18, sz*0.85, 8), mat);
+  body.rotation.z = Math.PI/2; group.add(body);
+
+  // Forked wing booms — the D'Deridex signature double-hull
+  [1, -1].forEach(side => {
+    // Outer wing boom
+    const boom = new THREE.Mesh(new THREE.BoxGeometry(sz*0.75, sz*0.08, sz*0.12), mat);
+    boom.position.set(-sz*0.05, 0, side*sz*0.42);
+    boom.rotation.y = side * 0.18;
+    group.add(boom);
+
+    // Wingtip pod
+    const pod = new THREE.Mesh(new THREE.CylinderGeometry(sz*0.08, sz*0.12, sz*0.5, 6), mat);
+    pod.rotation.z = Math.PI/2;
+    pod.position.set(-sz*0.28, 0, side*sz*0.62);
+    group.add(pod);
+
+    // Plasma emitter green glow
+    const plas = new THREE.Mesh(new THREE.SphereGeometry(sz*0.1, 8, 6), plasMat);
+    plas.position.set(sz*0.38, 0, side*sz*0.42);
+    group.add(plas);
+  });
+
+  // Warbird head
+  const head = new THREE.Mesh(new THREE.ConeGeometry(sz*0.14, sz*0.4, 6), mat);
+  head.rotation.z = -Math.PI/2; head.position.set(sz*0.6, 0, 0);
+  group.add(head);
+
   return group;
 }
 
 function buildEnemyGeometry(archetype) {
+
+function buildEnemyGeometry(archetype) {
   const cfg = ENEMY_CONFIGS[archetype];
-  const fCol = { Klingon:0x3a0a0a, Romulan:0x0a200a, Cardassian:0x2a1a00, Dominion:0x1a0a2a, Borg:0x001a10 };
-  const fEmi = { Klingon:0x1a0000, Romulan:0x001a00, Cardassian:0x1a0a00, Dominion:0x0a001a, Borg:0x002010 };
-  const mat  = new THREE.MeshPhongMaterial({ color:fCol[cfg.faction]||0x1a0808, emissive:fEmi[cfg.faction]||0x0a0000, specular:0x882222, shininess:40, transparent:true, opacity:1 });
-  const group = new THREE.Group();
+  const sz = { romulan_warbird:10, ktinga:8, vor_cha:9, romulan_bop:7, jem_hadar_battleship:9 }[archetype] || 7;
+
   if (archetype === 'borg_probe') {
-    const cube = new THREE.Mesh(new THREE.BoxGeometry(7,7,7), new THREE.MeshPhongMaterial({ color:0x001a10, emissive:0x003020, specular:0x00cc66, shininess:30 }));
-    group.add(cube);
-    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(7.1,7.1,7.1)), new THREE.LineBasicMaterial({ color:0x00cc66, transparent:true, opacity:0.6 }));
+    const group = new THREE.Group();
+    const cubeMat = new THREE.MeshPhongMaterial({ color:0x001a10, emissive:0x003020, specular:0x00cc66, shininess:30, transparent:true, opacity:1 });
+    const cube = new THREE.Mesh(new THREE.BoxGeometry(7,7,7), cubeMat); group.add(cube);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(7.2,7.2,7.2)), new THREE.LineBasicMaterial({ color:0x00cc66, transparent:true, opacity:0.7 }));
     group.add(edges);
-  } else {
-    const sz = { romulan_warbird:10, ktinga:8, vor_cha:9, romulan_bop:7, jem_hadar_battleship:9 }[archetype] || 7;
-    const body = new THREE.Mesh(new THREE.ConeGeometry(1.4,sz,6), mat);
-    body.rotation.z = Math.PI/2;
-    group.add(body);
-    if (['ktinga','vor_cha','romulan_bop','romulan_warbird'].includes(archetype)) {
-      const wSz = archetype === 'romulan_warbird' ? 10 : 7;
-      const wing = new THREE.Mesh(new THREE.BoxGeometry(sz*0.5, 0.5, wSz), mat.clone());
-      wing.position.set(-sz*0.15, 0, 0);
-      group.add(wing);
-    }
+    // Borg surface conduit ridges
+    [[7,0.3,0.3,0,0,0],[0.3,7,0.3,0,0,0],[0.3,0.3,7,0,0,0]].forEach(([w,h,d,x,y,z])=>{
+      const r = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshPhongMaterial({ color:0x003322, emissive:0x002211, shininess:5, transparent:true, opacity:1 }));
+      r.position.set(x,y,z); group.add(r);
+    });
+    // Green glow emitters on each face
+    [[3.6,0,0],[-3.6,0,0],[0,3.6,0],[0,-3.6,0],[0,0,3.6],[0,0,-3.6]].forEach(([x,y,z])=>{
+      const g = new THREE.Mesh(new THREE.SphereGeometry(0.5,6,5), new THREE.MeshPhongMaterial({ color:0x00ff88, emissive:0x00cc44, emissiveIntensity:3 }));
+      g.position.set(x,y,z); group.add(g);
+    });
+    return group;
   }
+
+  if (archetype === 'ktinga' || archetype === 'vor_cha') {
+    return buildKlingonBoPGeometry(sz);
+  }
+
+  if (archetype === 'romulan_bop') {
+    const group = new THREE.Group();
+    const mat = new THREE.MeshPhongMaterial({ color:0x0d2a0d, emissive:0x041404, specular:0x336633, shininess:50, transparent:true, opacity:1 });
+    const glowMat = new THREE.MeshPhongMaterial({ color:0x00cc44, emissive:0x008833, emissiveIntensity:2 });
+    // Compact forward body
+    const body = new THREE.Mesh(new THREE.ConeGeometry(1.1, sz*0.75, 5), mat);
+    body.rotation.z = Math.PI/2; group.add(body);
+    // Swept wings
+    [1,-1].forEach(side => {
+      const wGeo = new THREE.BufferGeometry();
+      const verts = new Float32Array([0,0,0, -sz*0.25,-sz*0.06,side*sz*0.45, sz*0.18,0,side*sz*0.2]);
+      wGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+      wGeo.computeVertexNormals();
+      group.add(new THREE.Mesh(wGeo, mat));
+      const tip = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 5), glowMat);
+      tip.position.set(-sz*0.12, -sz*0.04, side*sz*0.4); group.add(tip);
+    });
+    return group;
+  }
+
+  if (archetype === 'romulan_warbird') {
+    return buildRomulanWarbirdGeometry(sz);
+  }
+
+  if (archetype === 'cardassian_scout' || archetype === 'galor_class') {
+    const group = new THREE.Group();
+    const mat = new THREE.MeshPhongMaterial({ color:0x2a1800, emissive:0x140c00, specular:0x886622, shininess:60, transparent:true, opacity:1 });
+    const accentMat = new THREE.MeshPhongMaterial({ color:0xcc6600, emissive:0x883300, emissiveIntensity:1.2, transparent:true, opacity:1 });
+    // Asymmetric spine hull — Cardassian signature
+    const spine = new THREE.Mesh(new THREE.BoxGeometry(sz*0.9, sz*0.14, sz*0.18), mat);
+    group.add(spine);
+    // Forward command section — raised off-center
+    const cmd = new THREE.Mesh(new THREE.CylinderGeometry(sz*0.09, sz*0.14, sz*0.35, 6), mat);
+    cmd.rotation.z = Math.PI/2; cmd.position.set(sz*0.32, sz*0.1, sz*0.08);
+    group.add(cmd);
+    // Side lateral extensions
+    [1,-1].forEach(side => {
+      const ext = new THREE.Mesh(new THREE.BoxGeometry(sz*0.4, sz*0.08, sz*0.3), mat);
+      ext.position.set(sz*0.05, 0, side*sz*0.26); group.add(ext);
+      const accentBar = new THREE.Mesh(new THREE.BoxGeometry(sz*0.3, sz*0.04, sz*0.06), accentMat);
+      accentBar.position.set(sz*0.1, sz*0.06, side*sz*0.26); group.add(accentBar);
+    });
+    // Aft power conduit
+    const aft = new THREE.Mesh(new THREE.CylinderGeometry(sz*0.07, sz*0.1, sz*0.2, 6), mat);
+    aft.rotation.z = Math.PI/2; aft.position.set(-sz*0.45, 0, 0); group.add(aft);
+    return group;
+  }
+
+  if (archetype === 'jem_hadar_fighter' || archetype === 'jem_hadar_battleship') {
+    const group = new THREE.Group();
+    const mat = new THREE.MeshPhongMaterial({ color:0x1a0a28, emissive:0x0e0518, specular:0x8833cc, shininess:70, transparent:true, opacity:1 });
+    const polaronMat = new THREE.MeshPhongMaterial({ color:0x8822ff, emissive:0x4411aa, emissiveIntensity:2.5 });
+    // Angular delta-wing body
+    const body = new THREE.Mesh(new THREE.ConeGeometry(sz*0.14, sz*0.82, 4), mat);
+    body.rotation.z = Math.PI/2; group.add(body);
+    // Delta wings — sharp
+    [1,-1].forEach(side => {
+      const wGeo = new THREE.BufferGeometry();
+      const verts = new Float32Array([0,0,0, -sz*0.35,0,side*sz*0.48, -sz*0.05,-sz*0.05,side*sz*0.15]);
+      wGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+      wGeo.computeVertexNormals();
+      group.add(new THREE.Mesh(wGeo, mat));
+    });
+    // Polaron cannons — purple glow tips
+    [1,-1].forEach(side => {
+      const cannon = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, sz*0.45, 5), mat);
+      cannon.rotation.z = Math.PI/2; cannon.position.set(sz*0.1, -sz*0.04, side*sz*0.2); group.add(cannon);
+      const tip = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 5), polaronMat);
+      tip.position.set(sz*0.32, -sz*0.04, side*sz*0.2); group.add(tip);
+    });
+    return group;
+  }
+
+  // Fallback generic
+  const group = new THREE.Group();
+  const mat = new THREE.MeshPhongMaterial({ color:0x1a0808, emissive:0x0a0000, specular:0x882222, shininess:40, transparent:true, opacity:1 });
+  const body = new THREE.Mesh(new THREE.ConeGeometry(1.4, sz, 6), mat);
+  body.rotation.z = Math.PI/2; group.add(body);
   return group;
 }
 
@@ -224,10 +444,23 @@ function renderSpatialViewCanvas() {
   const now = THREE_clock.getElapsedTime();
   const cfg = ENEMY_CONFIGS[G.enemyArchetype];
 
-  // Camera follow
-  const desiredCam = new THREE.Vector3(mesh_defiant.position.x-55, mesh_defiant.position.y+28, mesh_defiant.position.z);
-  THREE_camera.position.lerp(desiredCam, 0.04);
-  THREE_camera.lookAt(new THREE.Vector3(mesh_enemyGroup.position.x*0.4+mesh_defiant.position.x*0.6, 0, 0));
+  // Camera orbit + shake
+  _camOrbitAngle += dt * 0.06;
+  _camOrbitY     += dt * 0.04;
+  _camShake = Math.max(0, _camShake - dt * 4);
+  const _orbitR  = G.attackRunActive ? 38 : 52;
+  const _orbitH  = 22 + Math.sin(_camOrbitY) * 4;
+  const _shakeX  = _camShake * (Math.random()-0.5) * 2;
+  const _shakeY  = _camShake * (Math.random()-0.5) * 2;
+  const desiredCam = new THREE.Vector3(
+    mesh_defiant.position.x - _orbitR * Math.cos(_camOrbitAngle * 0.25) + _shakeX,
+    mesh_defiant.position.y + _orbitH + _shakeY,
+    mesh_defiant.position.z + _orbitR * Math.sin(_camOrbitAngle * 0.18)
+  );
+  THREE_camera.position.lerp(desiredCam, G.attackRunActive ? 0.06 : 0.03);
+  THREE_camera.lookAt(new THREE.Vector3(
+    mesh_enemyGroup.position.x*0.45 + mesh_defiant.position.x*0.55, 0, 0
+  ));
 
   // Defiant drift — amplitude scales with helm speed
   const _speedDrift = { stop:0.2, maneuvering:0.5, half:1.0, full:1.8 }[G.helmSpeed] ?? 1.0;
@@ -322,22 +555,41 @@ function renderSpatialViewCanvas() {
     engine_glow_enemy.position.copy(mesh_enemyGroup.position); engine_glow_enemy.position.x+=10;
   }
 
-  // Weapon beams
+  // Weapon beams — dual glow+core lines with muzzle flash
   const elapsed=THREE_clock.getElapsedTime();
+  const bCols={cannon_pu:0x66ccff,cannon_pl:0x66ccff,cannon_su:0x66ccff,cannon_sl:0x66ccff,nose_beam:0xff8800,torpedoes:0xcc66ff,photon:0x4499ff};
   G.renderedBeamsVector.forEach(b=>{
     if (b._three_spawned||b.type==='burst_flash') return;
     b._three_spawned=true;
-    const fromV=mesh_defiant.position.clone().add(new THREE.Vector3(5,0,0));
-    const toV=mesh_enemyGroup.position.clone().add(new THREE.Vector3(-5,0,0));
-    const bCols={cannon_pu:0x66ccff,cannon_pl:0x66ccff,cannon_su:0x66ccff,cannon_sl:0x66ccff,nose_beam:0xff9900,torpedoes:0xcc66ff,photon:0x4488ff};
-    const geo=new THREE.BufferGeometry().setFromPoints([fromV,toV]);
-    const mat=new THREE.LineBasicMaterial({color:bCols[b.type]||0xffffff,transparent:true,opacity:0.9});
-    const line=new THREE.Line(geo,mat); line._bornAt=elapsed; line._duration=b.duration/1000;
-    THREE_scene.add(line); beam_lines.push(line);
+    const isEnemy = !!b.fromEnemy;
+    const fromV = isEnemy
+      ? mesh_enemyGroup.position.clone().add(new THREE.Vector3(-4,0,0))
+      : mesh_defiant.position.clone().add(new THREE.Vector3(5,0,0));
+    const toV = isEnemy
+      ? mesh_defiant.position.clone().add(new THREE.Vector3(4,0,0))
+      : mesh_enemyGroup.position.clone().add(new THREE.Vector3(-4,0,0));
+    const col = isEnemy
+      ? ({Klingon:0xff4422,Romulan:0x44ff44,Cardassian:0xffaa00,Dominion:0xaa44ff,Borg:0x00ff88}[ENEMY_CONFIGS[G.enemyArchetype]?.faction]||0xff4422)
+      : (bCols[b.type]||0xffffff);
+    const dur = b.duration/1000;
+    // Outer glow line
+    const geoG=new THREE.BufferGeometry().setFromPoints([fromV,toV]);
+    const matG=new THREE.LineBasicMaterial({color:col,transparent:true,opacity:0.35,linewidth:1});
+    const glow=new THREE.Line(geoG,matG); glow._bornAt=elapsed; glow._duration=dur; glow._isGlow=true;
+    THREE_scene.add(glow); beam_lines.push(glow);
+    // Bright core line
+    const geoC=new THREE.BufferGeometry().setFromPoints([fromV,toV]);
+    const matC=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.9});
+    const core=new THREE.Line(geoC,matC); core._bornAt=elapsed; core._duration=dur; core._isGlow=false;
+    THREE_scene.add(core); beam_lines.push(core);
+    // Muzzle flash particles at origin
+    const cr=((col>>16)&0xff)/255, cg=((col>>8)&0xff)/255, cb=(col&0xff)/255;
+    spawnThreeParticles(fromV.x,fromV.y,fromV.z,cr,cg,cb,8);
   });
   beam_lines=beam_lines.filter(line=>{
-    const f=Math.max(0,1-(elapsed-line._bornAt)/line._duration);
-    line.material.opacity=f*0.9;
+    const age=elapsed-line._bornAt;
+    const f=Math.max(0,1-age/line._duration);
+    line.material.opacity = line._isGlow ? f*0.35 : f*0.9;
     if (f<=0){THREE_scene.remove(line);line.geometry.dispose();line.material.dispose();return false;}
     return true;
   });
@@ -360,6 +612,11 @@ function renderSpatialViewCanvas() {
     m._progress=1-(gt.timeToImpact/3500);
     m.position.lerpVectors(m._origin,m._target,Math.max(0,Math.min(1,m._progress)));
     m.position.y+=Math.sin(m._progress*Math.PI)*2;
+    // Torpedo trail particles every few frames
+    if (Math.random()<0.35) {
+      const col = m.material.color;
+      spawnThreeParticles(m.position.x,m.position.y,m.position.z,col.r,col.g,col.b,2);
+    }
     return true;
   });
 
@@ -378,13 +635,15 @@ function renderSpatialViewCanvas() {
   }
   if (pDirty){particle_system.geometry.attributes.position.needsUpdate=true;particle_system.geometry.attributes.color.needsUpdate=true;}
 
-  // Consume G.damageParticles → Three.js particles
+  // Consume G.damageParticles → Three.js particles + camera shake
   if (G.damageParticles.length>0){
     G.damageParticles.forEach(p=>{
       const ox=p.target==='player'?mesh_defiant.position.x:mesh_enemyGroup.position.x;
       const oz=p.target==='player'?mesh_defiant.position.z:mesh_enemyGroup.position.z;
       const isRed=p.col===C.red;
-      spawnThreeParticles(ox,0,oz,isRed?1:1,isRed?0.2:0.6,isRed?0.1:0.1,3);
+      spawnThreeParticles(ox,0,oz,isRed?1:1,isRed?0.2:0.6,isRed?0.1:0.1,6);
+      if (p.target==='player') _camShake = Math.min(3.5, _camShake + 1.2);
+      else _camShake = Math.min(1.5, _camShake + 0.4);
     });
     G.damageParticles=[];
   }
