@@ -1,6 +1,19 @@
 'use strict';
 
 // ============================================================
+// SPLASH SCREEN
+// ============================================================
+function dismissSplash() {
+  const splash = document.getElementById('splash-screen');
+  const overlay = document.getElementById('overlay');
+  splash.classList.add('splash-exit');
+  setTimeout(() => {
+    splash.style.display = 'none';
+    overlay.style.display = 'flex';
+  }, 700);
+}
+
+// ============================================================
 // MAIN GAME LOOP
 // ============================================================
 function masterSimulationCoreLoop(ts) {

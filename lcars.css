@@ -24,12 +24,12 @@ body {
   background: var(--bg);
   color: #fff;
   font-family: 'Roboto Mono', monospace;
-  font-size: 13px;
+  font-size: clamp(10px, 1.1vh, 13px);
   overflow: hidden;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 12px;
+  padding: clamp(4px, 0.8vh, 12px);
 }
 
 /* ── Header ── */
@@ -37,20 +37,21 @@ header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  height: 45px;
+  height: clamp(32px, 4vh, 45px);
   position: relative;
-  margin-bottom: 12px;
+  margin-bottom: clamp(4px, 0.8vh, 12px);
   padding-right: 16px;
+  flex-shrink: 0;
 }
 .brand    { font-family: 'Antonio', sans-serif; font-size: 28px; font-weight: bold; color: var(--o); letter-spacing: 3px; text-transform: uppercase; }
 .sys-ref  { font-family: 'Antonio', sans-serif; font-size: 14px; color: var(--b); letter-spacing: 1px; }
 .header-accent-line { position: absolute; bottom: -4px; left: 160px; right: 0; height: 4px; background: linear-gradient(90deg, var(--o) 0%, var(--p) 30%, var(--b) 70%, var(--t) 100%); }
 
 /* ── Layout ── */
-.main-viewport       { display: flex; flex: 1; gap: 16px; overflow: hidden; }
+.main-viewport       { display: flex; flex: 1; gap: clamp(6px, 1vh, 16px); overflow: hidden; min-height: 0; }
 .left-anchor-panel   { width: 192px; display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
-.center-operations-deck { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-.right-telemetry-tower  { width: 230px; background: #010204; border-left: 2.5px solid var(--dim2); padding: 8px 0 8px 14px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; overflow: hidden; }
+.center-operations-deck { flex: 1; display: flex; flex-direction: column; gap: clamp(4px, 0.7vh, 10px); overflow: hidden; min-height: 0; }
+.right-telemetry-tower  { width: 230px; background: #010204; border-left: 2.5px solid var(--dim2); padding: clamp(4px, 0.6vh, 8px) 0 clamp(4px, 0.6vh, 8px) 14px; display: flex; flex-direction: column; gap: clamp(3px, 0.5vh, 6px); flex-shrink: 0; overflow: hidden; }
 
 /* ── LCARS Left Panel ── */
 .lcars-elbow {
@@ -97,8 +98,8 @@ header {
 .side-static-val   { font-family: 'Antonio'; font-size: 18px; color: #fff; margin-bottom: 8px; }
 
 /* ── Monitors ── */
-.top-monitor-row { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; height: 38%; min-height: 230px; }
-.top-monitor-row.engineering-monitors { height: 26%; min-height: 180px; }
+.top-monitor-row { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; height: clamp(160px, 28vh, 38%); min-height: 160px; flex-shrink: 0; }
+.top-monitor-row.engineering-monitors { height: clamp(130px, 22vh, 26%); min-height: 130px; }
 .monitor-frame   { background: #010205; border: 1.5px solid var(--dim2); border-radius: 6px; position: relative; overflow: hidden; display: none; }
 .monitor-frame.active-monitor { display: block; }
 .monitor-title   { position: absolute; top: 6px; left: 10px; font-family: 'Antonio'; font-size: 13px; color: var(--o); z-index: 10; letter-spacing: 1px; }
@@ -111,51 +112,54 @@ canvas { width: 100%; height: 100%; display: block; }
   background: #020409;
   border: 1px solid var(--dim2);
   border-radius: 6px;
-  padding: 12px;
+  padding: clamp(5px, 0.8vh, 12px);
   display: none;
   flex-direction: column;
-  gap: 8px;
+  gap: clamp(3px, 0.5vh, 8px);
   overflow: hidden;
+  min-height: 0;
 }
 .control-deck-plate.active-deck { display: flex; }
 
 /* ── Section headers ── */
 .section-header {
   font-family: 'Antonio';
-  font-size: 13px;
+  font-size: clamp(10px, 1.1vh, 13px);
   color: var(--t);
   text-transform: uppercase;
   border-bottom: 1.5px solid var(--dim2);
-  padding-bottom: 3px;
-  margin-bottom: 3px;
+  padding-bottom: clamp(1px, 0.3vh, 3px);
+  margin-bottom: clamp(1px, 0.3vh, 3px);
   letter-spacing: 1px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 .delegation-badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-family: 'Roboto Mono', monospace; font-weight: normal; }
 
 /* ── Bars ── */
-.bar-row   { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
-.bar-label { width: 130px; font-size: 11px; color: #aabbcc; text-transform: uppercase; }
-.bar-rail  { flex: 1; height: 18px; background: #050a14; border: 1px solid #14223d; position: relative; border-radius: 2px; overflow: hidden; }
+.bar-row   { display: flex; align-items: center; gap: 8px; margin-bottom: clamp(2px, 0.35vh, 6px); }
+.bar-label { width: 120px; font-size: clamp(9px, 0.95vh, 11px); color: #aabbcc; text-transform: uppercase; }
+.bar-rail  { flex: 1; height: clamp(11px, 1.4vh, 18px); background: #050a14; border: 1px solid #14223d; position: relative; border-radius: 2px; overflow: hidden; }
 .bar-fill  { height: 100%; width: 0%; background-image: linear-gradient(90deg, transparent 0px, transparent 2px, currentColor 2px, currentColor 8px); background-size: 8px 100%; transition: width 0.2s ease; }
-.bar-val   { width: 50px; text-align: right; font-size: 11px; font-weight: bold; }
+.bar-val   { width: 44px; text-align: right; font-size: clamp(9px, 0.95vh, 11px); font-weight: bold; }
 
 /* ── Action Buttons ── */
 .pill-action-btn {
   background: var(--b);
   color: #000;
   font-family: 'Antonio', sans-serif;
-  font-size: 14px;
+  font-size: clamp(10px, 1.2vh, 14px);
   font-weight: bold;
   border: none;
-  padding: 8px;
+  padding: clamp(3px, 0.55vh, 8px) clamp(4px, 0.6vh, 8px);
   text-align: center;
   border-radius: 14px;
   cursor: pointer;
   text-transform: uppercase;
   transition: all 0.1s ease;
+  line-height: 1.2;
 }
 .pill-action-btn:hover  { filter: brightness(1.25); }
 .pill-action-btn:active { transform: scale(0.98); }
@@ -166,7 +170,7 @@ canvas { width: 100%; height: 100%; display: block; }
 .pill-action-btn.green-btn { background: var(--green); color: #000; }
 
 /* ── Button Matrix ── */
-.button-matrix-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.button-matrix-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(3px, 0.4vh, 6px); }
 
 /* ── Engineering Table ── */
 .eng-layout-split { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 12px; flex: 1; min-height: 0; }
@@ -179,6 +183,144 @@ canvas { width: 100%; height: 100%; display: block; }
 /* ── Crew Card ── */
 .crew-status-card { display: flex; gap: 10px; background: #050914; border: 1px solid var(--dim2); padding: 6px; align-items: center; border-radius: 4px; }
 .crew-avatar      { width: 42px; height: 42px; background: linear-gradient(135deg, #14223d 0%, #020408 100%); border: 1px solid var(--b); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+
+/* ── Splash Screen ── */
+@keyframes splash-fadein  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes splash-fadeout { from { opacity: 1; } to { opacity: 0; pointer-events: none; } }
+@keyframes splash-scan    { 0% { background-position: 0 0; } 100% { background-position: 0 100vh; } }
+
+#splash-screen {
+  position: fixed; inset: 0;
+  background: #000;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 20000;
+  overflow: hidden;
+}
+/* subtle scanline texture */
+#splash-screen::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(68,119,255,0.03) 3px, rgba(68,119,255,0.03) 4px);
+  pointer-events: none;
+}
+#splash-screen.splash-exit {
+  animation: splash-fadeout 0.7s ease forwards;
+}
+
+.splash-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: min(680px, 90vw);
+  animation: splash-fadein 1s ease;
+}
+
+.splash-top-bar {
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, var(--o) 0%, var(--p) 35%, var(--b) 65%, var(--t) 100%);
+  border-radius: 3px;
+}
+
+.splash-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  justify-content: center;
+}
+.splash-pip {
+  width: 14px; height: 60px;
+  background: var(--o);
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+
+.splash-title-block {
+  text-align: center;
+}
+.splash-subtitle {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 11px;
+  color: var(--b);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.splash-main-title {
+  font-family: 'Antonio', sans-serif;
+  font-size: clamp(36px, 6vw, 62px);
+  font-weight: bold;
+  color: var(--o);
+  letter-spacing: 4px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  text-shadow: 0 0 40px rgba(255,153,0,0.4);
+}
+.splash-fan-label {
+  font-family: 'Roboto Mono', monospace;
+  font-size: clamp(11px, 1.4vw, 14px);
+  color: var(--t);
+  letter-spacing: 1px;
+  text-transform: none;
+  font-weight: normal;
+  margin-top: 8px;
+}
+
+.splash-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--dim2) 20%, var(--dim2) 80%, transparent);
+}
+
+.splash-disclaimer-block {
+  width: 100%;
+  background: rgba(4,8,20,0.8);
+  border: 1px solid var(--dim2);
+  border-left: 3px solid var(--b);
+  border-radius: 6px;
+  padding: 18px 22px;
+}
+.splash-disclaimer-heading {
+  font-family: 'Antonio', sans-serif;
+  font-size: 11px;
+  color: var(--b);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.splash-disclaimer-text {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 11px;
+  color: #7799aa;
+  line-height: 1.7;
+  text-align: left;
+}
+
+.splash-enter-btn {
+  background: transparent;
+  border: 2px solid var(--o);
+  color: var(--o);
+  font-family: 'Antonio', sans-serif;
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  padding: 14px 48px;
+  border-radius: 40px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.splash-enter-btn:hover {
+  background: rgba(255,153,0,0.12);
+  box-shadow: 0 0 25px rgba(255,153,0,0.35);
+  letter-spacing: 6px;
+}
+.splash-enter-icon { font-size: 16px; }
 
 /* ── Overlay / Modal ── */
 #overlay {
@@ -345,11 +487,59 @@ canvas { width: 100%; height: 100%; display: block; }
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 14px;
-  padding: 3px 6px;
+  font-size: clamp(10px, 1.2vh, 14px);
+  padding: clamp(1px, 0.3vh, 3px) 6px;
   background: rgba(0,204,102,0.05);
   border: 1px solid rgba(0,204,102,0.2);
   border-radius: 4px;
-  margin-bottom: 4px;
+  margin-bottom: clamp(1px, 0.3vh, 4px);
   letter-spacing: 2px;
+  flex-shrink: 0;
 }
+
+/* ── Tactical deck inline-div compression ── */
+/* Override the hard-coded margin-bottom / gap on the cap-bar grid and other divs */
+#deck-tactical > div { flex-shrink: 0; }
+#deck-tactical .button-matrix-grid { flex-shrink: 0; }
+
+/* Cloak status bar compact */
+#cloak-status-bar {
+  padding: clamp(2px, 0.35vh, 5px) 12px;
+  font-size: clamp(10px, 1.1vh, 13px);
+}
+
+/* Scan profile buttons compact */
+.scan-profile-btn {
+  padding: clamp(2px, 0.4vh, 6px) 4px;
+  font-size: clamp(9px, 1vh, 12px);
+}
+
+/* ── Tactical deck layout helpers ── */
+.cap-bar-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(6px, 1vh, 16px);
+  margin-bottom: clamp(3px, 0.5vh, 8px);
+  flex-shrink: 0;
+}
+.overload-header {
+  font-family: 'Antonio';
+  color: var(--red);
+  font-size: clamp(9px, 1vh, 11px);
+  margin: clamp(2px, 0.35vh, 6px) 0 clamp(2px, 0.35vh, 4px);
+  border-bottom: 1px solid rgba(255,51,51,0.3);
+  padding-bottom: 2px;
+  flex-shrink: 0;
+}
+.subsystem-target-section {
+  margin-top: clamp(1px, 0.3vh, 4px);
+  flex-shrink: 0;
+}
+.sensor-crew-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(4px, 0.6vh, 8px);
+  margin-top: clamp(1px, 0.3vh, 4px);
+  flex-shrink: 0;
+}
+

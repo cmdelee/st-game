@@ -12,9 +12,47 @@
 <body>
 
 <!-- ═══════════════════════════════════════════════════════════
+     SPLASH SCREEN
+════════════════════════════════════════════════════════════ -->
+<div id="splash-screen">
+  <div class="splash-inner">
+    <div class="splash-top-bar"></div>
+
+    <div class="splash-logo-row">
+      <div class="splash-pip"></div>
+      <div class="splash-title-block">
+        <div class="splash-subtitle">NX-74205 — INTERACTIVE TACTICAL SIMULATION</div>
+        <div class="splash-main-title">USS DEFIANT<br>BATTLE SIMULATOR</div>
+        <div class="splash-fan-label">A STAR TREK FAN PRODUCTION</div>
+      </div>
+      <div class="splash-pip"></div>
+    </div>
+
+    <div class="splash-divider"></div>
+
+    <div class="splash-disclaimer-block">
+      <div class="splash-disclaimer-heading">LEGAL DISCLAIMER</div>
+      <p class="splash-disclaimer-text">
+        Star Trek and all related marks, logos and characters are solely owned by CBS Studios Inc.
+        This fan production is not endorsed by, sponsored by, nor affiliated with CBS, Paramount Pictures,
+        or any other Star Trek franchise, and is a non-commercial fan-made interactive experience intended
+        for recreational use. No commercial exhibition or distribution is permitted. No alleged independent
+        rights will be asserted against CBS or Paramount Pictures.
+      </p>
+    </div>
+
+    <div class="splash-divider"></div>
+
+    <button class="splash-enter-btn" onclick="dismissSplash()">
+      <span class="splash-enter-icon">▶</span> ENTER BRIDGE
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
      STARTUP OVERLAY / MODAL
 ════════════════════════════════════════════════════════════ -->
-<div id="overlay">
+<div id="overlay" style="display:none;">
   <div class="modal-frame-box">
     <div id="modal-title">STATION DELEGATION ARCHITECTURE</div>
     <p id="modal-desc" style="color:#7799dd; font-size:13px; margin-top:8px;">
@@ -249,7 +287,7 @@
       </div>
 
       <!-- Weapon capacitor bars -->
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:8px;">
+      <div class="cap-bar-grid">
         <div>
           <div class="bar-row"><span class="bar-label">Pulse Cannon P/U</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-cpu" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-cpu">100%</span></div>
           <div class="bar-row"><span class="bar-label">Pulse Cannon P/L</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-cpl" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-cpl">100%</span></div>
@@ -287,7 +325,7 @@
       </div>
 
       <!-- Overload weapon modes -->
-      <div style="font-family:'Antonio'; color:var(--red); font-size:11px; margin:6px 0 4px; border-bottom:1px solid rgba(255,51,51,0.3); padding-bottom:2px;">⚠ OVERLOAD MODES — HIGH RISK</div>
+      <div class="overload-header">⚠ OVERLOAD MODES — HIGH RISK</div>
       <div class="button-matrix-grid">
         <button class="pill-action-btn red-btn" id="btn-overcharge"   onclick="executeCannonOvercharge()">⚡ OVERCHARGE<br><span style="font-size:11px;">Cannon +50% · Breaker risk · CD 30s</span></button>
         <button class="pill-action-btn red-btn" id="btn-unstable-torp" onclick="executeUnstableTorpedo()">☢ UNSTABLE TORP<br><span style="font-size:11px;">Quantum +70% · Misfire 25% · CD 35s</span></button>
@@ -295,7 +333,7 @@
       </div>
 
       <!-- Enemy subsystem targeting -->
-      <div style="margin-top:4px;">
+      <div class="subsystem-target-section">
         <div style="font-family:'Antonio'; font-size:11px; color:var(--t); text-transform:uppercase; border-bottom:1px solid var(--dim2); margin-bottom:4px; padding-bottom:2px;">Target Enemy Subsystem</div>
         <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:4px;" id="enemy-subsystem-target-grid"></div>
         <div style="font-size:9px; color:#6688aa; margin-top:2px;">
@@ -304,7 +342,7 @@
       </div>
 
       <!-- Sensor sweep + Crew status -->
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px;">
+      <div class="sensor-crew-grid">
         <div>
           <div class="section-header" style="font-size:11px; margin-bottom:3px;">
             <span>Sensor Sweep Profile</span>
