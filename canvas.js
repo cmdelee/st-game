@@ -229,10 +229,11 @@ function renderSpatialViewCanvas() {
   THREE_camera.position.lerp(desiredCam, 0.04);
   THREE_camera.lookAt(new THREE.Vector3(mesh_enemyGroup.position.x*0.4+mesh_defiant.position.x*0.6, 0, 0));
 
-  // Defiant drift
-  mesh_defiant.position.y = Math.sin(now*0.4)*0.6;
-  mesh_defiant.position.z = Math.sin(now*0.25)*0.8;
-  mesh_defiant.rotation.z = Math.sin(now*0.3)*0.03;
+  // Defiant drift — amplitude scales with helm speed
+  const _speedDrift = { stop:0.2, maneuvering:0.5, half:1.0, full:1.8 }[G.helmSpeed] ?? 1.0;
+  mesh_defiant.position.y = Math.sin(now*0.4)*0.6*_speedDrift;
+  mesh_defiant.position.z = Math.sin(now*0.25)*0.8*_speedDrift;
+  mesh_defiant.rotation.z = Math.sin(now*0.3)*0.03*_speedDrift;
 
   // Hull damage colouring
   const hullPct = G.player.hull / G.player.maxHull;
@@ -242,9 +243,10 @@ function renderSpatialViewCanvas() {
     }
   });
 
-  // Engine glow
-  engine_glow_player.intensity = G.cloaked ? 0.1 : 1.5+Math.sin(now*3)*0.8*(G.systems.engines.health/100);
-  engine_glow_enemy.intensity  = G.enemyCloaked ? 0.1 : 1.5+Math.sin(now*2.8)*0.6;
+  // Engine glow — intensity tied to helm speed setting
+  const _helmGlow = { stop:0.2, maneuvering:0.7, half:1.5, full:3.2 }[G.helmSpeed] ?? 1.5;
+  engine_glow_player.intensity = G.cloaked ? 0.1 : _helmGlow + Math.sin(now*3)*0.4*(G.systems.engines.health/100);
+  engine_glow_enemy.intensity  = G.enemyCloaked ? 0.1 : 1.8+Math.sin(now*2.8)*0.9;
 
   // Cloaking — fade Defiant
   const tOp = G.cloaked ? 0.0 : G.cloakVulnTimer>0 ? 0.3+Math.sin(now*20)*0.3 : 1.0;
@@ -267,19 +269,29 @@ function renderSpatialViewCanvas() {
     const _eDist = G.enemyRangeBracket==='close'?22:G.enemyRangeBracket==='medium'?38:55;
     const _pDist = G.playerRangeBracket==='close'?22:G.playerRangeBracket==='medium'?38:55;
     const rangeDist = Math.min(_eDist, _pDist);
-    mesh_enemyGroup.position.x = THREE.MathUtils.lerp(mesh_enemyGroup.position.x, mesh_defiant.position.x+rangeDist, 0.008);
-    mesh_enemyGroup.position.y = Math.sin(now*0.35+1.2)*0.7;
-    mesh_enemyGroup.position.z = Math.sin(now*0.22+0.7)*1.1;
+    mesh_enemyGroup.position.x = THREE.MathUtils.lerp(mesh_enemyGroup.position.x, mesh_defiant.position.x+rangeDist, 0.025);
+    // Base patrol oscillation — more visible amplitude
+    const _baseY = Math.sin(now*0.35+1.2)*2.8;
+    const _baseZ = Math.sin(now*0.22+0.7)*2.2;
 
     if (G.enemyManeuverState==='angling') {
-      const roll={fore:0,aft:Math.PI*0.15,port:0.2,starboard:-0.2}[G.enemyPreferredSector]||0;
-      mesh_enemyGroup.rotation.y=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.y,Math.PI+roll*0.5,0.04);
-      mesh_enemyGroup.rotation.z=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.z,roll*0.4,0.04);
+      const roll={fore:0,aft:Math.PI*0.15,port:0.25,starboard:-0.25}[G.enemyPreferredSector]||0;
+      const zOff={port:9, starboard:-9, fore:0, aft:0}[G.enemyPreferredSector]||0;
+      mesh_enemyGroup.rotation.y=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.y,Math.PI+roll*0.6,0.06);
+      mesh_enemyGroup.rotation.z=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.z,roll*0.5,0.06);
+      mesh_enemyGroup.position.y=THREE.MathUtils.lerp(mesh_enemyGroup.position.y, _baseY, 0.04);
+      mesh_enemyGroup.position.z=THREE.MathUtils.lerp(mesh_enemyGroup.position.z, _baseZ+zOff, 0.04);
     } else if (G.enemyManeuverState==='torpedocharge') {
-      mesh_enemyGroup.rotation.z=Math.sin(now*8)*0.06;
+      // Charge run — rush in closer, shudder
+      mesh_enemyGroup.rotation.z=Math.sin(now*12)*0.12;
+      mesh_enemyGroup.position.x=THREE.MathUtils.lerp(mesh_enemyGroup.position.x, mesh_defiant.position.x+rangeDist*0.7, 0.035);
+      mesh_enemyGroup.position.y=THREE.MathUtils.lerp(mesh_enemyGroup.position.y, _baseY, 0.05);
+      mesh_enemyGroup.position.z=THREE.MathUtils.lerp(mesh_enemyGroup.position.z, _baseZ, 0.05);
     } else {
-      mesh_enemyGroup.rotation.y=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.y,Math.PI,0.03);
-      mesh_enemyGroup.rotation.z=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.z,0,0.03);
+      mesh_enemyGroup.rotation.y=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.y,Math.PI,0.04);
+      mesh_enemyGroup.rotation.z=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.z,0,0.04);
+      mesh_enemyGroup.position.y=THREE.MathUtils.lerp(mesh_enemyGroup.position.y, _baseY, 0.03);
+      mesh_enemyGroup.position.z=THREE.MathUtils.lerp(mesh_enemyGroup.position.z, _baseZ, 0.03);
     }
     if (G.enemyRammingRun) {
       const rp=1-G.enemyRammingTimer/4000;
