@@ -407,6 +407,51 @@ function tuneBusAllocation(key, amount) {
   refreshEngineeringPanelGraphics();
 }
 
+const POWER_PRESETS = {
+  attack: {
+    label: 'ATTACK MODE',
+    log:   'Attack mode — weapons prioritised, shields reduced.',
+    alloc: { cannon_pu:12, cannon_pl:12, cannon_su:12, cannon_sl:12, nose_beam:18, torpedoes:16, shields:16, sensors:10, engines:10, cloak_dev:0, warp_core:8 },
+  },
+  silent: {
+    label: 'SILENT RUNNING',
+    log:   'Silent running — power signature minimised for cloaking operations.',
+    alloc: { cannon_pu:0,  cannon_pl:0,  cannon_su:0,  cannon_sl:0,  nose_beam:0,  torpedoes:0,  shields:20, sensors:20, engines:8,  cloak_dev:30, warp_core:12 },
+  },
+  evasive: {
+    label: 'EVASIVE',
+    log:   'Evasive configuration — engines and shields maximised.',
+    alloc: { cannon_pu:4,  cannon_pl:4,  cannon_su:4,  cannon_sl:4,  nose_beam:6,  torpedoes:6,  shields:35, sensors:14, engines:30, cloak_dev:0,  warp_core:10 },
+  },
+  damage_control: {
+    label: 'DAMAGE CONTROL',
+    log:   'Damage control — shields and sensors at maximum for repairs.',
+    alloc: { cannon_pu:4,  cannon_pl:4,  cannon_su:4,  cannon_sl:4,  nose_beam:4,  torpedoes:4,  shields:40, sensors:24, engines:12, cloak_dev:0,  warp_core:10 },
+  },
+};
+
+function applyPowerPreset(name) {
+  if (G.playerChosenStation === 'tactical') { postLogEvent('Power locked to automation.', 'warn'); return; }
+  const preset = POWER_PRESETS[name]; if (!preset) return;
+  const warpOut = getWarpOutput();
+  const total   = Object.values(preset.alloc).reduce((s, v) => s + v, 0);
+  if (total > warpOut) {
+    // Scale proportionally to fit within current warp output
+    const scale = warpOut / total;
+    Object.keys(preset.alloc).forEach(k => {
+      if (G.systems[k]) G.systems[k].allocatedPower = Math.floor(preset.alloc[k] * scale);
+    });
+    postLogEvent(`${preset.label} — scaled to ${warpOut}MW core output.`, 'warn');
+  } else {
+    Object.keys(preset.alloc).forEach(k => {
+      if (G.systems[k]) G.systems[k].allocatedPower = preset.alloc[k];
+    });
+    postLogEvent(preset.log, 'info');
+  }
+  recalculateShieldRegenRate();
+  refreshEngineeringPanelGraphics();
+}
+
 function masterConduitFlush() {
   if (G.playerChosenStation === 'tactical') return;
   Object.keys(G.systems).forEach(k => { G.systems[k].tripped = false; G.systems[k].stress = 0; });
