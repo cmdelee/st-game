@@ -1,80 +1,93 @@
 LCARS Dual-Deck Tactical Suite — Improvement Suggestions
+[ ] = not started   [~] = partial   [x] = complete
+
 Core Combat & Tactical Depth
-Add encounter phases for each faction (stalking, escalation, desperation, retreat).
-Implement spatial positioning:
-heading
-maneuvering
-attack vectors
-firing arcs
-drift/inertia
-Make damage create emergencies instead of only reducing numbers:
-plasma fires
-coolant leaks
-decompression
-EPS cascades
-Expand command-level decisions:
-pursue vs disengage
-rescue civilians
-sacrifice systems
-tactical retreats
-Add persistent crew/officers with injuries, deaths, and special bonuses.
-Expand sensors into a full gameplay layer:
-electronic warfare
-stealth signatures
-signal masking
-decoys
-Improve faction AI personality:
-Klingon aggression
-Romulan deception
-Borg adaptation
-Dominion sacrifice tactics
-Add campaign/meta progression between battles.
+[~] Add encounter phases for each faction (stalking, escalation, desperation, retreat).
+    -- enemyManeuverState (neutral/angling/torpedocharge), ramming at <20% hull, cloak triggers at <40% hull.
+    -- Missing: explicit stalking/escalation/retreat phases per faction.
+[x] Implement spatial positioning:
+    [x] heading         -- helmAttackVector + come-about rotate
+    [x] maneuvering     -- helm speed (stop/maneuvering/half/full), attack run, evasive
+    [x] attack vectors  -- G.helmAttackVector, 65% enemy fire probability on chosen face
+    [x] firing arcs     -- ARRAYS_DICTIONARY firingArc per weapon
+    [x] drift/inertia   -- Defiant mesh drift amplitude scales with helm speed in 3D view
+[~] Make damage create emergencies instead of only reducing numbers:
+    [x] EPS cascades    -- system stress → breaker trips, warp core trip, thermal buildup
+    [ ] plasma fires
+    [ ] coolant leaks
+    [ ] decompression
+[~] Expand command-level decisions:
+    [x] tactical retreats -- emergency warp at hull ≤35%
+    [ ] pursue vs disengage
+    [ ] rescue civilians
+    [ ] sacrifice systems
+[x] Add persistent crew/officers with injuries, deaths, and special bonuses.
+    -- Worf/O'Brien/Nog/Bashir; nominal/wounded/incapacitated states; casualty threshold;
+    -- role effects on fire efficiency, repair speed, evasive effectiveness, casualty rate.
+[~] Expand sensors into a full gameplay layer:
+    [x] stealth signatures -- enemy cloak lock collapse, blind-fire torpedoes
+    [x] decoys             -- Romulan sensor ghosts (false contacts while cloaked)
+    [~] electronic warfare -- scan profiles (disrupt -50% fire rate, tetryon -70% lock)
+    [ ] signal masking
+[x] Improve faction AI personality:
+    [x] Klingon aggression    -- prefersCloseRange, closes to combat range, +35-40% disruptors at close
+    [x] Romulan deception     -- 2.5× cloak aggression, sensor ghosts, plasma torpedo cycle
+    [x] Borg adaptation       -- per-weapon resistance 0-75%, escalating regen, dialogue milestones
+    [x] Dominion sacrifice    -- polaron bypass 30% shields, Jem'Hadar ramming run at <20% hull
+[ ] Add campaign/meta progression between battles.
+
 Systems & Engineering Improvements
-Add bridge drama/UI events:
-officer reports
-emergencies
-tactical advisories
-interruption events
-Expand EPS stress into full heat/strain mechanics.
-Improve visual readability:
-shield flashes
-incoming vectors
-damage indicators
-subsystem sparks
-Give every faction signature mechanics.
-Add engineering power-routing presets:
-attack mode
-silent running
-evasive
-damage control
-Add boarding actions:
-security response
-sealed bulkheads
-internal forcefields
-Add internal ship topology:
-engineering section
-bow
-port/starboard spine
-dorsal/ventral regions
-Add unidentified/unknown contacts before combat.
+[~] Add bridge drama/UI events:
+    [x] officer reports      -- Worf advisories (range, hull regen pause, ramming incoming)
+    [x] tactical advisories  -- postLogEvent system; Borg escalation dialogue
+    [ ] emergencies          -- (EPS warnings exist but no full emergency event system)
+    [ ] interruption events
+[x] Expand EPS stress into full heat/strain mechanics.
+    -- G.epsHeat 0-100; >70 penalises cap recharge up to 30%; passive cooling 8/s;
+    -- per-shot heat from weapon.cost * 0.12; log warnings at high heat.
+[~] Improve visual readability:
+    [x] shield flashes       -- shieldHitFlash player/enemy; icosahedron opacity burst in 3D
+    [x] damage indicators    -- hull damage emissive red on meshes; particle sparks on impact
+    [x] subsystem sparks     -- Three.js particle system on damage events + camera shake
+    [ ] incoming vectors     -- (no directional incoming indicator yet)
+[x] Give every faction signature mechanics.
+    -- Klingon: close-range, Romulan: cloak/plasma/ghosts, Cardassian: fast lock,
+    -- Dominion: polaron/ram, Borg: adaptation + tractor beam.
+[ ] Add engineering power-routing presets: attack mode, silent running, evasive, damage control.
+[ ] Add boarding actions: security response, sealed bulkheads, internal forcefields.
+[~] Add internal ship topology: engineering section, bow, port/starboard spine, dorsal/ventral regions.
+    -- Sector-weighted internal damage pools (fore/port/starboard/aft → specific system targets).
+    -- Missing: full topology model.
+[ ] Add unidentified/unknown contacts before combat.
+
 Mission Variety & Replayability
-Give enemies objectives besides destroying the player.
-Add reinforcements and multi-ship encounters.
-Expand procedural tactical dialogue.
-Make the delegated AI station feel like a real character.
-Add sensor delay and information lag.
-Add critical hit visual moments/cinematics.
-Add Defiant refits and ship variants.
-Add “last stand” mechanics during critical hull states.
-Add chain-reaction system failures.
+[ ] Give enemies objectives besides destroying the player.
+[ ] Add reinforcements and multi-ship encounters.
+[~] Expand procedural tactical dialogue.
+    -- postLogEvent across all mechanics; Worf/O'Brien/Nog/Bashir role lines;
+    -- Borg milestone dialogue at 1/3/5 adapted weapons.
+[~] Make the delegated AI station feel like a real character.
+    -- Auto-tactical and auto-engineering summaries on helm panel;
+    -- crew status affects delegation quality.
+[~] Add sensor delay and information lag.
+    -- Sensor health <40% → hull shown as degraded/rounded; <70% → approximate values.
+[ ] Add critical hit visual moments/cinematics.
+[~] Add "last stand" mechanics during critical hull states.
+    -- Emergency warp escape at hull ≤35%; ablative armour 6-layer buffer.
+[~] Add chain-reaction system failures.
+    -- EPS breaker trips propagate; warp core trip scales all allocations to impulse budget;
+    -- sector breach triggers random system damage from sector pool.
+[ ] Add Defiant refits and ship variants.
+
 Advanced Tactical Features
-Add cloak-combat fog-of-war mechanics.
-Add persistent campaign consequences.
-Add command reputation systems.
-Add overload weapon modes:
-unsafe overcharge
-unstable torpedoes
-emergency power dumps
-Add command-pressure moments with difficult timed decisions.
-Add dynamic mission briefings with hidden information.
-Add post-battle debriefs and combat analysis reports.
+[x] Add cloak-combat fog-of-war mechanics.
+    -- Player lock collapses to 15% on enemy cloak; blind-fire torpedoes at 40% yield;
+    -- 1200ms player vulnerability window; Romulan sensor ghosts; enemy lock drain -4/s while cloaked.
+[ ] Add persistent campaign consequences.
+[ ] Add command reputation systems.
+[ ] Add overload weapon modes: unsafe overcharge, unstable torpedoes, emergency power dumps.
+[~] Add command-pressure moments with difficult timed decisions.
+    -- Jem'Hadar 4s ramming countdown; cloak vulnerability windows; burst-fire timing.
+[ ] Add dynamic mission briefings with hidden information.
+[~] Add post-battle debriefs and combat analysis reports.
+    -- Scoring screen with breakdown (damage, repairs, hull integrity bonus, difficulty multiplier).
