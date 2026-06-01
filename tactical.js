@@ -190,6 +190,8 @@ function fireSelectedArray(weaponKey) {
   if (G._overchargeActive)   dmg *= (G._maxPhaserActive ? 1.60 : 1.50);
   if (G._unstableTorpActive) dmg *= 1.70;
   if (G.powerDumpActive)     dmg *= 1.40;
+  // Stardrive power boost — EPS no longer split with saucer section
+  if (G.saucerSepActive && !G.saucerSepReconnecting) dmg *= 1.20;
 
   if (G.scanBonus && performance.now() < G.scanBonus.expiry) {
     if (G.scanBonus.type === 'shields' && !weapon.isPhoton) dmg *= G.scanBonus.value;
@@ -491,8 +493,58 @@ function toggleSaucerSeparation() {
   }
 }
 
-// Which weapon systems belong to the saucer section (offline when separated).
+// Which weapon systems belong to the saucer section (offline to player when separated).
 const SAUCER_SECTION_SYSTEMS = new Set(['cannon_pu', 'cannon_pl']);
+
+// ── Saucer section autonomous fire ───────────────────────────
+// Saucer runs on impulse power only — arrays fire at 40% yield automatically.
+// Saucer flies independently so it can engage from any bearing.
+// Stardrive weapons get ×1.20 yield + ×1.15 cap recharge (freed EPS budget).
+function fireSaucerAutomatic() {
+  if (!G.running || G.dead || !G.saucerSepActive) return;
+  if (!G.threat || G.threat.hull <= 0) return;
+  if (G.enemyCloaked && G.enemyCloakVulnTimer <= 0) return; // saucer can't track cloaked target
+
+  // Pick a saucer phaser array to fire — saucer flies independently so all arcs available
+  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  const saucerArrays = ['cannon_port_upper','phaser_saucer_port','cannon_port_lower','phaser_saucer_stbd'];
+  // Filter to arrays whose systems are alive
+  const available = saucerArrays.filter(k => {
+    const w = aw[k]; if (!w) return false;
+    const sys = G.systems[w.parentSystem];
+    return sys && !sys.tripped && sys.health >= 10;
+  });
+  if (available.length === 0) return;
+
+  const key    = available[Math.floor(Math.random() * available.length)];
+  const weapon = aw[key];
+  const sys    = G.systems[weapon.parentSystem];
+
+  // Saucer fires on impulse power — 40% base yield, partial lock equivalent (~65%)
+  let dmg = weapon.yield * 0.40 * (sys.health / 100) * 0.65;
+  dmg *= (HELM_SPEED_CONFIG[G.helmSpeed]?.yieldMult ?? 1.0);
+
+  // Apply to enemy shields at the bearing the saucer is currently engaging
+  // Saucer picks the weakest visible shield sector to maximise pressure
+  const sectors = ['fore','port','starboard','aft'];
+  const target  = sectors.reduce((a, b) => (G.threat.shields[a] || 0) < (G.threat.shields[b] || 0) ? a : b);
+  applyDamageToEnemy(dmg, null, target);
+
+  // Visual: push a dim beam from offset position
+  G.renderedBeamsVector.push({ type:'beam', fromSaucer:true, targetSector:target,
+    trackingStartTime:performance.now(), duration:400, col:'#4477aa' });
+
+  postLogEvent(`Saucer section — ${weapon.label} [auto] → ${target.toUpperCase()} −${Math.round(dmg)}MW.`, 'info');
+
+  // Occasional crew report
+  if (Math.random() < 0.35) {
+    postCrewReport('nog', `Saucer section firing, Captain — ${weapon.label.toLowerCase()} on secondary power.`, 'status');
+  }
+
+  G.score.totalDmgDealt  += dmg;
+  G.score.volleysFired   += 1;
+  G.score.weaponsFired.cannons += 1;
+}
 
 // Returns true when a weapon's parent system is on the saucer (unavailable while separated).
 function _isSaucerWeapon(weapon) {

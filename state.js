@@ -26,6 +26,7 @@ const G = {
   saucerSepReconnecting: false,  // true during 6s docking window
   saucerSepReconnectTimer: 0,    // ms remaining in docking sequence
   saucerSepCooldown:     0,      // ms cooldown after reconnect completes
+  saucerAutoFireTimer:   10000,  // ms until saucer section fires autonomously
 
   // Tricobalt warhead (Enterprise-E special — 1 per engagement)
   tricobalReady: true,

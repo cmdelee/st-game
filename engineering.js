@@ -675,9 +675,11 @@ function computeConduitConduction(dt) {
     } else if (sys.stress > 0) {
       sys.stress = Math.max(0, sys.stress - (1.8 * sc));
     }
-    // Capacitor charging — reduced by EPS heat penalty
+    // Capacitor charging — reduced by EPS heat; stardrive systems get ×1.15 boost when saucer separated
     if (sys.cap < 100) {
-      const ls = (sys.allocatedPower * 0.6) * (sys.health / 100) * heatPenalty;
+      const _isSaucerSys   = key === 'cannon_pu' || key === 'cannon_pl';
+      const stardriveBoost = (G.saucerSepActive && !G.saucerSepReconnecting && !_isSaucerSys) ? 1.15 : 1.0;
+      const ls = (sys.allocatedPower * 0.6) * (sys.health / 100) * heatPenalty * stardriveBoost;
       sys.cap = Math.min(100, sys.cap + ls * sc);
     }
   });

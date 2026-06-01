@@ -451,6 +451,17 @@ function masterSimulationCoreLoop(ts) {
     if (G.saucerSepCooldown === 0 && typeof updateSaucerSepButton === 'function') updateSaucerSepButton();
   }
 
+  // Saucer section autonomous fire — active while separated (not during docking sequence)
+  if (G.saucerSepActive && !G.saucerSepReconnecting && G.running) {
+    G.saucerAutoFireTimer -= dt;
+    if (G.saucerAutoFireTimer <= 0) {
+      G.saucerAutoFireTimer = 9000 + Math.random() * 4000;  // 9–13s between shots
+      if (typeof fireSaucerAutomatic === 'function') fireSaucerAutomatic();
+    }
+  } else if (!G.saucerSepActive) {
+    G.saucerAutoFireTimer = 10000;  // reset when not separated
+  }
+
   // Cloak cooldown timers
   if (G.cloakVulnTimer > 0) G.cloakVulnTimer = Math.max(0, G.cloakVulnTimer - dt);
   if (G.cloakCooldown > 0) {
@@ -731,10 +742,11 @@ function initiateVesselSimulation(station) {
   Object.entries(_shipCfg.systemLabels).forEach(([k, label]) => { if (G.systems[k]) G.systems[k].label = label; });
   Object.entries(_shipCfg.defaultPower).forEach(([k, pwr])   => { if (G.systems[k]) G.systems[k].allocatedPower = pwr; });
   // Reset saucer separation and tricobalt
-  G.saucerSepActive       = false;
-  G.saucerSepReconnecting = false;
+  G.saucerSepActive         = false;
+  G.saucerSepReconnecting   = false;
   G.saucerSepReconnectTimer = 0;
-  G.saucerSepCooldown     = 0;
+  G.saucerSepCooldown       = 0;
+  G.saucerAutoFireTimer     = 10000;
   G.tricobalReady     = true;
 
   G.dead               = false;   // latent fix: ensures G.dead cleared if play-again ever added

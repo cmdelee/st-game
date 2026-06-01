@@ -162,7 +162,7 @@ function synchronizeGlobalInterfaceDisplays() {
   if (csb) {
     if (_isEntUI) {
       if (G.saucerSepReconnecting) { csb.style.display='flex'; if(cst)cst.textContent='◯ DOCKING — saucer on approach'; csb.style.color='var(--warn)'; csb.style.borderColor='var(--warn)'; if(cpd)cpd.textContent=`${Math.ceil(G.saucerSepReconnectTimer/1000)}s`; }
-      else if (G.saucerSepActive) { csb.style.display='flex'; if(cst)cst.textContent='◯ SEPARATED — Saucer/Dorsal/Ventral offline · Lock −66%'; csb.style.color='var(--green)'; csb.style.borderColor='var(--green)'; if(cpd)cpd.textContent=''; }
+      else if (G.saucerSepActive) { csb.style.display='flex'; if(cst)cst.textContent='◯ SEPARATED — Saucer firing auto (40%) · Stardrive +20% · Lock −66%'; csb.style.color='var(--green)'; csb.style.borderColor='var(--green)'; if(cpd)cpd.textContent=''; }
       else csb.style.display='none';
     } else {
       if (G.cloakVulnTimer > 0)    { csb.style.display='flex'; if(cst)cst.textContent='⚡ CLOAK TRANSITION — NO SHIELDS'; csb.style.color='var(--red)'; csb.style.borderColor='var(--red)'; if(cpd)cpd.textContent=''; }
