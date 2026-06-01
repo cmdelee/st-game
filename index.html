@@ -653,71 +653,63 @@
         <div id="captain-comms-feed" class="captain-comms-feed"></div>
       </div>
 
-      <!-- WORF orders — all in one 7-column grid -->
+      <!-- WORF — Fire Control -->
       <div class="captain-orders-group">
-        <div class="captain-orders-label" style="color:var(--o);">⚡ WORF <span style="color:#6688aa; font-weight:normal; font-size:9px;">FIRE · TARGET · SCAN</span></div>
-        <div class="captain-orders-grid" style="grid-template-columns:repeat(7,1fr);">
-          <button class="pill-action-btn"          id="cap-ord-fire_cannons" onclick="capFireCannons()"><span>Cannons</span></button>
-          <button class="pill-action-btn p-btn"    id="cap-ord-fire_quantum" onclick="capFireQuantum()"><span>Quantum</span></button>
-          <button class="pill-action-btn"          id="cap-ord-fire_photon"  onclick="capFirePhoton()"><span>Photon</span></button>
-          <button class="pill-action-btn red-btn"  id="cap-ord-fire_burst"   onclick="capFireBurst()"><span>Burst</span></button>
-          <button class="pill-action-btn red-btn"  id="cap-ord-fire_alpha"   onclick="capFireAlpha()"><span>Alpha</span></button>
-          <button class="pill-action-btn"          id="cap-ord-rotate_freq"  onclick="capRotateFreq()"><span>Rotate Freq</span></button>
-          <button class="pill-action-btn warn-btn" id="cap-ord-cloak"        onclick="capCloakToggle()"><span id="cap-cloak-label">◉ Cloak</span></button>
-          <button class="pill-action-btn"          id="cap-ord-tgt_hull"     onclick="capTgtHull()"><span>Tgt Hull</span></button>
-          <button class="pill-action-btn"          id="cap-ord-tgt_shields"  onclick="capTgtShields()"><span>Tgt Shields</span></button>
-          <button class="pill-action-btn warn-btn" id="cap-ord-tgt_weapons"  onclick="capTgtWeaponsAny()"><span>Tgt Weapons</span></button>
-          <button class="pill-action-btn warn-btn" id="cap-ord-tgt_engines"  onclick="capTgtEngines()"><span>Tgt Engines</span></button>
-          <button class="pill-action-btn p-btn"    id="cap-ord-tgt_cloak"    onclick="capTgtCloak()"><span>Tgt Cloak</span></button>
-          <button class="pill-action-btn"          id="cap-ord-tgt_sensors"  onclick="capTgtSensors()"><span>Tgt Sensors</span></button>
-          <button class="pill-action-btn"          id="cap-ord-tgt_warpcore" onclick="capTgtWarpCore()"><span>Tgt Warp</span></button>
-          <button class="pill-action-btn"          id="cap-ord-scan_shields" onclick="capScanShields()"><span>🛡 Shld Scan</span></button>
-          <button class="pill-action-btn"          id="cap-ord-scan_hull"    onclick="capScanHull()"><span>💥 Hull Scan</span></button>
-          <button class="pill-action-btn warn-btn" id="cap-ord-scan_weapons" onclick="capScanWeapons()"><span>⚡ Disrupt</span></button>
-          <button class="pill-action-btn p-btn"    id="cap-ord-scan_tetryon" onclick="capScanTetryon()"><span>〜 Tetryon</span></button>
-          <button class="pill-action-btn"          id="cap-ord-evasive"      onclick="capEvasive()"><span>Evasive ◈</span></button>
-          <button class="pill-action-btn warn-btn" id="cap-ord-hold_fire"    onclick="capHoldFire()"><span>✋ Hold Fire</span></button>
+        <div class="captain-orders-label" style="color:var(--o);">⚡ WORF <span style="color:#6688aa;font-weight:normal;font-size:9px;">FIRE CONTROL</span></div>
+        <div class="captain-orders-grid" style="grid-template-columns:repeat(6,1fr);">
+          <button class="pill-action-btn red-btn"  id="cap-ord-fire_at_will"  onclick="capFireAtWill()"><span>🔥 FIRE AT WILL</span></button>
+          <button class="pill-action-btn"          id="cap-ord-fire_energy"   onclick="capFireEnergy()"><span>⚡ Fire Phasers</span></button>
+          <button class="pill-action-btn p-btn"    id="cap-ord-fire_torps"    onclick="capFireTorps()"><span>⬟ Fire Torpedoes</span></button>
+          <button class="pill-action-btn green-btn"id="cap-ord-fire_all"      onclick="capFireAll()"><span>⚡⚡ Fire All</span></button>
+          <button class="pill-action-btn red-btn"  id="cap-ord-fire_burst"    onclick="capBurst()"><span>Burst / Conc.</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-hold_fire"     onclick="capHoldFire()"><span>✋ Hold Fire</span></button>
+        </div>
+        <div class="captain-orders-grid" style="grid-template-columns:repeat(6,1fr);margin-top:3px;">
+          <button class="pill-action-btn"          id="cap-ord-deep_scan"     onclick="capDeepScan()"><span>🔭 Deep Scan</span></button>
+          <button class="pill-action-btn p-btn"    id="cap-ord-evasive"       onclick="capEvasive()"><span>◈ Evasive</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-cloak"         onclick="capCloakToggle()"><span id="cap-cloak-label">◉ Cloak</span></button>
+          <button class="pill-action-btn"          id="cap-ord-tgt_hull"      onclick="capTgtHull()"><span>⊙ Hull</span></button>
+          <button class="pill-action-btn"          id="cap-ord-tgt_shields"   onclick="capTgtShields()"><span>⊙ Shields</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-tgt_weapons"   onclick="capTgtWeaponsAny()"><span>⊙ Weapons</span></button>
+        </div>
+        <div class="captain-orders-grid" style="grid-template-columns:repeat(4,1fr);margin-top:3px;">
+          <button class="pill-action-btn warn-btn" id="cap-ord-tgt_engines"   onclick="capTgtEngines()"><span>⊙ Engines</span></button>
+          <button class="pill-action-btn p-btn"    id="cap-ord-tgt_cloak"     onclick="capTgtCloak()"><span>⊙ Cloak Dev</span></button>
+          <button class="pill-action-btn"          id="cap-ord-tgt_sensors"   onclick="capTgtSensors()"><span>⊙ Sensors</span></button>
+          <button class="pill-action-btn"          id="cap-ord-tgt_warpcore"  onclick="capTgtWarpCore()"><span>⊙ Warp Core</span></button>
         </div>
       </div>
 
-      <!-- O'BRIEN orders — shields + repairs in one 6-column grid -->
+      <!-- O'BRIEN — Engineering -->
       <div class="captain-orders-group">
-        <div class="captain-orders-label" style="color:var(--b);">⚙ O'BRIEN <span style="color:#6688aa; font-weight:normal; font-size:9px;">SHIELDS · REPAIRS · POWER</span></div>
+        <div class="captain-orders-label" style="color:var(--b);" id="cap-panel-eng-orders-header">⚙ O'BRIEN <span style="color:#6688aa;font-weight:normal;font-size:9px;">ENGINEERING</span></div>
         <div class="captain-orders-grid" style="grid-template-columns:repeat(4,1fr);">
-          <button class="pill-action-btn"          id="cap-ord-shld_equalise"    onclick="capShldEqualise()"><span>Equalise</span></button>
-          <button class="pill-action-btn"          id="cap-ord-shld_regen_boost" onclick="capShldRegenBoost()"><span>Boost Regen</span></button>
-          <button class="pill-action-btn warn-btn" id="cap-ord-emerg_batt"       onclick="capEmergBatt()"><span>Battery</span></button>
-          <button class="pill-action-btn"          id="cap-ord-repair_wpn"       onclick="capRepairWpn()"><span>Repair Wpn</span></button>
-          <button class="pill-action-btn"          id="cap-ord-repair_sys"       onclick="capRepairSys()"><span>Repair Sys</span></button>
-          <button class="pill-action-btn p-btn"    id="cap-ord-repair_cloak"     onclick="capRepairCloak()"><span>Repair Cloak</span></button>
-          <button class="pill-action-btn"          id="cap-ord-flush_eps"        onclick="capFlushEPS()"><span>Flush EPS</span></button>
-          <button class="pill-action-btn red-btn"  id="cap-ord-dmg_ctrl"         onclick="capDmgCtrl()"><span>Dmg Ctrl</span></button>
+          <button class="pill-action-btn"          id="cap-ord-boost_shields"  onclick="capBoostShields()"><span>🛡 Boost Shields</span></button>
+          <button class="pill-action-btn"          id="cap-ord-repair_wpn"     onclick="capRepairWpn()"><span>🔧 Repair Weapons</span></button>
+          <button class="pill-action-btn"          id="cap-ord-repair_sys"     onclick="capRepairSys()"><span>🔧 Repair Systems</span></button>
+          <button class="pill-action-btn red-btn"  id="cap-ord-dmg_ctrl"       onclick="capDmgCtrl()"><span>⚠ Damage Control</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-emerg_batt"     onclick="capEmergBatt()"><span>⚡ Emergency Batt</span></button>
+          <button class="pill-action-btn"          id="cap-ord-flush_eps"      onclick="capFlushEPS()"><span>♻ Flush EPS</span></button>
+          <button class="pill-action-btn"          id="cap-ord-attack_mode"    onclick="capAttackMode()"><span>⚡ Attack Power</span></button>
+          <button class="pill-action-btn"          id="cap-ord-defense_mode"   onclick="capDefenseMode()"><span>🛡 Defense Power</span></button>
         </div>
       </div>
 
-      <!-- NOG orders — vectors + speed + range + manoeuvres in one 8-column grid -->
+      <!-- NOG — Helm -->
       <div class="captain-orders-group">
-        <div class="captain-orders-label" style="color:var(--t);">🚀 NOG <span style="color:#6688aa; font-weight:normal; font-size:9px;">VECTOR · SPEED · RANGE · MANOEUVRES</span></div>
-        <div class="captain-orders-grid" style="grid-template-columns:repeat(8,1fr);">
-          <button class="pill-action-btn"          id="cap-ord-vec_fore"      onclick="capVecFore()"><span>▲ Fore</span></button>
-          <button class="pill-action-btn"          id="cap-ord-vec_port"      onclick="capVecPort()"><span>◀ Port</span></button>
-          <button class="pill-action-btn"          id="cap-ord-vec_stbd"      onclick="capVecStbd()"><span>▶ Stbd</span></button>
-          <button class="pill-action-btn"          id="cap-ord-vec_aft"       onclick="capVecAft()"><span>▼ Aft</span></button>
-          <button class="pill-action-btn green-btn"id="cap-ord-speed_full"    onclick="capSpeedFull()"><span>Full Imp</span></button>
-          <button class="pill-action-btn"          id="cap-ord-speed_half"    onclick="capSpeedHalf()"><span>Half Imp</span></button>
-          <button class="pill-action-btn"          id="cap-ord-speed_stop"    onclick="capSpeedStop()"><span>All Stop</span></button>
-          <button class="pill-action-btn"          id="cap-ord-range_long"    onclick="capRangeLong()"><span>Long</span></button>
-          <button class="pill-action-btn"          id="cap-ord-range_medium"  onclick="capRangeMedium()"><span>Medium</span></button>
-          <button class="pill-action-btn warn-btn" id="cap-ord-range_close"   onclick="capRangeClose()"><span>Close</span></button>
-          <button class="pill-action-btn p-btn"    id="cap-ord-attack_run"    onclick="capAttackRun()"><span>Atk Run</span></button>
-          <button class="pill-action-btn"          id="cap-ord-come_about"    onclick="capComeAbout()"><span>Come Abt</span></button>
-          <button class="pill-action-btn p-btn"    id="cap-ord-picard"        onclick="capPicard()"><span>Picard</span></button>
-          <button class="pill-action-btn red-btn"  id="cap-ord-pattern_omega" onclick="capPatternOmega()"><span>Omega</span></button>
-          <button class="pill-action-btn warn-btn" id="cap-ord-evasive_alpha"    onclick="capEvasiveAlpha()"><span>Evasive α</span></button>
-          <button class="pill-action-btn p-btn"   id="cap-ord-auto_shld_track" onclick="capAutoShieldTrack()"><span>⟳ Shld Track</span></button>
-          <button class="pill-action-btn"         id="cap-ord-silent_running"  onclick="capSilentRunning()"><span>🔇 Silent Run</span></button>
-          <button class="pill-action-btn warn-btn"id="cap-ord-emerg_thrusters" onclick="capEmergThrusters()"><span>⚡ Thrusters</span></button>
-          <button class="pill-action-btn red-btn" id="cap-ord-emerg_warp"      onclick="capEmergWarp()"><span>⚡ Warp</span></button>
+        <div class="captain-orders-label" style="color:var(--t);">🚀 NOG <span style="color:#6688aa;font-weight:normal;font-size:9px;">HELM &amp; MANOEUVRES</span></div>
+        <div class="captain-orders-grid" style="grid-template-columns:repeat(5,1fr);">
+          <button class="pill-action-btn p-btn"    id="cap-ord-attack_run"     onclick="capAttackRun()"><span>◈ Attack Run</span></button>
+          <button class="pill-action-btn"          id="cap-ord-come_about"     onclick="capComeAbout()"><span>↺ Come About</span></button>
+          <button class="pill-action-btn p-btn"    id="cap-ord-picard"         onclick="capPicard()"><span>⚡ Picard</span></button>
+          <button class="pill-action-btn red-btn"  id="cap-ord-pattern_omega"  onclick="capPatternOmega()"><span>Ω Pattern Omega</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-evasive_alpha"  onclick="capEvasiveAlpha()"><span>◈ Evasive α</span></button>
+        </div>
+        <div class="captain-orders-grid" style="grid-template-columns:repeat(4,1fr);margin-top:3px;">
+          <button class="pill-action-btn p-btn"    id="cap-ord-auto_shld_track"  onclick="capAutoShieldTrack()"><span>⟳ Shield Track</span></button>
+          <button class="pill-action-btn"          id="cap-ord-silent_running"   onclick="capSilentRunning()"><span>🔇 Silent Running</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-emerg_thrusters"  onclick="capEmergThrusters()"><span>⚡ Thrusters</span></button>
+          <button class="pill-action-btn red-btn"  id="cap-ord-emerg_warp"       onclick="capEmergWarp()"><span>⚡ Emergency Warp</span></button>
         </div>
       </div>
 

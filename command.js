@@ -105,38 +105,38 @@ function _fillBar(id, pct) {
 // ── Order Cooldowns ───────────────────────────────────────────
 
 const _CAP_CD = {
-  // Worf — weapons (captain-side rate limiter; capacitor system is the real gate)
-  fire_cannons:3000,   fire_quantum:5000,   fire_photon:3000,
-  fire_burst:13000,    fire_alpha:15000,    // burst = 12s game CD + 1s overhead
-  // Worf — tactical (matched to full ability cycle: active + game CD)
-  rotate_freq:43000,   // 12s active + 30s CD + 1s overhead
-  evasive:29000,       // 8s active  + 20s CD + 1s overhead
-  cloak:26000,         // 25s game CD + 1s overhead
+  // Worf — fire orders
+  fire_energy:2500,    fire_torps:4000,     fire_all:5000,
+  fire_burst:13000,    // burst = 12s game CD + 1s overhead
   hold_fire:20000,
+  deep_scan:2000,      // just a comms delay — real CD is in G.deepScanCooldown
+  // Worf — tactical modes
+  evasive:29000,       // 8s active + 20s CD + 1s overhead
+  cloak:26000,         // 25s game CD + 1s overhead
   // Worf — targeting (2.5s deliberate debounce)
   tgt_hull:2500,       tgt_shields:2500,    tgt_weapons:2500,
   tgt_engines:2500,    tgt_cloak:2500,      tgt_sensors:2500,
   tgt_warpcore:2500,
-  // Worf — scans (long enough that captain picks one profile per engagement phase)
-  scan_shields:32000,  scan_hull:28000,     scan_weapons:36000,  scan_tetryon:22000,
-  // O'Brien — shields & power
-  shld_equalise:8000,  shld_regen_boost:20000,
-  // O'Brien — repairs & systems
-  emerg_batt:22000,    repair_wpn:12000,    repair_sys:12000,
-  flush_eps:25000,     dmg_ctrl:22000,      repair_cloak:18000,
-  // Nog — helm (speed/range/vector: 2s comms + helm response overhead)
-  speed_full:2500,     speed_half:2500,     speed_stop:2500,
-  range_long:2000,     range_close:2000,    range_medium:2000,
-  vec_fore:2000,       vec_port:2000,       vec_stbd:2000,       vec_aft:2000,
+  // O'Brien — shields, repairs, power
+  boost_shields:10000, repair_wpn:12000,    repair_sys:12000,
+  dmg_ctrl:22000,      emerg_batt:22000,    flush_eps:25000,
+  attack_mode:8000,    defense_mode:8000,
   // Nog — manoeuvres (matched to full ability cycle)
   attack_run:29000,    // 8s active  + 20s CD + 1s overhead
   come_about:22000,    // 3s active  + 18s CD + 1s overhead
   picard:64000,        // 3s active  + 60s CD + 1s overhead
   pattern_omega:56000, // 10s active + 45s CD + 1s overhead
   evasive_alpha:21000, // 5s active  + 15s CD + 1s overhead
-  emerg_warp:0,
-  // New manoeuvres
   auto_shld_track:30000, silent_running:40000, emerg_thrusters:25000,
+  emerg_warp:0,
+  // Legacy keys retained for backward compat (not in new UI)
+  fire_cannons:3000,   fire_quantum:5000,   fire_photon:3000,   fire_alpha:15000,
+  rotate_freq:43000,   shld_equalise:8000,  shld_regen_boost:20000,
+  repair_cloak:18000,  scan_shields:32000,  scan_hull:28000,
+  scan_weapons:36000,  scan_tetryon:22000,
+  speed_full:2500,     speed_half:2500,     speed_stop:2500,
+  range_long:2000,     range_close:2000,    range_medium:2000,
+  vec_fore:2000,       vec_port:2000,       vec_stbd:2000,       vec_aft:2000,
 };
 
 function tickCaptainCooldowns(dt) {
@@ -154,13 +154,23 @@ function _updateCaptainOrderButtons() {
     const btn = document.getElementById('cap-ord-' + key);
     if (!btn) return;
     const ready = _canOrder(key);
-    btn.disabled    = !ready;
+    btn.disabled      = !ready;
     btn.style.opacity = ready ? '1' : '0.38';
-    const cd = G.captainOrderCooldowns[key] || 0;
-    const lbl = btn.getAttribute('data-label') || btn.textContent.split('\n')[0];
+    const cd  = G.captainOrderCooldowns[key] || 0;
+    const lbl = btn.getAttribute('data-label') || btn.querySelector('span')?.textContent || btn.textContent.trim().split('\n')[0];
     btn.setAttribute('data-label', lbl);
-    if (btn.firstChild) btn.firstChild.textContent = ready ? lbl : lbl + ' (' + Math.ceil(cd / 1000) + 's)';
+    const span = btn.querySelector('span');
+    const target = span || btn.firstChild;
+    if (target) target.textContent = ready ? lbl : lbl + ' (' + Math.ceil(cd / 1000) + 's)';
   });
+  // Fire at Will toggle — separate visual state (no cooldown)
+  const fawBtn = document.getElementById('cap-ord-fire_at_will');
+  if (fawBtn) {
+    fawBtn.style.background = G.fireAtWill ? 'var(--red)'  : '';
+    fawBtn.style.color      = G.fireAtWill ? '#fff'        : '';
+    const span = fawBtn.querySelector('span');
+    if (span) span.textContent = G.fireAtWill ? '🔥 FIRE AT WILL ▶' : '🔥 FIRE AT WILL';
+  }
 }
 
 // ── Issue an Order ────────────────────────────────────────────
@@ -173,14 +183,46 @@ function _order(key, fn, crew, msg) {
   _updateCaptainOrderButtons();
 }
 
-// ── WORF — Weapons & Tactical ─────────────────────────────────
-function capFireCannons()  { _order('fire_cannons',  firePulseCannons,                             'worf',   "Aye, Captain — all pulse cannons firing."); }
-function capFireQuantum()  { _order('fire_quantum',  () => fireSelectedArray('torpedo_quantum'),   'worf',   "Quantum torpedo away, sir."); }
-function capFirePhoton()   { _order('fire_photon',   () => fireSelectedArray('torpedo_photon'),    'worf',   "Photon torpedo launched, Captain."); }
-function capFireBurst()    { _order('fire_burst',    executeBurstFireSalvo,                        'worf',   "Initiating burst salvo — four cannon barrage."); }
-function capFireAlpha()    { _order('fire_alpha',    executeAlphaSalvoFire,                        'worf',   "All weapons firing, Captain."); }
-function capRotateFreq()   { _order('rotate_freq',   rotateShieldFrequency,                       'worf',   "Rotating shield frequencies now, Captain."); }
-function capEvasive()      { _order('evasive',       executeEvasivePattern,                        'worf',   "Evasive Pattern Delta, aye."); }
+// ── WORF — Simplified fire & tactical orders ──────────────────
+
+// Fire at Will — toggle aggressive auto-fire mode (no cooldown, just a state toggle)
+function capFireAtWill() {
+  if (!G.running || G.dead) return;
+  G.fireAtWill = !G.fireAtWill;
+  if (G.fireAtWill) {
+    G.holdFire = false;  // cancel any hold fire
+    postLogEvent("WORF: Fire at will — maximum aggression. All available weapons on continuous fire.", 'crit');
+    postCrewReport('worf', "Fire at will, Captain. Engaging with all available weapons.", 'alert');
+  } else {
+    postLogEvent("WORF: Standing down from fire at will — returning to standard discipline.", 'info');
+    postCrewReport('worf', "Aye Captain — returning to standard fire discipline.", 'status');
+  }
+  _updateCaptainOrderButtons();
+}
+
+function capFireEnergy()   { _order('fire_energy',  fireEnergyWeapons,  'worf', "Aye, Captain — all energy weapons firing."); }
+function capFireTorps()    { _order('fire_torps',   fireTorpedoBanks,   'worf', "Torpedo banks away, Captain."); }
+function capFireAll()      { _order('fire_all',     fireAllWeapons,     'worf', "All weapons — maximum fire, Captain!"); }
+
+// Burst — ship-aware (Defiant: burst salvo; Enterprise-E: concentrated fire)
+function capBurst() {
+  if (G.playerShipKey === 'enterprise_e') {
+    _order('fire_burst', executeConcentratedPhaserFire, 'worf', "Concentrated phaser fire — all arrays in sequence, Captain.");
+  } else {
+    _order('fire_burst', executeBurstFireSalvo,         'worf', "Initiating burst salvo — four cannon barrage.");
+  }
+}
+
+function capDeepScan()     { _order('deep_scan',    startDeepScan,      'worf', "Deep sensor analysis initiated, Captain. Stand by for frequency data."); }
+function capEvasive()      { _order('evasive',      executeEvasivePattern, 'worf', "Evasive Pattern Delta, aye."); }
+
+// ── Legacy wrappers (still called from captain auto-delegation, keep them) ───
+function capFireCannons()  { _order('fire_cannons',  firePulseCannons,                           'worf', "All cannons firing, Captain."); }
+function capFireQuantum()  { _order('fire_quantum',  () => fireSelectedArray('torpedo_quantum'), 'worf', "Quantum torpedo away, sir."); }
+function capFirePhoton()   { _order('fire_photon',   () => fireSelectedArray('torpedo_photon'),  'worf', "Photon torpedo launched, Captain."); }
+function capFireBurst()    { capBurst(); }
+function capFireAlpha()    { _order('fire_alpha',    executeAlphaSalvoFire,                       'worf', "All weapons firing, Captain."); }
+function capRotateFreq()   { _order('rotate_freq',   rotateShieldFrequency,                      'worf', "Rotating shield frequencies now, Captain."); }
 
 // Cloak / Decloak — single toggle, label updates with state
 // Decloaking has no captain-side cooldown; cloaking uses the 28s CD.
@@ -305,17 +347,29 @@ function capScanHull()     { _capScan('scan_hull',     'hull',    "Scanning enem
 function capScanWeapons()  { _capScan('scan_weapons',  'weapons', "Initiating weapons disruption scan, Captain."); }
 function capScanTetryon()  { _capScan('scan_tetryon',  'tetryon', "Launching tetryon pulse — enemy targeting will be degraded, Captain."); }
 
-// ── O'BRIEN — Shield Management ───────────────────────────────
-function capShldEqualise() { _order('shld_equalise',  rebalanceShieldArrays,               'obrien', "Equalising shield arrays — brief power dip during transfer, Captain."); }
-function capShldRegenBoost(){ _order('shld_regen_boost', () => adjustShieldRegenMode('boost'), 'obrien', "Boosting shield regeneration rate, Captain. Diverting extra EPS to deflectors."); }
+// ── O'BRIEN — Simplified engineering orders ───────────────────
 
-// ── O'BRIEN — Repairs & Systems ───────────────────────────────
-function capEmergBatt()    { _order('emerg_batt',     _capActivateBattery,                 'obrien', "Switching to emergency battery, aye."); }
-function capRepairWpn()    { _order('repair_wpn',     emergencyRepairWeapons,              'obrien', "Dispatching repair team to weapons, Captain."); }
-function capRepairSys()    { _order('repair_sys',     emergencyRepairSystems,              'obrien', "Repair team on critical systems, aye."); }
-function capRepairCloak()  { _order('repair_cloak',   repairCloakingDevice,               'obrien', "Repair team to the cloaking array, Captain. ETA shortly."); }
-function capFlushEPS()     { _order('flush_eps',      masterConduitFlush,                  'obrien', "Flushing EPS conduits, Captain."); }
-function capDmgCtrl()      { _order('dmg_ctrl',       () => _capDamageControl(),           'obrien', "Damage control engaged, Captain."); }
+// Boost Shields — equalise + boost regen in one composite order
+function capBoostShields() {
+  _order('boost_shields', () => {
+    rebalanceShieldArrays();
+    adjustShieldRegenMode('boost');
+    applyPowerPreset('damage_control');
+  }, 'obrien', "Boosting shield power — equalising arrays and rerouting EPS to deflectors, Captain.");
+}
+
+function capRepairWpn()    { _order('repair_wpn',   emergencyRepairWeapons, 'obrien', "Dispatching repair team to weapons, Captain."); }
+function capRepairSys()    { _order('repair_sys',   emergencyRepairSystems, 'obrien', "Repair team on critical systems, aye."); }
+function capDmgCtrl()      { _order('dmg_ctrl',     () => _capDamageControl(), 'obrien', "Full damage control engaged, Captain."); }
+function capEmergBatt()    { _order('emerg_batt',   _capActivateBattery,    'obrien', "Switching to emergency battery, aye."); }
+function capFlushEPS()     { _order('flush_eps',    masterConduitFlush,     'obrien', "Flushing EPS conduits, Captain."); }
+function capAttackMode()   { _order('attack_mode',  () => applyPowerPreset('attack'), 'obrien', "Attack power profile engaged — weapons at maximum, Captain."); }
+function capDefenseMode()  { _order('defense_mode', () => applyPowerPreset('damage_control'), 'obrien', "Defense profile engaged — shields and sensors prioritised, Captain."); }
+
+// Legacy wrappers
+function capShldEqualise()  { _order('shld_equalise',   rebalanceShieldArrays,                  'obrien', "Equalising shield arrays, Captain."); }
+function capShldRegenBoost() { _order('shld_regen_boost', () => adjustShieldRegenMode('boost'), 'obrien', "Boosting shield regen rate, Captain."); }
+function capRepairCloak()   { _order('repair_cloak',     repairCloakingDevice,                  'obrien', "Repair team to the cloaking array, Captain."); }
 
 // ── NOG — Attack Vectors ──────────────────────────────────────
 function capVecFore()      { _order('vec_fore',  () => setHelmAttackVector('fore'),      'nog', "Presenting fore shields to the enemy, Captain."); }

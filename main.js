@@ -686,6 +686,7 @@ function initiateVesselSimulation(station) {
   G.deepScanActive        = false;
   G.deepScanProgress      = 0;
   G.deepScanCooldown      = 0;
+  G.fireAtWill            = false;
   // Refresh scan UI so results/button from previous game are cleared
   if (typeof _updateDeepScanButton === 'function') _updateDeepScanButton();
   if (typeof _renderScanResults    === 'function') _renderScanResults();

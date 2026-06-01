@@ -62,20 +62,32 @@ function processAutomatedDelegation(dt) {
   }
 
   // ── Auto-tactical: weapons + worf special abilities ──────────
+  // Fire at Will: lower interval, lower lock threshold, more torpedo use, auto deep scan
+  const _fireClock  = G.fireAtWill ? 1400 : 2400;
+  const _lockMin    = G.fireAtWill ? 0    : 8;
+  const _torpChance = G.fireAtWill ? 0.65 : 0.35;
+
   if (runAutoTac && !G.holdFire) {
     G.autoTacticalFireClock += dt;
-    if (G.autoTacticalFireClock > 2400) {
+    if (G.autoTacticalFireClock > _fireClock) {
       G.autoTacticalFireClock = 0;
-      if (!G.cloaked && G.cloakVulnTimer === 0 && G.lockProgress >= 8) {
+      if (!G.cloaked && G.cloakVulnTimer === 0 && G.lockProgress >= _lockMin) {
         const ce = getCrewEfficiency('tactical');
         if (Math.random() < ce) {
           const warpOnline = !G.systems.warp_core.tripped || G.batteryActive;
           if (warpOnline) {
             fireEnergyWeapons();
-            if (Math.random() < 0.35 * ce) fireTorpedoBanks();
+            if (Math.random() < _torpChance * ce) fireTorpedoBanks();
           }
         }
       }
+    }
+    // Fire at Will: auto-burst + auto deep scan when ready
+    if (G.fireAtWill && isCaptain) {
+      if (G.burstFireReady && G.lockProgress >= 20 && !G.cloaked && !G.enemyTractorActive)
+        executeBurstFireSalvo();
+      if (!G.deepScanActive && G.deepScanCooldown === 0 && G.systems.sensors.health >= 15)
+        startDeepScan();
     }
 
     // Captain-only Worf autonomous abilities
