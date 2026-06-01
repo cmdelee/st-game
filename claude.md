@@ -2,11 +2,12 @@
 
 ## Project overview
 
-Single-page Star Trek tactical combat simulator set aboard the **USS Defiant (NX-74205)**. The player commands the **Tactical**, **Engineering**, or **Helm** station; the unchosen stations are delegated to the computer. All game logic lives across **9 files** served from the same directory — no build step, no bundler.
+Single-page Star Trek tactical combat simulator set aboard the **USS Defiant (NX-74205)**. The player commands the **Tactical**, **Engineering**, **Helm**, or **Captain's Chair** station; the unchosen stations are delegated to the computer. All game logic lives across **13 JS files** served from the same directory — no build step, no bundler.
 
 **File load order (matters — each file depends on the previous):**
 ```
-state.js → engineering.js → tactical.js → helm.js → canvas.js → ui.js → main.js
+config.js → state.js → engineering.js → crew.js → sensors.js → tactical.js →
+helm.js → enemy-ai.js → command.js → canvas-three.js → canvas-2d.js → ui.js → main.js
 lcars.css (stylesheet)
 index.html (HTML shell + script tags)
 ```
@@ -17,13 +18,19 @@ index.html (HTML shell + script tags)
 
 | File | Responsibility |
 |---|---|
-| `state.js` | `C` colour palette, `DIFFICULTY`, `ENEMY_CONFIGS`, `ARRAYS_DICTIONARY`, `CREW_STATIONS`, `WARP_CORE`, `ABLATIVE_ARMOUR`, `HELM_SPEED_CONFIG` constants; `G` game state object; `getWarpOutput()`, `getTotalAllocatedPower()`, `setDifficulty()`, `postLogEvent()` |
-| `engineering.js` | Warp core trip, emergency battery, ablative armour processing, shield regen rate calculation, repair queue (2 independent teams), engineering matrix UI, power allocation (`tuneBusAllocation`), EPS conduit conduction + thermal buildup, system degradation thresholds, shield manipulation |
-| `tactical.js` | Burst-fire salvo, shield frequency rotation, evasive pattern, crew casualties + role effects, emergency warp, all player weapon fire (`fireSelectedArray`), damage application (`applyDamageToEnemy`), player cloaking, scan profiles (4 types), enemy subsystem targeting, enemy cloaking AI, sensor ghosts, mechanics timers (`processNewMechanicsTimers` — delegates helm timers to `processHelmTimers`), Jem'Hadar ramming, enemy AI loop (`processEnemyAI`), enemy fire (`executeThreatCounterVolley`), auto-delegation (both tactical and engineering auto-fire when at helm) |
-| `helm.js` | Helm timer processing (`processHelmTimers`), speed control (`setHelmSpeed`), attack vector (`setHelmAttackVector`), engagement range (`setPlayerRangeBracket`), attack run (`executeAttackRun`), come about (`executeComeAbout`), helm panel UI (`updateHelmPanel`) |
-| `canvas.js` | Three.js 3D spatial battle view (ships, weapon beams, torpedoes, particles, engine glow — glow intensity + Defiant drift scale with helm speed); enemy schematic 2D canvas (silhouette + system nodes + readout panel); hull schematic 2D canvas (Defiant outline + ablative rings + system nodes); power distribution 2D canvas (EPS bars + thermal) |
-| `ui.js` | Deck switching (`toggleActiveDeck` — handles tactical/engineering/helm), global UI sync (`synchronizeGlobalInterfaceDisplays`), scoring with hull integrity bonus (`calculateFinalScore`), end-game (`concludeSimulationRun`) |
-| `main.js` | Main game loop (`masterSimulationCoreLoop`), simulation init with full state reset (`initiateVesselSimulation`), boot sequence (`runMasterBootSequence`) |
+| `config.js` | All game constants: `C` colour palette, `DIFFICULTY`, `ENEMY_CONFIGS`, `ARRAYS_DICTIONARY`, `CREW_STATIONS`, `WARP_CORE`, `ABLATIVE_ARMOUR`, `HELM_SPEED_CONFIG`; `let currentDifficulty` |
+| `state.js` | `G` game state object; `getWarpOutput()`, `getTotalAllocatedPower()`, `setDifficulty()`, `postLogEvent()` |
+| `engineering.js` | Warp core trip, emergency battery, ablative armour processing, shield regen rate calculation, repair queue (2 independent teams), engineering matrix UI, power allocation (`tuneBusAllocation`), power presets (`applyPowerPreset`), EPS conduit conduction + thermal buildup, system degradation thresholds, shield manipulation |
+| `crew.js` | Crew casualties (`inflictCrewCasualty`), efficiency modifiers (`getCrewEfficiency`, `getMedicalEfficiency`, `getHelmEvasiveModifier`), `updateCrewStatusDisplay`, `attemptEmergencyWarp`, `updateWarpAvailability`, `postTacticalAdvisory` |
+| `sensors.js` | Scan profiles (`activateScanProfile`, `commitScanProfile`), active sensor toggle, enemy subsystem target grid (`buildEnemySubsystemTargetGrid`, `setEnemyTarget`) |
+| `tactical.js` | Player weapons only: burst-fire salvo, shield frequency rotation, evasive pattern, `fireSelectedArray`, `applyDamageToEnemy`, overload modes (overcharge/unstable torp/power dump), player cloaking (`toggleCloakingDevice`) |
+| `helm.js` | Helm timer processing (`processHelmTimers`), speed control (`setHelmSpeed`), attack vector (`setHelmAttackVector`), engagement range (`setPlayerRangeBracket`), attack run, come about, Picard Manoeuvre, Attack Pattern Omega, Evasive Pattern Alpha, helm panel UI (`updateHelmPanel`) |
+| `enemy-ai.js` | Enemy cloaking AI (`processEnemyCloakDecision`, `triggerEnemyCloak/Decloak`), sensor ghosts, all mechanics timers (`processNewMechanicsTimers` — delegates to `processHelmTimers`), Jem'Hadar ramming, enemy AI loop (`processEnemyAI`), enemy fire (`executeThreatCounterVolley`), full auto-delegation (`processAutomatedDelegation`) |
+| `command.js` | Captain's Chair: crew report feed (`postCrewReport`), captain overview panels (`updateCaptainOverview`), order cooldown table (`_CAP_CD`), all captain order functions (40+), new manoeuvres (Hold Fire, Auto Shield Track, Silent Running, Emergency Thrusters), manoeuvre ticker (`tickCaptainManoeuvres`), periodic + event-driven crew reports, `initCaptainStation()` |
+| `canvas-three.js` | Three.js 3D spatial battle view (ships, weapon beams, torpedoes, particles, engine glow, starfield) |
+| `canvas-2d.js` | Enemy schematic 2D canvas (silhouette + system nodes); hull schematic 2D canvas (Defiant outline + ablative rings); power distribution 2D canvas (EPS bars + thermal) |
+| `ui.js` | Deck switching (`toggleActiveDeck` — handles tactical/engineering/helm/captain), global UI sync (`synchronizeGlobalInterfaceDisplays`), scoring with hull integrity bonus (`calculateFinalScore`), end-game (`concludeSimulationRun`) |
+| `main.js` | Main game loop (`masterSimulationCoreLoop`), simulation init with full state reset (`initiateVesselSimulation`), boot sequence (`runMasterBootSequence`), captain manoeuvre tickers, splash screen (`dismissSplash`) |
 
 ---
 
@@ -31,7 +38,7 @@ index.html (HTML shell + script tags)
 
 ```js
 G.running / G.dead                    // game lifecycle
-G.playerChosenStation                 // 'tactical' | 'engineering' | 'helm'
+G.playerChosenStation                 // 'tactical' | 'engineering' | 'helm' | 'captain'
 G.activePanel                         // same — drives canvas and UI selection
 
 // Player
@@ -70,7 +77,7 @@ G.shieldTransferInProgress            // true during 2s shield equalisation dela
 G.ablative = { layers, layerHealth[6], regenTimers[6], regenProgress[6] }
   // each layer absorbs 60% of incoming hull damage
   // consumed layer: 45s cooldown → 30s regen
-  // layer cost per hit: (absorbed/40)*20 (gentler than original /30 formula)
+  // layer cost per hit: (absorbed/40)*20
 
 // EPS thermal buildup
 G.epsHeat                             // 0-100; >70 reduces cap recharge up to 30%
@@ -88,13 +95,19 @@ G.enemyAdaptiveHits    // legacy counter for Borg regen scaling
 G.burstFireReady / G.burstFireCooldown   // 12s cooldown
 G.shieldFreqActive / G.shieldFreqTimer / G.shieldFreqCooldown / G.shieldFreqWeaponType
 G.evasiveActive / G.evasiveCooldown / G.evasiveDuration / G.evasiveCooldownTime
+G.overchargeReady / G.overchargeCooldown           // 30s CD
+G.unstableTorpReady / G.unstableTorpCooldown       // 35s CD
+G.powerDumpReady / G.powerDumpTimer / G.powerDumpCooldown  // 10s active, 50s CD
 
 // Helm station state
 G.helmSpeed            // 'stop'|'maneuvering'|'half'|'full' — affects enemy lock + player yield
 G.helmAttackVector     // 'fore'|'port'|'starboard'|'aft' — 65% chance enemy hits this sector
 G.playerRangeBracket   // 'long'|'medium'|'close' — weapon damage modifiers + 3D distance
-G.attackRunActive / G.attackRunTimer / G.attackRunCooldown   // 8s active, 20s CD
-G.comeAboutActive / G.comeAboutTimer / G.comeAboutCooldown   // 3s rotate, 18s CD
+G.attackRunActive / G.attackRunTimer / G.attackRunCooldown       // 8s active, 20s CD
+G.comeAboutActive / G.comeAboutTimer / G.comeAboutCooldown       // 3s rotate, 18s CD
+G.picardManoeuverActive / G.picardManoeuverTimer / G.picardManoeuverCooldown  // 3s active, 60s CD
+G.attackPatternOmegaActive / G.attackPatternOmegaTimer / G.attackPatternOmegaCooldown  // 10s active, 45s CD
+G.evasiveAlphaActive / G.evasiveAlphaTimer / G.evasiveAlphaCooldown  // 5s active, 15s CD
 
 // Scanning / targeting
 G.lockProgress                         // 0-100 player targeting lock
@@ -103,6 +116,14 @@ G.activeScanProfile / G.scanAnalysisProgress
 G.scanBonus                            // { type, value, expiry } | null
 G.weaponsDisrupted / G.weaponsDisruptedTimer
 G.lastPlayerFireTime                   // timestamp; drives hull regen advisory
+
+// Captain's Chair
+G.crewReports[]                        // rolling feed of { crew, text, type, ts }
+G.captainOrderCooldowns{}              // per-order CD map keyed by _CAP_CD keys
+G.captainPeriodicTimer                 // countdown to next periodic crew report
+G.holdFire / G.holdFireTimer           // 8s auto-tactical suppression
+G.autoShieldTrack / G.autoShieldTrackTimer  // 15s auto attack vector
+G.silentRunning / G.silentRunningTimer      // 12s enemy lock −40%
 
 // Scoring
 G.score = { totalDmgDealt, volleysFired, hullBreaches, systemsDestroyed,
@@ -144,7 +165,7 @@ G.score = { totalDmgDealt, volleysFired, hullBreaches, systemsDestroyed,
 | `galor_class` | Galor-Class Warship | Cardassian | Torpedoes, no cloak |
 | `jem_hadar_fighter` | Jem'Hadar Attack Ship | Dominion | Polaron bypass, ramming 280 dmg |
 | `jem_hadar_battleship` | Jem'Hadar Battle Cruiser | Dominion | Heavy polaron, ramming 380 dmg |
-| `borg_probe` | Borg Probe | Borg | Per-weapon adaptation 0–75%, tractor beam, escalating dialogue |
+| `borg_probe` | Borg Probe | Borg | Per-weapon adaptation 0–65%, tractor beam, escalating damage |
 
 ### Enemy pools by difficulty
 - **Normal:** ktinga, romulan_bop, cardassian_scout, galor_class, jem_hadar_fighter, vor_cha
@@ -187,6 +208,8 @@ G.score = { totalDmgDealt, volleysFired, hullBreaches, systemsDestroyed,
 | Hard   | ×1.2  | ×1.15 | ×1.3 | ×0.85 | ×0.85 | Yes (20%) | ×0.85 |
 | Elite  | ×1.35 | ×1.28 | ×1.5 | ×0.78 | ×0.78 | Yes (30%) | ×0.72 |
 
+`systemTargetChance` lives in the DIFFICULTY config; `processAutomatedDelegation` uses `diff.systemTargetChance` (was hardcoded 0.45/0.25).
+
 ---
 
 ## Shield & power values (current)
@@ -203,41 +226,76 @@ Default EPS allocations (114MW / 120MW — 6MW headroom):
   shields:28  sensors:16  engines:10  cloak_dev:0  warp_core:10
 ```
 
+### Power presets (`POWER_PRESETS` / `applyPowerPreset(name)`)
+| Preset | Purpose | Notable allocation changes |
+|---|---|---|
+| `attack` | Maximum weapons | Weapons maxed, shields/sensors reduced |
+| `silent` | Cloak-ready profile | Engines/sensors cut, cloak_dev powered |
+| `evasive` | Engine + shield priority | Engines maxed, weapons reduced |
+| `damage_control` | Survival mode | Shields maxed, sensors boosted, weapons minimal |
+
+Scales automatically when warp core is offline (impulse budget 40MW).
+
 ---
 
 ## Key mechanics
 
+### Captain's Chair (command.js)
+
+The 4th station. All three stations run on full auto-delegation simultaneously. Crew act autonomously and report in via the comms feed; captain issues orders to override or time key abilities.
+
+**Crew comms feed:** `postCrewReport(crew, text, type)` — colour-coded by speaker (Worf=orange, O'Brien=blue, Nog=pink). Shows 3 most recent entries. 15+ event-driven hooks fire on: shield hits, hull breaches, enemy cloak/decloak, system trips, repair completions, warp core trips, ramming runs, Klingon range closing, scan commits, weapons disrupted/restored, attack run/come-about completion, low hull.
+
+**Captain order cooldowns** (`_CAP_CD`): matched to full ability cycle (active time + game CD + 1s comms overhead). Buttons grey out with countdown seconds while cooling.
+
+**Autonomous crew behaviors (captain mode only):**
+- **Worf:** auto burst-fire (lock >55%), auto evasive (enemy lock >88%), auto rotate shield freq (sustained fire)
+- **O'Brien:** auto-activates battery on warp core trip, auto-equalises shields when sector drops <15% of max
+- **Nog:** auto-presents strongest shield sector when current facing <10% of max, occasional auto attack run
+
+**Captain-exclusive manoeuvres:**
+| Order | Effect | CD |
+|---|---|---|
+| Hold Fire | Suppresses auto-tactical fire for 8s | 20s |
+| Auto Shield Track | Nog auto-presents strongest shield sector for 15s | 30s |
+| Silent Running | Enemy lock rate −40% for 12s; drops to maneuvering speed | 40s |
+| Emergency Thrusters | Enemy lock −35%, player lock −15%, engine stress +20 | 25s |
+
 ### Helm station (helm.js)
 
-The helm station runs both **auto-tactical** (computer fires weapons) and **auto-engineering** (computer restores breakers and assigns repair teams) simultaneously. The player controls four parameters:
+The helm station runs both **auto-tactical** and **auto-engineering** simultaneously. The player controls speed, attack vector, range, and manoeuvres.
 
 #### Speed control — `HELM_SPEED_CONFIG`
 | Setting | Enemy Lock Mult | Player Yield Mult |
 |---|---|---|
-| ALL STOP | ×1.35 (harder to miss) | ×1.10 (stable platform) |
+| ALL STOP | ×1.35 | ×1.10 (stable platform) |
 | MANEUVERING | ×1.10 | ×1.00 |
 | HALF IMPULSE *(default)* | ×0.85 | ×0.97 |
 | FULL IMPULSE | ×0.65 | ×0.88 |
 
 Engine glow intensity and Defiant drift amplitude in the 3D view both scale with helm speed. Full impulse stresses engines +15 on activation.
 
-#### Attack vector — `G.helmAttackVector`
-Sets which of our shield faces the enemy. In `executeThreatCounterVolley`, 65% of enemy fire hits the selected sector (normal fire) or 65% (fallback non-torpedo shots). Disabled during come-about (all sectors equally exposed).
-
-#### Engagement range — `G.playerRangeBracket`
-Controls 3D enemy ship distance (min of player and enemy brackets). Weapon damage multipliers applied in `fireSelectedArray`. Locked to 'close' during an active attack run; resets to 'medium' when run expires.
-
 #### Helm manoeuvres
 | Action | Effect | Cooldown |
 |---|---|---|
-| **Attack Run** | 8s cannon +20%, closes to combat range; engine stress +35; resets to medium range on expiry | 20s |
-| **Come About** | 3s rotation, all sectors exposed; auto-presents strongest shield sector on completion | 18s |
+| **Attack Run** | 8s cannon +20%, closes to combat range; engine stress +35; resets to medium on expiry | 20s |
+| **Come About** | 3s rotation, all sectors exposed; auto-presents strongest shield on completion | 18s |
 | **Evasive Pattern Delta** | Enemy lock rate −60% for 8s; engine stress +25 | 20s |
+| **Picard Manoeuvre** | Micro-warp jump; enemy cannot lock or fire for 3s | 60s |
+| **Attack Pattern Omega** | All weapons +40% for 10s; incoming damage +20% | 45s |
+| **Evasive Pattern Alpha** | Enemy lock rate −50% for 5s; maximum evasion | 15s |
 | **Emergency Warp** | Escape (hull ≤35% required) | — |
 
+### Overload weapon modes (tactical.js)
+| Mode | Effect | Risk | Cooldown |
+|---|---|---|---|
+| **Cannon Overcharge** | All cannon yield +50% for next salvo | Breaker trip on each cannon | 30s |
+| **Unstable Torpedo** | Quantum yield +70% | 25% misfire (damages player) | 35s |
+| **Emergency Power Dump** | All weapons +40% for 10s, EPS spike | Shields −30% during active window | 50s |
+
 ### Ablative armour
-- **6 layers** (was 5), each absorbs **60%** of incoming hull damage
-- Layer cost per hit: `(absorbed/40)*20` — layers last ~33% longer than original
+- **6 layers**, each absorbs **60%** of incoming hull damage
+- Layer cost per hit: `(absorbed/40)*20`
 - Consumed layer: 45s cooldown → 30s regen
 - Visible as concentric arcs on hull schematic, strip on tactical panel
 
@@ -249,21 +307,11 @@ Controls 3D enemy ship distance (min of player and enemy brackets). Weapon damag
 ### Shield frequency rotation (`rotateShieldFrequency`)
 - Detects enemy dominant weapon type (disruptors/phasers/polaron/plasma)
 - 25% incoming damage reduction for 12s; 30s cooldown
-- Applied in `executeThreatCounterVolley` via `shieldFreqActive` check
-
-### Evasive Pattern Delta (`executeEvasivePattern`)
-- Reduces enemy lock build rate by 60% (full helm) for 8s; 20s cooldown
-- Burns engine stress +25 points
-- Helm crew status scales effectiveness via `getHelmEvasiveModifier()`:
-  - Nominal → 0.4× lock rate (60% reduction)
-  - Wounded → 0.6× (40% reduction)
-  - Incapacitated → 0.8× (20% reduction)
 
 ### EPS thermal buildup
 - Each weapon shot adds `weapon.cost * 0.12` heat to `G.epsHeat` (0–100)
 - Cools passively at 8/s
 - Above 70%: capacitor recharge penalised up to 30% (`heatPenalty` in conduit loop)
-- Log warning fires periodically at high heat
 
 ### Quantum torpedo (binary)
 - ≥60% lock: clean hit, full yield ±15%
@@ -271,39 +319,36 @@ Controls 3D enemy ship distance (min of player and enemy brackets). Weapon damag
 - Does not scale gradually with lock like energy weapons
 
 ### Scan profiles (4 types)
-| Profile | Effect | Duration | Note |
-|---|---|---|---|
-| Shields | +25% weapon yield vs shields | 25s | Energy weapons only |
-| Fissures | +35% all damage | 20s | All weapons |
-| Disrupt | −50% enemy fire rate | 30s | Via `G.weaponsDisrupted` + main loop 2× fi |
-| Tetryon | −70% enemy lock rate | 15s | Stacks with evasive pattern |
+| Profile | Effect | Duration |
+|---|---|---|
+| Shields | +25% weapon yield vs shields | 25s |
+| Fissures | +35% all damage | 20s |
+| Disrupt | −50% enemy fire rate | 30s |
+| Tetryon | −70% enemy lock rate | 15s |
 
 ### Borg per-weapon adaptation
-- `G.enemyAdaptiveResist[weaponKey]` tracks 0–0.75 resistance per weapon
-- Builds +0.06 per hit; damage multiplied by `(1 - resist)`
+- `G.enemyAdaptiveResist[weaponKey]` tracks 0–0.65 resistance per weapon
+- Builds +0.04 per hit (17 hits to cap); damage multiplied by `(1 - resist)`
+- Escalating damage: +10% per level, capped at 2 levels (+20% max)
 - Enemy schematic shows per-weapon resistance %
-- Milestone Borg dialogue at 1/3/5 fully-adapted weapons
+- Milestone dialogue at 1/3/5 fully-adapted weapons
 
 ### Klingon close-range
-- `prefersCloseRange` enemies: 20s → medium, 45s → close bracket (`G.enemyRangeBracket`)
-- Close bracket: `closeRangeDmgBonus` (×1.35–1.4) on disruptors; disruptors prioritised
-- Worf advisory fires on bracket change
+- `prefersCloseRange` enemies: 20s → medium, 45s → close bracket
+- Close bracket: `closeRangeDmgBonus` (×1.35–1.4) on disruptors
 - 3D view: enemy closes in (min of `G.enemyRangeBracket` and `G.playerRangeBracket`)
 
 ### Romulan cloaking aggressiveness
-- `cloakAggressiveness = 2.5` for Romulan faction on cloak trigger check
-- Romulans cloak much more readily than Klingons; repairs faster while cloaked
+- `cloakAggressiveness = 2.5` for Romulan faction — cloak much more readily
 
 ### Romulan plasma torpedo
 - After firing: `G.plasmaTorpedoReady = false`; timer counts down (18/22s)
 - Falls back to phasers/disruptors during reload
-- Enemy schematic shows reload countdown
 
 ### Jem'Hadar ramming
 - Random check (0.008/frame) when hull < 20%
 - 4s countdown on canvas with trajectory line + RAMMING RUN text
-- `cfg.ramDamage` (280/380) through ablative; destroys enemy ship
-- 2 crew casualties regardless of survival
+- `cfg.ramDamage` (280/380) through ablative; destroys enemy ship on impact
 
 ### Cloaking (player)
 - 1200ms vulnerability window on engage AND disengage
@@ -326,21 +371,20 @@ Controls 3D enemy ship distance (min of player and enemy brackets). Weapon damag
 - Stress builds above 40MW/system; trips breaker at 100%
 - Cap charges: `allocatedPower * 0.6 * (health/100) * heatPenalty` per second
 - Warp core trip scales allocations to impulse budget (40MW)
-- Auto-delegation restores tripped systems (tactical/helm player)
+- Auto-delegation restores tripped systems; captain auto-delegation also activates battery
 
 ### Warp core restart (gradual)
 - After repair completes, health ramps from `repaired - 60` to full over 12s
-- EPS output climbs gradually; second log fires when complete
+- EPS output climbs gradually
 
 ### Repair queue (2 independent teams — Alpha / Beta)
 - Time: `max(5000, (damage/10) * 5000)` ms base
 - Drain: `dt * crewEfficiency('engineering') * repairSpeedMult`
 - Completes at 80% of missing health restored; clears tripped
-- Auto-assigned when player is at tactical or helm
+- Auto-assigned when player is at tactical, helm, or captain
 
 ### Shield equalisation
 - 2s transfer delay; shields dip to 80% during EPS conduit switching
-- `G.shieldTransferInProgress` prevents double-trigger
 
 ### Crew role effects
 | Station | Crew | Wounded | Incapacitated |
@@ -349,11 +393,6 @@ Controls 3D enemy ship distance (min of player and enemy brackets). Weapon damag
 | Engineering | O'Brien | 65% repair speed | 30% repair speed |
 | Helm | Nog | Evasive: 40% reduction | Evasive: 20% reduction |
 | Medical | Bashir | Casualty threshold ×0.7 | Casualty threshold ×0.4 |
-
-### Enemy hull regen advisory
-- `G.lastPlayerFireTime` stamped on every `fireSelectedArray` call
-- If >10s pause and enemy hull < 90%, Worf advisory fires
-- Spam-protected: internal reset after advisory
 
 ### Sector-weighted internal damage
 On shield breach, random system drawn from sector pool:
@@ -394,10 +433,10 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 13. cloak_dev auto-restore gets 10MW — `hasOwnProperty` check for falsy 0
 14. Weapons disruption 4× fire penalty — removed redundant doubling from `commitScanProfile`
 15. Breaker grid rebuilt 60×/s — `tripSig` string gates rebuild
-16. Helm attack run had no cooldown — `G.attackRunCooldown = 20000` was never set in `executeAttackRun`; after the 8s window the run could be immediately re-fired
-17. Helm range not restored after attack run — `G.playerRangeBracket` stayed at 'close' permanently; now resets to 'medium' on expiry
-18. Dead "Quantum Torpedo" button — `fireSelectedArray('torpedo_fore')` called a non-existent ARRAYS_DICTIONARY key; fixed to `'torpedo_quantum'`
-19. Helm panel rendered twice per frame — `synchronizeGlobalInterfaceDisplays` now skips `updateHelmPanel` when a helm timer (`attackRunActive` / `comeAboutActive`) is already driving it that frame
+16. Helm attack run had no cooldown — `G.attackRunCooldown = 20000` was never set in `executeAttackRun`
+17. Helm range not restored after attack run — `G.playerRangeBracket` stayed at 'close' permanently
+18. Dead "Quantum Torpedo" button — `fireSelectedArray('torpedo_fore')` → `'torpedo_quantum'`
+19. Helm panel rendered twice per frame — `synchronizeGlobalInterfaceDisplays` now skips `updateHelmPanel` when a helm timer is already driving it
 
 ---
 
@@ -412,15 +451,18 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 | Quantum Torpedo | `fireSelectedArray('torpedo_quantum')` | ≥5% lock, torpedoes > 0 |
 | Photon Torpedo | `fireSelectedArray('torpedo_photon')` | No lock required |
 | ⚡⚡ BURST SALVO | `executeBurstFireSalvo()` | ≥20% lock, 12s CD |
-| ◉ ENGAGE CLOAK | `toggleCloakingDevice()` | Health ≥20%, no cooldown |
+| ALPHA SALVO | `executeAlphaSalvoFire()` | All weapons |
+| ⚡ OVERCHARGE | `executeCannonOvercharge()` | 30s CD |
+| ☢ UNSTABLE TORP | `executeUnstableTorpedo()` | 35s CD |
+| ⚡⚡ POWER DUMP | `executeEmergencyPowerDump()` | 50s CD |
+| ◉ ENGAGE CLOAK | `toggleCloakingDevice()` | Health ≥20%, no active cooldown |
 | 🛡 ROTATE FREQ | `rotateShieldFrequency()` | 30s CD |
 | ◈ EVASIVE PATTERN | `executeEvasivePattern()` | Engines ≥20%, 20s CD |
-| ALPHA SALVO | `executeAlphaSalvoFire()` | All weapons |
 | 🛡 Shields scan | `activateScanProfile('shields')` | 100% analysis first |
 | 💥 Fissures scan | `activateScanProfile('hull')` | 100% analysis first |
 | ⚡ Disrupt scan | `activateScanProfile('weapons')` | 100% analysis first |
 | 〜 Tetryon scan | `activateScanProfile('tetryon')` | 100% analysis first |
-| Reinforce Fore | `pumpShieldSector('fore')` | Not cloaked |
+| Reinforce Fore/Port/Stbd/Aft | `pumpShieldSector(sector)` | Not cloaked |
 | Equalise | `rebalanceShieldArrays()` | Not cloaked, 2s delay |
 | ⚡ EMERGENCY WARP | `attemptEmergencyWarp()` | Hull ≤35%, core online |
 
@@ -434,7 +476,22 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 | ◈ EVASIVE DELTA | `executeEvasivePattern()` | Engines ≥20%, 20s CD |
 | ◈ ATTACK RUN | `executeAttackRun()` | Engines ≥25%, 20s CD |
 | ↺ COME ABOUT | `executeComeAbout()` | Engines ≥20%, 18s CD |
+| PICARD MANOEUVRE | `executePicardManoeuver()` | Warp core ≥40%, 60s CD |
+| PATTERN OMEGA | `executeAttackPatternOmega()` | Engines ≥20%, 45s CD |
+| EVASIVE ALPHA | `executeEvasivePatternAlpha()` | 15s CD |
+| Power Presets | `applyPowerPreset(name)` | Any time |
 | ⚡ EMERGENCY WARP | `attemptEmergencyWarp()` | Hull ≤35%, core online |
+
+### Captain's Chair (command.js)
+
+Orders grouped by crew member. All have cooldowns from `_CAP_CD` (active time + game CD + 1s overhead). Buttons show countdown while cooling.
+
+**Worf — Fire Control:** Cannons, Quantum, Photon, Burst, Alpha, Rotate Freq, Cloak/Decloak toggle, Hold Fire  
+**Worf — Targeting:** Target Hull/Shields/Weapons/Engines/Cloak/Sensors/Warp Core  
+**Worf — Scans:** Shield/Hull/Disrupt/Tetryon (auto-commits on completion)  
+**O'Brien — Shields & Power:** Equalise, Boost Regen, Emergency Battery, Repair Weapons/Systems/Cloak, Flush EPS, Damage Control  
+**Nog — Vectors:** Fore/Port/Stbd/Aft  
+**Nog — Speed/Range/Manoeuvres:** Full/Half/Stop, Long/Medium/Close, Attack Run, Come About, Picard, Pattern Omega, Evasive Alpha, Auto Shield Track, Silent Running, Emergency Thrusters, Emergency Warp
 
 ---
 
@@ -444,36 +501,35 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 Tactical view:     3D spatial battle view (Three.js, left 1.2fr) + enemy schematic 2D (right 0.8fr)
 Engineering view:  hull schematic 2D (left 1.2fr) + power distribution 2D (right 0.8fr)
 Helm view:         reuses tactical monitors (3D spatial + enemy schematic)
+Captain view:      reuses tactical monitors (3D spatial + enemy schematic)
 ```
-
-**3D spatial view** (Three.js): Defiant and enemy meshes, engine glow (scales with helm speed for Defiant), weapon beams (colour-coded by weapon type), torpedo spheres, particle sparks, starfield, grid plane, nebula planes. Enemy drift amplitude and range distance update every frame from `G.enemyRangeBracket` / `G.playerRangeBracket` (minimum of both).
-
-Enemy schematic right panel: hull, faction, cloak status, polaron/adaptive/Klingon range/plasma reload/ramming/ghost indicators, shields ×4 sectors, all enemy systems.
 
 ---
 
 ## HTML structure
 
 ```
-#overlay               — startup modal + difficulty + end-game score
-                         (3 start buttons: COMMAND TACTICAL, CONTROL ENGINEERING, FLY HELM)
+#splash-screen         — fan disclaimer + title + ENTER BRIDGE button (fades to overlay)
+#overlay               — startup modal + difficulty + station select (4 buttons) + end-game score
 #sensor-ghost-overlay  — Romulan ghost alert (fixed top-right, animated)
 #cloak-vuln-overlay    — full-screen purple tint during cloak transition
 header                 — brand + accent line + stardate + mission context
 .main-viewport         — flex row
-  .left-anchor-panel   — LCARS nav pills (Tactical / Engineering / Helm) + enemy readouts + our lock bar
+  .left-anchor-panel   — LCARS nav pills (Tactical / Engineering / Helm / Command Chair)
+                         + enemy readouts + our lock bar
   .center-operations-deck
-    .top-monitor-row   — 2 canvases (view-tactical + view-helm share spatial/schematic pair;
-                         view-engineering shows hull/power pair)
+    .top-monitor-row   — 2 canvases (tactical/helm/captain share spatial+schematic pair;
+                         engineering shows hull+power pair)
     #eng-utility-panel — battery, cloak, shield regen, damage control, ablative,
-                         repair queue, auto-tac summary (engineering mode only)
+                         repair queue, power presets, auto-tac summary (engineering only)
     #deck-tactical     — capacitor bars, ablative strip, weapon health strip,
-                         cloak status bar, fire buttons, subsystem target grid,
+                         cloak status bar, fire buttons, overload modes, subsystem target grid,
                          scan profiles (4), crew status, emergency warp
     #deck-engineering  — power allocation table + breaker grid
-    #deck-helm         — speed control (4 buttons), attack vector (4 buttons),
-                         engagement range (3 buttons), tactical manoeuvres (4 buttons),
-                         auto-tactical summary, auto-engineering summary, live status line
+    #deck-helm         — speed (4), attack vector (4), range (3), manoeuvres (7 buttons),
+                         power presets, auto-tactical/engineering summaries, live status line
+    #deck-captain      — hull bar, 3 mini station panels (Worf/O'Brien/Nog),
+                         crew comms feed (3 lines fixed height), 3 order groups
   .right-telemetry-tower — hull bar, quantum + photon torpedoes, shield sector bars ×4,
                            system health bars ×11, warp + cloak power footer
 ```
@@ -485,7 +541,7 @@ header                 — brand + accent line + stardate + mission context
 | Class | Purpose |
 |---|---|
 | `.nav-pill-btn.active` | White highlight on active station nav |
-| `.control-deck-plate.active-deck` | Shows tactical, engineering, or helm deck |
+| `.control-deck-plate.active-deck` | Shows tactical, engineering, helm, or captain deck |
 | `.monitor-frame.active-monitor` | Shows correct canvas pair |
 | `.tripped-relay-alert` | Flashing red animation on tripped breaker |
 | `.pill-action-btn.red-btn/.warn-btn/.green-btn/.p-btn` | Colour variants |
@@ -493,16 +549,9 @@ header                 — brand + accent line + stardate + mission context
 | `#cloak-status-bar` | Purple bar shown during cloak states |
 | `#sensor-ghost-overlay` | Flashing amber Romulan ghost alert |
 | `#cloak-vuln-overlay` | Full-screen purple flash during transition |
-| `#btn-burst-fire` | Updated by `synchronizeGlobalInterfaceDisplays` |
-| `#btn-shield-freq` | Updated by `updateShieldFreqButton` |
-| `#btn-evasive` | Updated by `updateEvasiveButton` |
-| `#btn-helm-speed-*` | White glow when active speed; updated by `updateHelmPanel` |
-| `#btn-helm-vector-*` | White/blue glow when active; shows live shield MW |
-| `#btn-helm-range-*` | White/orange glow when active; updated by `updateHelmPanel` |
-| `#lbl-helm-range-status` | Live status line: speed label, lock mod%, yield mod%, vector, range |
-
----
-
-## Pending items
-
-None — all reviewed suggestions implemented.
+| `.captain-overview-row` | 3-column grid of mini station panels |
+| `.captain-comms-wrap` | Fixed-height crew comms container (clamp 58-78px) |
+| `.captain-orders-group` | Per-crew order section with label + grid |
+| `.captain-orders-grid` | Button grid (7-col Worf, 4-col O'Brien, 8-col Nog) |
+| `.comms-line / .comms-speaker / .comms-text` | Individual crew report line |
+| `.comms-alert / .comms-good` | Alert (orange text) / good (green text) report variants |
