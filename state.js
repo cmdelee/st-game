@@ -208,6 +208,13 @@ const G = {
   // Enemy hull milestones (tracks which % thresholds have already fired)
   enemyHullMilestones:{},
 
+  // Campaign mode
+  campaignMode:    false,
+  campaignStation: 'tactical',
+  campaignLevel:   0,      // 0-indexed into CAMPAIGN_ORDER
+  campaignScore:   0,      // accumulated score across levels
+  campaignLevelResults: [], // [{level, enemy, score, hullPct, time, won}]
+
   // Scoring
   score:{
     totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0,

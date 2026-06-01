@@ -114,23 +114,44 @@
       Select your operational assignment. The alternative deck matrix will automatically delegate tasks to computer subroutines.
     </p>
 
-    <!-- Difficulty selector -->
-    <div style="display:flex; gap:12px; justify-content:center; margin-bottom:14px;">
-      <button class="pill-action-btn" id="diff-btn-normal" style="font-size:11px; padding:6px 14px; background:var(--green); color:#000;" onclick="setDifficulty('normal')">● NORMAL</button>
-      <button class="pill-action-btn" id="diff-btn-hard"   style="font-size:11px; padding:6px 14px; background:var(--dim2);  color:#aabbcc;" onclick="setDifficulty('hard')">◎ HARD</button>
-      <button class="pill-action-btn" id="diff-btn-elite"  style="font-size:11px; padding:6px 14px; background:var(--dim2);  color:#aabbcc;" onclick="setDifficulty('elite')">◆ ELITE</button>
+    <!-- ── SINGLE ENGAGEMENT ── -->
+    <div id="campaign-diff-section">
+      <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:8px;">— SINGLE ENGAGEMENT —</div>
+      <div style="display:flex; gap:12px; justify-content:center; margin-bottom:10px;">
+        <button class="pill-action-btn" id="diff-btn-normal" style="font-size:11px; padding:6px 14px; background:var(--green); color:#000;" onclick="setDifficulty('normal')">● NORMAL</button>
+        <button class="pill-action-btn" id="diff-btn-hard"   style="font-size:11px; padding:6px 14px; background:var(--dim2);  color:#aabbcc;" onclick="setDifficulty('hard')">◎ HARD</button>
+        <button class="pill-action-btn" id="diff-btn-elite"  style="font-size:11px; padding:6px 14px; background:var(--dim2);  color:#aabbcc;" onclick="setDifficulty('elite')">◆ ELITE (BORG)</button>
+      </div>
+      <div id="diff-desc" style="font-size:11px; color:#7799dd; margin-bottom:10px; min-height:28px; text-align:center;">Standard engagement. Enemy fires at hull sectors only.</div>
     </div>
-    <div id="diff-desc" style="font-size:11px; color:#7799dd; margin-bottom:10px; min-height:32px;">Standard engagement. Enemy fires at hull sectors only.</div>
 
-    <!-- Station buttons -->
+    <!-- Station buttons (single engagement) -->
     <div class="setup-buttons-flex" id="setup-controls-anchor">
-      <button class="pill-action-btn" style="width:160px; padding:12px; background:var(--o);" onclick="initiateVesselSimulation('tactical')">COMMAND TACTICAL</button>
-      <button class="pill-action-btn" style="width:160px; padding:12px; background:var(--p);" onclick="initiateVesselSimulation('engineering')">CONTROL ENGINEERING</button>
-      <button class="pill-action-btn" style="width:160px; padding:12px; background:var(--t);" onclick="initiateVesselSimulation('helm')">FLY HELM</button>
-      <button class="pill-action-btn" style="width:160px; padding:12px; background:var(--warn); color:#000;" onclick="initiateVesselSimulation('captain')">⭐ CAPTAIN'S CHAIR</button>
+      <button class="pill-action-btn" style="width:155px; padding:10px; background:var(--o);"            onclick="initiateVesselSimulation('tactical')">COMMAND TACTICAL</button>
+      <button class="pill-action-btn" style="width:155px; padding:10px; background:var(--p);"            onclick="initiateVesselSimulation('engineering')">CONTROL ENGINEERING</button>
+      <button class="pill-action-btn" style="width:155px; padding:10px; background:var(--t);"            onclick="initiateVesselSimulation('helm')">FLY HELM</button>
+      <button class="pill-action-btn" style="width:155px; padding:10px; background:var(--warn);color:#000;" onclick="initiateVesselSimulation('captain')">⭐ CAPTAIN'S CHAIR</button>
     </div>
 
-    <!-- End-game score display (hidden until game over) -->
+    <!-- ── CAMPAIGN RUN ── -->
+    <div style="margin-top:14px;border-top:1px solid var(--dim2);padding-top:12px;">
+      <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:6px;">— CAMPAIGN RUN — 9 ENGAGEMENTS —</div>
+      <div style="font-size:10px;color:#6688aa;text-align:center;margin-bottom:8px;">Fighter → Scout → BoP → Galor → Battleship → K'Tinga → Vor'Cha → Warbird → <span style="color:var(--red);">BORG</span></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button class="pill-action-btn" style="padding:8px 14px;background:var(--o);color:#000;"       onclick="startCampaign('tactical')">⚡ TACTICAL</button>
+        <button class="pill-action-btn" style="padding:8px 14px;background:var(--p);"                  onclick="startCampaign('engineering')">⚡ ENGINEERING</button>
+        <button class="pill-action-btn" style="padding:8px 14px;background:var(--t);"                  onclick="startCampaign('helm')">⚡ HELM</button>
+        <button class="pill-action-btn" style="padding:8px 14px;background:var(--warn);color:#000;"    onclick="startCampaign('captain')">⭐ CAPTAIN</button>
+      </div>
+    </div>
+
+    <!-- Campaign level summary (shown between campaign fights) -->
+    <div id="campaign-level-summary" style="display:none;margin:10px 0;padding:10px;background:#060c18;border:1px solid var(--o);border-radius:8px;text-align:left;max-height:260px;overflow-y:auto;"></div>
+
+    <!-- Campaign action buttons (Next Engagement / Abandon) -->
+    <div id="campaign-action-btns" style="display:none;"></div>
+
+    <!-- End-game score display (single fight only) -->
     <div id="score-display" style="display:none; margin:12px 0; padding:12px; background:#060c18; border:1px solid var(--b); border-radius:8px; text-align:left;">
       <div style="font-family:'Antonio'; color:var(--o); font-size:16px; margin-bottom:8px; text-align:center;">BATTLE ASSESSMENT</div>
       <div id="score-breakdown" style="font-size:11px; color:#aabbcc; line-height:1.8;"></div>
@@ -166,6 +187,9 @@
   </div>
   <div class="header-accent-line"></div>
 </header>
+
+<!-- Campaign HUD strip — shown only during active campaign levels -->
+<div id="campaign-hud" style="display:none;background:rgba(255,100,0,0.12);border-bottom:1px solid rgba(255,100,0,0.4);padding:4px 16px;font-family:'Antonio';font-size:12px;letter-spacing:1px;align-items:center;gap:0;"></div>
 
 <!-- ═══════════════════════════════════════════════════════════
      MAIN VIEWPORT

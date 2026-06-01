@@ -362,6 +362,19 @@ const ENCOUNTER_PHASES = {
   ],
 };
 
+// ── Campaign level order (easiest → hardest, data-driven from fight analysis) ─
+const CAMPAIGN_ORDER = [
+  { level:1, archetype:'jem_hadar_fighter',    diff:'normal', label:"LEVEL 1",  title:"Jem'Hadar Attack Ship",   subtitle:"Dominion — Polaron weapons · Ramming protocol" },
+  { level:2, archetype:'cardassian_scout',     diff:'normal', label:"LEVEL 2",  title:"Cardassian Scout Vessel", subtitle:"Cardassian — Fast lock · Harassment fire" },
+  { level:3, archetype:'romulan_bop',          diff:'normal', label:"LEVEL 3",  title:"Romulan Bird-of-Prey",    subtitle:"Romulan — Cloaking · Plasma torpedo · Sensor ghosts" },
+  { level:4, archetype:'galor_class',          diff:'hard',   label:"LEVEL 4",  title:"Galor-Class Warship",     subtitle:"Cardassian — Heavy phasers · Photon torpedoes [HARD]" },
+  { level:5, archetype:'jem_hadar_battleship', diff:'hard',   label:"LEVEL 5",  title:"Jem'Hadar Battle Cruiser",subtitle:"Dominion — Heavy polaron bypass · Ramming [HARD]" },
+  { level:6, archetype:'ktinga',               diff:'hard',   label:"LEVEL 6",  title:"K'Tinga Battle Cruiser",  subtitle:"Klingon — Cloaking · Closes to brawl range [HARD]" },
+  { level:7, archetype:'vor_cha',              diff:'hard',   label:"LEVEL 7",  title:"Vor'Cha Attack Cruiser",  subtitle:"Klingon — Wing disruptors · Heavy torpedoes [HARD]" },
+  { level:8, archetype:'romulan_warbird',      diff:'hard',   label:"LEVEL 8",  title:"D'Deridex Warbird",       subtitle:"Romulan — Massive plasma · Sensor ghosts [HARD]" },
+  { level:9, archetype:'borg_probe',           diff:'elite',  label:"LEVEL 9",  title:"Borg Probe",              subtitle:"Borg — Adaptive shielding · Tractor beam [ELITE]" },
+];
+
 // ── Helm speed profiles ───────────────────────────────────────
 const HELM_SPEED_CONFIG = {
   stop:        { label:'ALL STOP',     enemyLockMult:1.35, yieldMult:1.10 },

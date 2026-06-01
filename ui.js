@@ -307,6 +307,7 @@ function calculateFinalScore(victory, escaped) {
 // END GAME
 // ============================================================
 function concludeSimulationRun(victory, msg, escaped) {
+  if (G.campaignMode) { concludeCampaignLevel(victory, escaped); return; }
   G.dead = true; G.running = false;
   const overlay = document.getElementById('overlay'); overlay.style.display = 'flex';
   const setup = document.getElementById('setup-controls-anchor'); if (setup) setup.style.display = 'none';
