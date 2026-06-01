@@ -175,15 +175,20 @@ The crew acts independently — Worf fires weapons and uses burst fire when cond
 
 ## Architecture
 
-No build step. Ten plain JS files loaded in order:
+No build step. 13 plain JS files loaded in order:
 
 ```
-state.js        — constants (DIFFICULTY, ENEMY_CONFIGS, HELM_SPEED_CONFIG, POWER_PRESETS…), G state object
+config.js       — all game constants (DIFFICULTY, ENEMY_CONFIGS, ARRAYS_DICTIONARY, …)
+state.js        — G state object + utility functions (getWarpOutput, postLogEvent, …)
 engineering.js  — power allocation, repairs, EPS conduit, ablative armour, power presets
-tactical.js     — weapons, enemy AI, cloaking, scanning, overload modes, auto-delegation
+crew.js         — crew casualties, efficiency modifiers, emergency warp
+sensors.js      — scan profiles, subsystem targeting grid
+tactical.js     — player weapons, cloaking, burst/evasive/overload modes
 helm.js         — speed, attack vector, range, all helm manoeuvres
+enemy-ai.js     — enemy AI, enemy fire, cloaking AI, mechanics timers, auto-delegation
 command.js      — Captain's Chair: crew comms, order cooldowns, autonomous crew behaviors
-canvas.js       — Three.js 3D battle view + 2D enemy schematic / hull / power canvases
+canvas-three.js — Three.js 3D battle view
+canvas-2d.js    — 2D enemy schematic / hull / power canvases
 ui.js           — deck switching (4 stations), global UI sync, scoring, end-game
 main.js         — game loop, simulation init, boot sequence, captain manoeuvre tickers
 lcars.css       — LCARS styling

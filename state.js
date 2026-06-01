@@ -86,6 +86,20 @@ const G = {
   evasiveDuration:8000,
   evasiveCooldownTime:20000,
 
+  // Burst fire
+  burstFireReady:true,
+  burstFireCooldown:0,
+
+  // Overload modes
+  overchargeReady:true,
+  overchargeCooldown:0,
+  unstableTorpReady:true,
+  unstableTorpCooldown:0,
+  powerDumpReady:true,
+  powerDumpActive:false,
+  powerDumpTimer:0,
+  powerDumpCooldown:0,
+
   // Helm station state
   helmSpeed:'half',
   helmAttackVector:'fore',

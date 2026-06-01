@@ -277,7 +277,9 @@ function _capScan(cdKey, scanType, worfMsg) {
       // Poll until analysis complete then auto-commit
       const sessionId = G.gameSessionId;
       const poll = setInterval(() => {
-        if (!G.running || G.gameSessionId !== sessionId) { clearInterval(poll); return; }
+        if (!G.running || G.gameSessionId !== sessionId || !G.activeScanProfile) {
+          clearInterval(poll); return;
+        }
         if (G.scanAnalysisProgress >= 100 && G.activeScanProfile === scanType) {
           clearInterval(poll);
           commitScanProfile();
