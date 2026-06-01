@@ -1,6 +1,138 @@
 'use strict';
 
 // ============================================================
+// ENCOUNTER PHASES — faction-specific dramatic arcs
+// ============================================================
+function _getFactionKey(cfg) {
+  const f = (cfg.faction || '').toLowerCase();
+  if (f === 'klingon')   return 'klingon';
+  if (f === 'romulan')   return 'romulan';
+  if (f === 'cardassian')return 'cardassian';
+  if (f === 'dominion')  return 'dominion';
+  if (f === 'borg')      return 'borg';
+  return null;
+}
+
+function initEncounterPhases() {
+  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
+  const key = _getFactionKey(cfg);
+  const phases = key ? ENCOUNTER_PHASES[key] : null;
+  if (!phases || !phases.length) {
+    G.enemyPhase = 'combat'; G.enemyPhaseIndex = 0;
+    G.enemyPhaseFireMult = 1.0; G.enemyPhaseLockMult = 1.0;
+    return;
+  }
+  G.enemyPhaseIndex = 0;
+  G.enemyPhaseTimer = 0;
+  _applyPhase(phases[0]);
+  postLogEvent(`[PHASE] ${cfg.faction}: ${phases[0].note}`, 'info');
+}
+
+function _applyPhase(phase) {
+  G.enemyPhase       = phase.name;
+  G.enemyPhaseFireMult = phase.fireRateMult;
+  G.enemyPhaseLockMult = phase.lockRateMult;
+  // Update phase label in left panel
+  const lbl = document.getElementById('lbl-enemy-phase-left');
+  if (lbl) {
+    lbl.style.display = 'block';
+    lbl.textContent   = `PHASE: ${phase.name.toUpperCase()}`;
+  }
+}
+
+function processEncounterPhase(dt) {
+  if (!G.running) return;
+  const cfg    = ENEMY_CONFIGS[G.enemyArchetype];
+  const key    = _getFactionKey(cfg);
+  const phases = key ? ENCOUNTER_PHASES[key] : null;
+  if (!phases || !phases.length) return;
+
+  const phase = phases[G.enemyPhaseIndex];
+  if (!phase) return;
+
+  G.enemyPhaseTimer += dt;
+
+  // Check for berserk override (Klingon) — enemy hull critical
+  if (key === 'klingon' && G.enemyPhase !== 'berserk') {
+    if (G.threat.hull / G.threat.maxHull < 0.25) {
+      const berserkIdx = phases.findIndex(p => p.name === 'berserk');
+      if (berserkIdx >= 0 && G.enemyPhaseIndex !== berserkIdx) {
+        G.enemyPhaseIndex = berserkIdx;
+        G.enemyPhaseTimer = 0;
+        _applyPhase(phases[berserkIdx]);
+        postLogEvent(`WORF: ${phases[berserkIdx].note}`, 'warn');
+        postCrewReport && postCrewReport('worf', "Captain — Klingon vessel entering berserk combat mode. Hull critical.", 'alert');
+        return;
+      }
+    }
+  }
+
+  // Romulan: force 'strike' phase on first decloak after shadow
+  if (key === 'romulan' && G.enemyPhase === 'shadow' && !G.enemyCloaked) {
+    const strikeIdx = phases.findIndex(p => p.name === 'strike');
+    if (strikeIdx >= 0) {
+      G.enemyPhaseIndex = strikeIdx;
+      G.enemyPhaseTimer = 0;
+      _applyPhase(phases[strikeIdx]);
+      postLogEvent(`WORF: ${phases[strikeIdx].note}`, 'warn');
+      return;
+    }
+  }
+
+  // Romulan: fade if heavily damaged and not already fading
+  if (key === 'romulan' && G.enemyPhase === 'strike' && G.threat.hull / G.threat.maxHull < 0.45) {
+    const fadeIdx = phases.findIndex(p => p.name === 'fade');
+    if (fadeIdx >= 0 && !G.enemyCloaked) {
+      G.enemyPhaseIndex = fadeIdx;
+      G.enemyPhaseTimer = 0;
+      _applyPhase(phases[fadeIdx]);
+      postLogEvent(`WORF: ${phases[fadeIdx].note}`, 'warn');
+      return;
+    }
+  }
+
+  // Dominion: sacrifice phase when ramming is triggered
+  if (key === 'dominion' && G.enemyRammingRun && G.enemyPhase !== 'sacrifice') {
+    const sacIdx = phases.findIndex(p => p.name === 'sacrifice');
+    if (sacIdx >= 0) {
+      G.enemyPhaseIndex = sacIdx; G.enemyPhaseTimer = 0;
+      _applyPhase(phases[sacIdx]);
+      return;
+    }
+  }
+
+  // Borg: escalate phase based on adaptation progress
+  if (key === 'borg') {
+    const totalResist  = Object.values(G.enemyAdaptiveResist).reduce((s, v) => s + v, 0);
+    const overwhelmIdx = phases.findIndex(p => p.name === 'overwhelm');
+    const adaptIdx     = phases.findIndex(p => p.name === 'adapt');
+    if (totalResist > 1.5 && G.enemyPhaseIndex < overwhelmIdx && overwhelmIdx >= 0) {
+      G.enemyPhaseIndex = overwhelmIdx; G.enemyPhaseTimer = 0;
+      _applyPhase(phases[overwhelmIdx]);
+      postLogEvent(`WORF: ${phases[overwhelmIdx].note}`, 'crit');
+      return;
+    } else if (totalResist > 0.4 && G.enemyPhaseIndex < adaptIdx && adaptIdx >= 0) {
+      G.enemyPhaseIndex = adaptIdx; G.enemyPhaseTimer = 0;
+      _applyPhase(phases[adaptIdx]);
+      postLogEvent(`WORF: ${phases[adaptIdx].note}`, 'warn');
+      return;
+    }
+  }
+
+  // Duration-based phase advance
+  if (phase.duration !== null && G.enemyPhaseTimer >= phase.duration) {
+    const nextIdx = G.enemyPhaseIndex + 1;
+    if (nextIdx < phases.length) {
+      G.enemyPhaseIndex = nextIdx;
+      G.enemyPhaseTimer = 0;
+      _applyPhase(phases[nextIdx]);
+      postLogEvent(`WORF: ${phases[nextIdx].note}`, 'warn');
+      postCrewReport && postCrewReport('worf', phases[nextIdx].note, 'alert');
+    }
+  }
+}
+
+// ============================================================
 // ENEMY-AI.JS — Enemy AI, firing, cloaking, auto-delegation
 // Depends on: config.js, state.js, engineering.js, crew.js,
 //             sensors.js, tactical.js, helm.js
@@ -228,6 +360,7 @@ function processEnemyAI(dt) {
   const cfg  = ENEMY_CONFIGS[G.enemyArchetype];
   const diff = DIFFICULTY[currentDifficulty];
 
+  processEncounterPhase(dt);
   processEnemyCloakDecision(dt);
   if (cfg.hasSensorGhosts) processEnemySensorGhosts(dt);
   processNewMechanicsTimers(dt);
@@ -272,7 +405,8 @@ function processEnemyAI(dt) {
   const alphaLockMod  = G.evasiveAlphaActive    ? 0.5 : 1.0;
   const picardLockMod = G.picardManoeuverActive  ? 0.0 : 1.0;
   const silentRunMod  = G.silentRunning          ? 0.6 : 1.0;
-  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * sc);
+  const phaseLockMod  = G.enemyPhaseLockMult     || 1.0;
+  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * phaseLockMod * sc);
 
   // Jem'Hadar ramming check
   if (cfg.canRam && !G.enemyRammingRun) {

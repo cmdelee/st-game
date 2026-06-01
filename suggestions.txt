@@ -2,9 +2,13 @@ LCARS Dual-Deck Tactical Suite — Improvement Suggestions
 [ ] = not started   [~] = partial   [x] = complete
 
 Core Combat & Tactical Depth
-[~] Add encounter phases for each faction (stalking, escalation, desperation, retreat).
-    -- enemyManeuverState (neutral/angling/torpedocharge), ramming at <20% hull, cloak triggers at <40% hull.
-    -- Missing: explicit stalking/escalation/retreat phases per faction.
+[x] Add encounter phases for each faction (stalking, escalation, desperation, retreat).
+    -- ENCOUNTER_PHASES config in config.js; initEncounterPhases + processEncounterPhase
+    -- in enemy-ai.js. Per-faction arcs: Klingon (approach→challenge→aggression→berserk),
+    -- Romulan (shadow→strike→fade), Cardassian (harassment→sustained→methodical),
+    -- Dominion (advance→overwhelm→sacrifice), Borg (analyze→adapt→overwhelm).
+    -- Phase fire rate + lock rate multipliers applied each frame. Phase label shown in
+    -- left panel. Transitions driven by duration, hull thresholds, and game events.
 [x] Implement spatial positioning:
     [x] heading         -- helmAttackVector + come-about rotate
     [x] maneuvering     -- helm speed (stop/maneuvering/half/full), attack run, evasive
@@ -59,7 +63,11 @@ Systems & Engineering Improvements
 [~] Add internal ship topology: engineering section, bow, port/starboard spine, dorsal/ventral regions.
     -- Sector-weighted internal damage pools (fore/port/starboard/aft → specific system targets).
     -- Missing: full topology model.
-[ ] Add unidentified/unknown contacts before combat.
+[x] Add unidentified/unknown contacts before combat.
+    -- Pre-battle briefing overlay (showPreBattleBriefing in main.js): 15s sensor scan,
+    -- contact revealed progressively (25% faction, 50% ship class + silhouette,
+    -- 70% threat assessment, 90% tactics). Power presets available during window.
+    -- BATTLE STATIONS button to skip; auto-engages at 100% scan.
 
 Mission Variety & Replayability
 [ ] Give enemies objectives besides destroying the player.
@@ -95,6 +103,9 @@ Advanced Tactical Features
     -- 10s, EPS spike, shields −30%, 50s CD).
 [~] Add command-pressure moments with difficult timed decisions.
     -- Jem'Hadar 4s ramming countdown; cloak vulnerability windows; burst-fire timing.
-[ ] Add dynamic mission briefings with hidden information.
+[x] Add dynamic mission briefings with hidden information.
+    -- MISSION_INTEL in config.js: per-archetype intel cards (4 per enemy) with
+    -- revealAt thresholds (50/70/90%). Cards start [CLASSIFIED], unlock as sensor
+    -- scan progresses. Threat level badge, mission context, tactical recommendations.
 [~] Add post-battle debriefs and combat analysis reports.
     -- Scoring screen with breakdown (damage, repairs, hull integrity bonus, difficulty multiplier).

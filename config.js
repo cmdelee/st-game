@@ -223,6 +223,135 @@ const ABLATIVE_ARMOUR = {
   regenTime:       30000,
 };
 
+// ── Pre-battle intel cards (revealed as sensor scan progresses) ─
+// Each card: { label, text, revealAt (0-100%) }
+const MISSION_INTEL = {
+  ktinga: {
+    silhouette: '🛸',
+    threat: 'HIGH',
+    cards: [
+      { label:'VESSEL CLASS',      text:"K'Tinga-class battle cruiser. 900 hull, heavy torpedoes.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"Cloaking device confirmed. Closes to disruptor range aggressively — disruptors gain +40% at close quarters.", revealAt:70 },
+      { label:'KNOWN WEAKNESS',    text:"Hull integrity degrades quickly under sustained cannon fire. Cloaking device is a priority target.", revealAt:90 },
+      { label:'TACTICS',           text:"Hold long range. Use Evasive Pattern when they close. Target disruptors or cloak device to neutralise their advantages.", revealAt:90 },
+    ]
+  },
+  vor_cha: {
+    silhouette: '🛸',
+    threat: 'HIGH',
+    cards: [
+      { label:'VESSEL CLASS',      text:"Vor'Cha-class attack cruiser. 1050 hull, wing disruptors, heavy torpedoes.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"More powerful than K'Tinga. Closes aggressively — wing disruptors gain +35% at close range. Cloaking confirmed.", revealAt:70 },
+      { label:'KNOWN WEAKNESS',    text:"Wing disruptors have limited firing arc. Aft quarter is comparatively light. Target engines to slow their advance.", revealAt:90 },
+      { label:'TACTICS',           text:"Maintain long range and use come-about to present fore shields. Destroy wing disruptors early to reduce close-range threat.", revealAt:90 },
+    ]
+  },
+  romulan_bop: {
+    silhouette: '🦅',
+    threat: 'HIGH',
+    cards: [
+      { label:'VESSEL CLASS',      text:"Romulan Bird-of-Prey. 750 hull. Plasma torpedo — catastrophic on impact.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"Cloaking device — highly aggressive. Plasma torpedo reload: 18 seconds. Generates false sensor contacts while cloaked.", revealAt:70 },
+      { label:'KNOWN WEAKNESS',    text:"Relatively light hull for Romulan design. Plasma banks take 18s to reload — fire window opens immediately after launch.", revealAt:90 },
+      { label:'TACTICS',           text:"Fire during the 18s plasma reload window. Tetryon scan degrades their lock. Don't ignore sensor ghosts — the real ship is nearby.", revealAt:90 },
+    ]
+  },
+  romulan_warbird: {
+    silhouette: '🦅',
+    threat: 'CRITICAL',
+    cards: [
+      { label:'VESSEL CLASS',      text:"D'Deridex-class warbird. 1200 hull, dual disruptors, heavy plasma banks.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"Largest Romulan design in active service. Cloak confirmed. Plasma reload: 22s. Sensor ghosts whilst cloaked. Massive hull integrity.", revealAt:70 },
+      { label:'KNOWN WEAKNESS',    text:"Slow to manoeuvre. Plasma banks have a 22s vulnerability window after each launch. Singularity core is targetable.", revealAt:90 },
+      { label:'TACTICS',           text:"Hull scan (+35% damage) before engaging. Target plasma banks first. Use burst salvo during the reload window. Manage EPS heat carefully — this will be a long fight.", revealAt:90 },
+    ]
+  },
+  cardassian_scout: {
+    silhouette: '⬡',
+    threat: 'MODERATE',
+    cards: [
+      { label:'VESSEL CLASS',      text:"Cardassian scout vessel. 480 hull, rapid-fire phasers, fast targeting lock.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"No cloaking device. Highest lock rate of any Cardassian design — achieves targeting lock in under 15 seconds.", revealAt:70 },
+      { label:'KNOWN WEAKNESS',    text:"Thin hull and light shielding. Aggressive fire pattern means EPS conduits run hot. Sustained pressure destroys it quickly.", revealAt:90 },
+      { label:'TACTICS',           text:"Attack immediately. Burst salvo early — its shields won't last. Tetryon scan negates its lock-rate advantage. Evasive only if lock exceeds 70%.", revealAt:90 },
+    ]
+  },
+  galor_class: {
+    silhouette: '⬡',
+    threat: 'MODERATE',
+    cards: [
+      { label:'VESSEL CLASS',      text:"Galor-class warship. 800 hull, forward phasers, photon torpedoes.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"No cloaking device. Strong fore shields. Photon torpedoes confirmed — reliable fire, no lock required.", revealAt:70 },
+      { label:'KNOWN WEAKNESS',    text:"Aft quarter is the weakest. Phaser systems are targetable and significantly reduce incoming fire rate when disabled.", revealAt:90 },
+      { label:'TACTICS',           text:"Come about to present strongest shields then press with cannons. Target phasers early. Shield frequency rotation counters their weapon signature.", revealAt:90 },
+    ]
+  },
+  jem_hadar_fighter: {
+    silhouette: '◈',
+    threat: 'HIGH',
+    cards: [
+      { label:'VESSEL CLASS',      text:"Jem'Hadar attack ship. 420 hull. Polaron weapons bypass 30% of shield capacity.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"Polaron bypass confirmed — 30% of each shot penetrates directly to hull. RAMMING PROTOCOL: will attempt suicide run below 20% hull.", revealAt:70 },
+      { label:'KNOWN WEAKNESS',    text:"Light hull — aggressive pressure destroys it before it reaches ramming threshold. Polaron arrays have broad firing arcs but low individual yield.", revealAt:90 },
+      { label:'TACTICS',           text:"Destroy it fast. If you see RAMMING RUN — all power to fore shields, Evasive Pattern immediately. Target polaron arrays to reduce hull bleed.", revealAt:90 },
+    ]
+  },
+  jem_hadar_battleship: {
+    silhouette: '◈',
+    threat: 'CRITICAL',
+    cards: [
+      { label:'VESSEL CLASS',      text:"Jem'Hadar battle cruiser. 1100 hull. Heavy polaron banks, photon torpedoes.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"Elite Dominion vessel. Polaron bypass confirmed. Ramming protocol active below 20% hull — collision damage 380 through ablative.", revealAt:70 },
+      { label:'KNOWN WEAKNESS',    text:"Heavier and slower than the fighter. Fore shields are its primary defence — come about to exploit aft quarter. Engine damage slows it significantly.", revealAt:90 },
+      { label:'TACTICS',           text:"Hull scan immediately. Rotate shield frequencies against polaron signature. Save ablative armour for the ramming run — it will come.", revealAt:90 },
+    ]
+  },
+  borg_probe: {
+    silhouette: '⬢',
+    threat: 'CRITICAL',
+    cards: [
+      { label:'VESSEL CLASS',      text:"Borg probe. 1400 hull. Adaptive shielding — per-weapon resistance builds with each hit.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"ADAPTIVE SHIELDING CONFIRMED. Each weapon type faces increasing resistance (0→65%). Tractor beam can disable weapons. Damage escalates as it adapts.", revealAt:70 },
+      { label:'KNOWN WEAKNESS',    text:"Adaptation is per-weapon — rotate all weapon types to prevent any single resistance reaching cap. Photon torpedoes adapt separately from quantum.", revealAt:90 },
+      { label:'TACTICS',           text:"Never fire the same weapon consecutively. Rotate: cannons → nose beam → quantum → photon → cannons. Subsystem targeting on sensors or cutting beam. Resistance is NOT futile.", revealAt:90 },
+    ]
+  },
+};
+
+// ── Encounter phase configs ───────────────────────────────────
+// Each faction has named phases. The AI checks G.enemyPhase each tick.
+// fireRateMult: multiplier on G.threat.fireInterval (lower = faster fire)
+// lockRateMult: multiplier on enemy lock rate
+// note: shown in enemy state display when phase changes
+const ENCOUNTER_PHASES = {
+  klingon: [
+    { name:'approach',   duration:18000, fireRateMult:1.0,  lockRateMult:1.0,  note:"Klingon vessel holding position — challenge incoming." },
+    { name:'challenge',  duration:6000,  fireRateMult:1.4,  lockRateMult:0.6,  note:"INCOMING HAIL — Klingon commander demanding surrender." },
+    { name:'aggression', duration:null,  fireRateMult:0.82, lockRateMult:1.2,  note:"Challenge refused — Klingon vessel closing to attack range!" },
+    { name:'berserk',    duration:null,  fireRateMult:0.65, lockRateMult:1.4,  note:"BERSERK — Klingon vessel at critical hull, maximum aggression!" },
+  ],
+  romulan: [
+    { name:'shadow',     duration:22000, fireRateMult:1.5,  lockRateMult:0.5,  note:"Romulan vessel cloaked — holding position, assessing tactics." },
+    { name:'strike',     duration:null,  fireRateMult:0.80, lockRateMult:1.3,  note:"Romulan vessel decloaking — plasma banks charged!" },
+    { name:'fade',       duration:null,  fireRateMult:1.2,  lockRateMult:0.8,  note:"Romulan vessel withdrawing under cloak to repair." },
+  ],
+  cardassian: [
+    { name:'harassment', duration:20000, fireRateMult:0.90, lockRateMult:1.1,  note:"Cardassian vessel opening with harassment fire — building targeting lock." },
+    { name:'sustained',  duration:null,  fireRateMult:0.80, lockRateMult:1.2,  note:"Cardassian vessel shifting to sustained fire pattern." },
+    { name:'methodical', duration:null,  fireRateMult:0.85, lockRateMult:1.3,  note:"Cardassian vessel locked to subsystem targeting — methodical approach." },
+  ],
+  dominion: [
+    { name:'advance',    duration:15000, fireRateMult:0.95, lockRateMult:1.0,  note:"Jem'Hadar advancing — polaron suppression fire." },
+    { name:'overwhelm',  duration:null,  fireRateMult:0.75, lockRateMult:1.2,  note:"Jem'Hadar shifting to overwhelming fire — maximum aggression." },
+    { name:'sacrifice',  duration:null,  fireRateMult:0.60, lockRateMult:1.0,  note:"JEM'HADAR SACRIFICE PROTOCOL ACTIVE — ramming trajectory confirmed!" },
+  ],
+  borg: [
+    { name:'analyze',    duration:25000, fireRateMult:1.3,  lockRateMult:0.8,  note:"Borg probe analysing vessel — adaptation subroutines initialising." },
+    { name:'adapt',      duration:null,  fireRateMult:0.90, lockRateMult:1.1,  note:"Borg adaptation progressing — fire rate increasing." },
+    { name:'overwhelm',  duration:null,  fireRateMult:0.70, lockRateMult:1.3,  note:"Borg adaptation complete — overwhelming assault commencing." },
+  ],
+};
+
 // ── Helm speed profiles ───────────────────────────────────────
 const HELM_SPEED_CONFIG = {
   stop:        { label:'ALL STOP',     enemyLockMult:1.35, yieldMult:1.10 },

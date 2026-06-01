@@ -178,6 +178,19 @@ const G = {
   // Borg escalation
   borgEscalationLevel:0,
 
+  // Pre-battle briefing
+  preBattleActive:false,
+  preBattleScanProgress:0,   // 0-100
+  preBattleTimer:0,          // ms elapsed
+  preBattleDuration:15000,   // 15s full scan
+
+  // Encounter phase
+  enemyPhase:'',
+  enemyPhaseTimer:0,
+  enemyPhaseIndex:0,
+  enemyPhaseFireMult:1.0,
+  enemyPhaseLockMult:1.0,
+
   // Captain's Chair
   crewReports:[],
   captainOrderCooldowns:{},

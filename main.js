@@ -97,9 +97,9 @@ function masterSimulationCoreLoop(ts) {
   // Enemy hull slow natural recovery
   G.threat.hull = Math.min(G.threat.maxHull, G.threat.hull + G.threat.recoveryCoefficient * (dt / 1000));
 
-  // Enemy fire cycle
+  // Enemy fire cycle — phase multiplier adjusts fire rate per faction arc
   G.threatCycleTimer += dt;
-  const fi = G.weaponsDisrupted ? G.threat.fireInterval * 2 : G.threat.fireInterval;
+  const fi = G.threat.fireInterval * (G.enemyPhaseFireMult || 1.0) * (G.weaponsDisrupted ? 2 : 1);
   if (G.threatCycleTimer > fi) { G.threatCycleTimer = 0; executeThreatCounterVolley(); }
 
   updateWarpAvailability();
@@ -197,6 +197,11 @@ function initiateVesselSimulation(station) {
   G.evasiveAlphaCooldown     = 0;
   G.evasiveActive            = false;
   G.evasiveCooldown          = 0;
+  G.enemyPhase               = '';
+  G.enemyPhaseIndex          = 0;
+  G.enemyPhaseTimer          = 0;
+  G.enemyPhaseFireMult       = 1.0;
+  G.enemyPhaseLockMult       = 1.0;
   G.holdFire                 = false;
   G.holdFireTimer            = 0;
   G.autoShieldTrack          = false;
@@ -285,11 +290,10 @@ function initiateVesselSimulation(station) {
   const scoreDiv = document.getElementById('score-display');
   if (scoreDiv) scoreDiv.style.display = 'none';
 
-  // Hide the startup overlay — this was missing and caused the load screen to persist
+  // Hide the startup overlay
   document.getElementById('overlay').style.display = 'none';
 
-  G.running = true;
-  G.lastFrameTimestamp = performance.now();
+  // G.running is set true by startCombat() after the pre-battle briefing
 
   // Item 1: Generate stardate and mission context
   G.stardate = 50000 + Math.floor(Math.random() * 5000) + Math.random().toFixed(1) * 1;
@@ -338,7 +342,129 @@ function initiateVesselSimulation(station) {
   updateWarpAvailability();
   recalculateShieldRegenRate();
   if (station === 'captain') initCaptainStation();
-  // No extra rAF call needed — the boot loop in runMasterBootSequence is already running
+
+  // Show pre-battle briefing before starting combat
+  showPreBattleBriefing();
+}
+
+// ============================================================
+// PRE-BATTLE BRIEFING
+// ============================================================
+function showPreBattleBriefing() {
+  G.preBattleScanProgress = 0;
+  G.preBattleTimer        = 0;
+  G.preBattleActive       = true;
+
+  const cfg    = ENEMY_CONFIGS[G.enemyArchetype];
+  const intel  = MISSION_INTEL[G.enemyArchetype] || {};
+  const overlay = document.getElementById('pre-battle-overlay');
+  if (!overlay) { startCombat(); return; }
+
+  // Populate static fields
+  const sd = document.getElementById('pb-stardate');
+  if (sd) sd.textContent = `STARDATE ${G.stardate.toFixed(1)} — ${G.missionContext}`;
+
+  const threat = document.getElementById('pb-threat');
+  if (threat) {
+    const lvl = intel.threat || 'UNKNOWN';
+    threat.textContent = `THREAT: ${lvl}`;
+    if (lvl === 'CRITICAL') threat.classList.add('critical');
+    else threat.classList.remove('critical');
+  }
+
+  const sil = document.getElementById('pb-silhouette');
+  if (sil) { sil.textContent = '?'; sil.classList.remove('revealed'); }
+
+  // Reset identity lines
+  const faction   = document.getElementById('pb-faction');
+  const shipclass = document.getElementById('pb-shipclass');
+  const mission   = document.getElementById('pb-mission');
+  if (faction)   { faction.textContent   = 'FACTION: [SCANNING...]'; faction.classList.add('classified'); }
+  if (shipclass) { shipclass.textContent = 'CLASS: [SCANNING...]';   shipclass.classList.add('classified'); }
+  if (mission)   mission.textContent = '';
+
+  // Build intel cards (start all classified)
+  const cardsEl = document.getElementById('pb-cards');
+  if (cardsEl) {
+    cardsEl.innerHTML = (intel.cards || []).map((c, i) => `
+      <div class="pb-card" id="pb-card-${i}">
+        <div class="pb-card-label">${c.label}</div>
+        <div class="pb-card-text" id="pb-cardtext-${i}">
+          <span class="pb-card-classified">████ CLASSIFIED ████</span>
+        </div>
+      </div>`).join('');
+  }
+
+  overlay.style.display = 'flex';
+
+  // Tick the briefing each 100ms
+  const sessionId = G.gameSessionId;
+  const tick = setInterval(() => {
+    if (G.gameSessionId !== sessionId || !G.preBattleActive) { clearInterval(tick); return; }
+
+    G.preBattleTimer += 100;
+    G.preBattleScanProgress = Math.min(100, (G.preBattleTimer / G.preBattleDuration) * 100);
+    const pct = G.preBattleScanProgress;
+
+    // Update scan bar
+    const bar = document.getElementById('pb-scan-bar');
+    const pctLbl = document.getElementById('pb-scan-pct');
+    if (bar) bar.style.width = pct + '%';
+    if (pctLbl) pctLbl.textContent = Math.round(pct) + '%';
+
+    // Countdown
+    const secs = Math.ceil((G.preBattleDuration - G.preBattleTimer) / 1000);
+    const cdLbl = document.getElementById('pb-countdown');
+    if (cdLbl) cdLbl.textContent = secs > 0 ? `Auto-engaging in ${secs}s` : 'Engaging...';
+
+    // Progressive identity reveals
+    if (pct >= 25 && faction && faction.classList.contains('classified')) {
+      faction.textContent = `FACTION: ${cfg.faction.toUpperCase()}`;
+      faction.classList.remove('classified');
+    }
+    if (pct >= 50) {
+      if (sil) { sil.textContent = intel.silhouette || '?'; sil.classList.add('revealed'); }
+      if (shipclass && shipclass.classList.contains('classified')) {
+        shipclass.textContent = `CLASS: ${cfg.label}`;
+        shipclass.classList.remove('classified');
+      }
+      if (mission && !mission.textContent) mission.textContent = G.missionContext;
+    }
+
+    // Reveal intel cards by their threshold
+    (intel.cards || []).forEach((c, i) => {
+      if (pct >= c.revealAt) {
+        const card = document.getElementById(`pb-card-${i}`);
+        const text = document.getElementById(`pb-cardtext-${i}`);
+        if (card && !card.classList.contains('revealed')) {
+          card.classList.add('revealed');
+          if (text) { text.innerHTML = c.text; text.classList.add('revealed'); }
+        }
+      }
+    });
+
+    // Auto-start at 100%
+    if (pct >= 100) { clearInterval(tick); _engageCombat(); }
+  }, 100);
+}
+
+function engageFromBriefing() {
+  // Player clicked BATTLE STATIONS early
+  G.preBattleScanProgress = 100;
+  _engageCombat();
+}
+
+function _engageCombat() {
+  G.preBattleActive = false;
+  const overlay = document.getElementById('pre-battle-overlay');
+  if (overlay) overlay.style.display = 'none';
+  startCombat();
+}
+
+function startCombat() {
+  G.running = true;
+  G.lastFrameTimestamp = performance.now();
+  initEncounterPhases();
 }
 
 // ============================================================
