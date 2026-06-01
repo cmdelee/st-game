@@ -225,6 +225,7 @@ function initiateVesselSimulation(station) {
   });
   G.score              = { totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false };
   G.repairQueue        = [];
+  G.enemyRepairQueue   = [];  // clear stale entries from previous game
   G.repairTeams        = [
     { sysKey:null, label:'', totalTime:0, remaining:0 },
     { sysKey:null, label:'', totalTime:0, remaining:0 },
