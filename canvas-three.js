@@ -11,6 +11,13 @@ const _FACTION_GLOW_COL  = { Klingon:0xff2200, Romulan:0x00cc44, Cardassian:0xff
 const _FACTION_BEAM_COL  = { Klingon:0xff4422, Romulan:0x44ff44, Cardassian:0xffaa00, Dominion:0xaa44ff, Borg:0x00ff88 };
 // Nacelle end offsets per ship (local space, relative to group origin)
 const _NAC_OFFSET = { defiant:{ x:-5.2, y:-0.5 }, enterprise_e:{ x:-8.4, y:-2.4 } };
+// Player weapon beam colours — canon-accurate
+// Defiant pulse cannons + Type-XII phasers: amber-orange. Nose emitter: deep orange.
+// Quantum torpedoes: blue-white. Photon torpedoes: orange-red.
+const _PLAYER_BEAM_COL = {
+  cannon_pu: 0xff9900, cannon_pl: 0xff9900, cannon_su: 0xff9900, cannon_sl: 0xff9900,
+  nose_beam: 0xff6600, torpedoes: 0x99ccff, photon: 0xff6600,
+};
 
 let THREE_scene, THREE_camera, THREE_renderer, THREE_clock;
 let mesh_defiant, mesh_enemy, mesh_enemyGroup;
@@ -27,6 +34,7 @@ let _saucerSepAngle = 0;
 let particle_system, particle_positions, particle_colours, particle_velocities, particle_life;
 const PARTICLE_COUNT = 800;
 let engine_glow_player, engine_glow_enemy;
+let impulse_glow_player;   // separate orange-red impulse engine light
 let THREE_ready = false;
 let _camShake = 0;
 let _camOrbitAngle = 0;
@@ -344,17 +352,67 @@ function spawnThreeParticles(x, y, z, colR, colG, colB, count) {
 }
 
 function buildStarfield() {
-  const N=1500, pos=new Float32Array(N*3), col=new Float32Array(N*3);
-  for (let i=0;i<N;i++) {
-    const r=400+Math.random()*200, t=Math.random()*Math.PI*2, p=Math.random()*Math.PI;
-    pos[i*3]=r*Math.sin(p)*Math.cos(t); pos[i*3+1]=r*Math.sin(p)*Math.sin(t); pos[i*3+2]=r*Math.cos(p);
-    const br=0.5+Math.random()*0.5, tint=Math.random();
-    col[i*3]=br*(tint>0.7?0.7:1); col[i*3+1]=br*(tint>0.8?0.7:1); col[i*3+2]=br*(tint<0.3?0.7:1);
+  // Layer 1 — bright foreground stars (varied star types)
+  const N1 = 2500;
+  const pos1 = new Float32Array(N1*3), col1 = new Float32Array(N1*3);
+  for (let i = 0; i < N1; i++) {
+    const r = 300 + Math.random()*250, t = Math.random()*Math.PI*2, p = Math.random()*Math.PI;
+    pos1[i*3]   = r*Math.sin(p)*Math.cos(t);
+    pos1[i*3+1] = r*Math.sin(p)*Math.sin(t);
+    pos1[i*3+2] = r*Math.cos(p);
+    const br   = 0.55 + Math.random()*0.45;
+    const type = Math.random(); // 0-0.5=white, 0.5-0.7=blue-white, 0.7-0.85=yellow, 0.85-1=orange
+    if (type < 0.50) { col1[i*3]=br;        col1[i*3+1]=br;        col1[i*3+2]=br; }
+    else if (type < 0.70) { col1[i*3]=br*0.8; col1[i*3+1]=br*0.9; col1[i*3+2]=br; }
+    else if (type < 0.85) { col1[i*3]=br;    col1[i*3+1]=br*0.9;  col1[i*3+2]=br*0.6; }
+    else                   { col1[i*3]=br;    col1[i*3+1]=br*0.7;  col1[i*3+2]=br*0.4; }
   }
-  const geo=new THREE.BufferGeometry();
-  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  geo.setAttribute('color',   new THREE.BufferAttribute(col,3));
-  return new THREE.Points(geo, new THREE.PointsMaterial({ size:0.8, vertexColors:true, sizeAttenuation:true }));
+  const geo1 = new THREE.BufferGeometry();
+  geo1.setAttribute('position', new THREE.BufferAttribute(pos1, 3));
+  geo1.setAttribute('color',    new THREE.BufferAttribute(col1, 3));
+  const stars1 = new THREE.Points(geo1, new THREE.PointsMaterial({ size:1.0, vertexColors:true, sizeAttenuation:true }));
+
+  // Layer 2 — faint distant background star haze
+  const N2 = 4000;
+  const pos2 = new Float32Array(N2*3), col2 = new Float32Array(N2*3);
+  for (let i = 0; i < N2; i++) {
+    const r = 550 + Math.random()*150, t = Math.random()*Math.PI*2, p = Math.random()*Math.PI;
+    pos2[i*3]   = r*Math.sin(p)*Math.cos(t);
+    pos2[i*3+1] = r*Math.sin(p)*Math.sin(t);
+    pos2[i*3+2] = r*Math.cos(p);
+    const br = 0.15 + Math.random()*0.25;
+    col2[i*3] = br; col2[i*3+1] = br*0.95; col2[i*3+2] = br*1.1;
+  }
+  const geo2 = new THREE.BufferGeometry();
+  geo2.setAttribute('position', new THREE.BufferAttribute(pos2, 3));
+  geo2.setAttribute('color',    new THREE.BufferAttribute(col2, 3));
+  const stars2 = new THREE.Points(geo2, new THREE.PointsMaterial({ size:0.5, vertexColors:true, sizeAttenuation:true }));
+
+  const group = new THREE.Group();
+  group.add(stars1, stars2);
+  return group;
+}
+
+// Rich nebula background — DS9 Bajoran sector aesthetic
+function buildNebula() {
+  const group = new THREE.Group();
+  const nebulaData = [
+    // [hex colour, opacity, width, height, x, y, z, rotX, rotY]
+    [0x3a0a00, 0.55, 180, 90,   20, -10, -150,  0.05, 0.2 ],  // deep orange-red gas cloud (aft)
+    [0x1a0030, 0.45, 150, 70,  -60,  20, -120, -0.08, -0.3],  // purple nebula (port side)
+    [0x001828, 0.40, 120, 60,   80, -15, -100,  0.12, 0.4 ],  // teal nebula (starboard)
+    [0x200010, 0.30, 200, 80,    0,  40, -200,  0.2,  0.0 ],  // large dark nebula far back
+    [0x0a0020, 0.35, 100, 50, -100,  30, -90,  -0.05, 0.5 ],  // small purple wisp
+    [0x300800, 0.25, 90,  40,  120, -25, -80,   0.1, -0.2 ],  // orange filament
+  ];
+  nebulaData.forEach(([col, op, w, h, x, y, z, rx, ry]) => {
+    const mat = new THREE.MeshBasicMaterial({ color:col, transparent:true, opacity:op, side:THREE.DoubleSide, depthWrite:false });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    mesh.position.set(x, y, z);
+    mesh.rotation.x = rx; mesh.rotation.y = ry;
+    group.add(mesh);
+  });
+  return group;
 }
 
 function initThreeScene() {
@@ -363,13 +421,13 @@ function initThreeScene() {
   const w = mount.clientWidth || 500, h = mount.clientHeight || 300;
 
   THREE_scene  = new THREE.Scene();
-  THREE_scene.background = new THREE.Color(0x000008);
-  THREE_scene.fog        = new THREE.FogExp2(0x000010, 0.0018);
+  THREE_scene.background = new THREE.Color(0x000004);
+  THREE_scene.fog        = new THREE.FogExp2(0x000008, 0.0012);
   THREE_clock  = new THREE.Clock();
 
-  THREE_camera = new THREE.PerspectiveCamera(55, w/h, 0.1, 1000);
-  THREE_camera.position.set(-55, 28, 0);
-  THREE_camera.lookAt(30, 0, 0);
+  THREE_camera = new THREE.PerspectiveCamera(52, w/h, 0.1, 1200);
+  THREE_camera.position.set(-52, 24, 0);
+  THREE_camera.lookAt(20, 0, 0);
 
   THREE_renderer = new THREE.WebGLRenderer({ antialias:true });
   THREE_renderer.setPixelRatio(window.devicePixelRatio || 1);
@@ -378,34 +436,29 @@ function initThreeScene() {
   mount.appendChild(THREE_renderer.domElement);
   THREE_renderer.domElement.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;';
 
-  // Lighting
-  THREE_scene.add(new THREE.AmbientLight(0x0a1020, 0.8));
-  const keyL = new THREE.DirectionalLight(0xfff8f0, 1.2); keyL.position.set(80,60,20); keyL.castShadow=true; THREE_scene.add(keyL);
-  const rimL = new THREE.DirectionalLight(0x1133ff, 0.4); rimL.position.set(-40,-10,0); THREE_scene.add(rimL);
-  const redF = new THREE.PointLight(0xff2200, 1.5, 80); redF.position.set(35,5,0); THREE_scene.add(redF);
+  // Lighting — star system sun + blue rim + combat ambience
+  THREE_scene.add(new THREE.AmbientLight(0x080c18, 1.0));
+  // Key light — angled "sun" for dramatic hull shading
+  const keyL = new THREE.DirectionalLight(0xfff5e0, 1.4); keyL.position.set(120, 80, 40); keyL.castShadow = true; THREE_scene.add(keyL);
+  // Blue rim from opposite side — deep space fill
+  const rimL = new THREE.DirectionalLight(0x1033aa, 0.5); rimL.position.set(-60, -20, -10); THREE_scene.add(rimL);
+  // Warm orange combat zone light — centred on engagement area
+  const combatL = new THREE.PointLight(0xff4400, 0.8, 120); combatL.position.set(0, 8, 0); THREE_scene.add(combatL);
 
   // Saucer separation point light — starts inactive
   engine_glow_saucer = new THREE.PointLight(0xffa040, 0, 30);
   THREE_scene.add(engine_glow_saucer);
 
-  // Static scene
+  // Static scene — NO grid (space has no grid)
   THREE_scene.add(buildStarfield());
-  grid_helper = new THREE.GridHelper(200, 40, 0x1133aa, 0x0a1a44);
-  grid_helper.position.y = -8; grid_helper.material.transparent=true; grid_helper.material.opacity=0.35;
-  THREE_scene.add(grid_helper);
+  THREE_scene.add(buildNebula());
 
-  // Nebula planes
-  [[0x200040,-0.06,60,30,0],[0x002040,-0.04,50,25,1]].forEach(([col,y,sx,sy,side]) => {
-    const neb = new THREE.Mesh(new THREE.PlaneGeometry(sx,sy), new THREE.MeshBasicMaterial({ color:col, transparent:true, opacity:0.12, side:THREE.DoubleSide, depthWrite:false }));
-    neb.position.set(20+side*30, y*80+60, -80+side*40); neb.rotation.x=-Math.PI/8;
-    THREE_scene.add(neb);
-  });
-
-  // Player
+  // Player — warp nacelle glow (blue) + impulse engine glow (orange-red, separate)
   mesh_defiant = buildDefiantGeometry();
-  mesh_defiant.position.set(-28,0,0);
+  mesh_defiant.position.set(-28, 0, 0);
   THREE_scene.add(mesh_defiant);
-  engine_glow_player = new THREE.PointLight(0x4477ff, 2.5, 20); engine_glow_player.position.set(-33,0,0); THREE_scene.add(engine_glow_player);
+  engine_glow_player  = new THREE.PointLight(0x4488ff, 2.2, 22); engine_glow_player.position.set(-33, 0, 0); THREE_scene.add(engine_glow_player);
+  impulse_glow_player = new THREE.PointLight(0xff4400, 0.8, 14); impulse_glow_player.position.set(-24, 0, 0); THREE_scene.add(impulse_glow_player);
   shield_player = buildShieldMesh(0x4477ff); shield_player.position.copy(mesh_defiant.position); THREE_scene.add(shield_player);
 
   // Enemy (placeholder — rebuilt on game start)
@@ -731,7 +784,7 @@ function renderSpatialViewCanvas() {
 
   // ── Weapon beams — 3D tube meshes with glow + core ──────────
   const elapsed = THREE_clock.getElapsedTime();
-  const bCols = { cannon_pu:0x66ccff, cannon_pl:0x66ccff, cannon_su:0x66ccff, cannon_sl:0x66ccff, nose_beam:0xff8800, torpedoes:0xcc66ff, photon:0x4499ff };
+  const bCols = _PLAYER_BEAM_COL;
 
   G.renderedBeamsVector.forEach(b => {
     // ── Burst flash: expanding shockwave ring ──
@@ -815,7 +868,8 @@ function renderSpatialViewCanvas() {
     if (t._three_mesh) return;
     const fromV = t.fromEnemy ? mesh_enemyGroup.position.clone() : mesh_defiant.position.clone();
     const toV   = t.fromEnemy ? mesh_defiant.position.clone() : mesh_enemyGroup.position.clone();
-    const col   = t.fromEnemy ? 0xff3333 : (t.isPhoton ? 0x4488ff : 0xcc66ff);
+    // Enemy: red warning. Player quantum: blue-white (First Contact canon). Player photon: orange-red (classic Trek).
+    const col   = t.fromEnemy ? 0xff2200 : (t.isPhoton ? 0xff6600 : 0x99ccff);
     const geo   = new THREE.SphereGeometry(0.5, 8, 6);
     const mat   = new THREE.MeshPhongMaterial({ color:col, emissive:col, emissiveIntensity:2, transparent:true, opacity:0.9 });
     const mesh  = new THREE.Mesh(geo, mat);
@@ -903,7 +957,12 @@ function renderSpatialViewCanvas() {
     G.damageParticles = [];
   }
 
-  grid_helper.rotation.y = now * 0.008;
+  // Impulse engine glow — orange-red, scales with helm speed
+  if (impulse_glow_player) {
+    const _impGlow = { stop:0.2, maneuvering:0.5, half:1.0, full:2.2 }[G.helmSpeed] ?? 1.0;
+    impulse_glow_player.intensity = G.cloaked ? 0 : _impGlow * (G.systems.engines.health / 100);
+    impulse_glow_player.position.set(mesh_defiant.position.x + 4, mesh_defiant.position.y, mesh_defiant.position.z);
+  }
   G.renderedBeamsVector = G.renderedBeamsVector.filter(b => performance.now() - b.trackingStartTime < b.duration);
   THREE_renderer.render(THREE_scene, THREE_camera);
 }
