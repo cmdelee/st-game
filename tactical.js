@@ -310,34 +310,31 @@ function fireEnergyWeapons() {
   energyKeys.forEach(k => fireSelectedArray(k));
 }
 
-// Fire best available torpedoes for current arc + lock
+// Fire best available torpedo for current arc — one tube, arc-strict.
+// Aft vector → aft tubes. All other vectors → fore tubes (fore/port/stbd arc).
+// Quantum if lock ≥ 5% and magazine, otherwise photon. Never crosses tube positions.
 function fireTorpedoBanks() {
   if (!G.running || G.dead) return;
   const aw  = G.activeWeaponArrays || ARRAYS_DICTIONARY;
-  const aft = G.helmAttackVector === 'aft';
+  const vec = G.helmAttackVector;
 
-  // Choose tube set based on current facing
-  const quantumKey = aft ? 'torpedo_quantum_aft' : 'torpedo_quantum';
-  const photonKey  = aft ? 'torpedo_photon_aft'  : 'torpedo_photon';
+  // Pick the tube set whose arc covers the current vector
+  const useAft     = vec === 'aft';
+  const quantumKey = useAft ? 'torpedo_quantum_aft' : 'torpedo_quantum';
+  const photonKey  = useAft ? 'torpedo_photon_aft'  : 'torpedo_photon';
 
-  // Also check the other facing's quantum as a fallback for non-aft vectors
-  const altQuantum = aft ? 'torpedo_quantum' : 'torpedo_quantum_aft';
+  // Verify the selected tubes actually bear on this vector
+  const qInArc = aw[quantumKey] && aw[quantumKey].arc.includes(vec);
+  const pInArc = aw[photonKey]  && aw[photonKey].arc.includes(vec);
 
-  let fired = false;
-  // Prefer quantum if we have lock and magazine
-  if (aw[quantumKey] && aw[quantumKey].arc.includes(G.helmAttackVector) &&
-      G.lockProgress >= 5 && G.player.torpedoes > 0) {
-    fireSelectedArray(quantumKey); fired = true;
-  } else if (!aft && aw[altQuantum] && aw[altQuantum].arc.includes(G.helmAttackVector) &&
-      G.lockProgress >= 5 && G.player.torpedoes > 0) {
-    fireSelectedArray(altQuantum); fired = true;
+  // Quantum first (better yield), photon as fallback only — never simultaneous
+  if (qInArc && G.lockProgress >= 5 && G.player.torpedoes > 0) {
+    fireSelectedArray(quantumKey);
+  } else if (pInArc && G.player.photonTorpedoes > 0) {
+    fireSelectedArray(photonKey);
+  } else {
+    postLogEvent("No torpedoes available on current attack vector.", 'warn');
   }
-  // Fire photon alongside (or as fallback)
-  if (aw[photonKey] && aw[photonKey].arc.includes(G.helmAttackVector) &&
-      G.player.photonTorpedoes > 0) {
-    fireSelectedArray(photonKey); fired = true;
-  }
-  if (!fired) postLogEvent("No torpedoes available on current attack vector.", 'warn');
 }
 
 // Fire everything in arc (energy + torpedoes)
