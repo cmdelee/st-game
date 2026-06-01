@@ -1,4 +1,4 @@
-# 🖖 USS Defiant Battle Simulator - A STAR TREK FAN PRODUCTION
+# 🖖 Starship Battle Simulator - A STAR TREK FAN PRODUCTION
 
 "Star Trek and all related marks, logos and characters are solely owned by CBS Studios Inc. This fan production is not endorsed by, sponsored by, nor affiliated with CBS, Paramount Pictures, or any other Star Trek franchise, and is a non-commercial fan-made interactive experience intended for recreational use. No commercial exhibition or distribution is permitted. No alleged independent rights will be asserted against CBS or Paramount Pictures."
 
