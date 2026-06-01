@@ -1,214 +1,10 @@
 'use strict';
 
 // ============================================================
-// ENCOUNTER PHASES — faction-specific dramatic arcs
-// ============================================================
-function _getFactionKey(cfg) {
-  const f = (cfg.faction || '').toLowerCase();
-  if (f === 'klingon')   return 'klingon';
-  if (f === 'romulan')   return 'romulan';
-  if (f === 'cardassian')return 'cardassian';
-  if (f === 'dominion')  return 'dominion';
-  if (f === 'borg')      return 'borg';
-  return null;
-}
-
-function initEncounterPhases() {
-  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
-  const key = _getFactionKey(cfg);
-  const phases = key ? ENCOUNTER_PHASES[key] : null;
-  if (!phases || !phases.length) {
-    G.enemyPhase = 'combat'; G.enemyPhaseIndex = 0;
-    G.enemyPhaseFireMult = 1.0; G.enemyPhaseLockMult = 1.0;
-    return;
-  }
-  G.enemyPhaseIndex = 0;
-  G.enemyPhaseTimer = 0;
-  _applyPhase(phases[0]);
-  postLogEvent(`[PHASE] ${cfg.faction}: ${phases[0].note}`, 'info');
-}
-
-function _applyPhase(phase) {
-  G.enemyPhase       = phase.name;
-  G.enemyPhaseFireMult = phase.fireRateMult;
-  G.enemyPhaseLockMult = phase.lockRateMult;
-  G.score.enemyPhaseReached = phase.name;
-  // Update phase label in left panel
-  const lbl = document.getElementById('lbl-enemy-phase-left');
-  if (lbl) {
-    lbl.style.display = 'block';
-    lbl.textContent   = `PHASE: ${phase.name.toUpperCase()}`;
-  }
-}
-
-function processEncounterPhase(dt) {
-  if (!G.running) return;
-  const cfg    = ENEMY_CONFIGS[G.enemyArchetype];
-  const key    = _getFactionKey(cfg);
-  const phases = key ? ENCOUNTER_PHASES[key] : null;
-  if (!phases || !phases.length) return;
-
-  const phase = phases[G.enemyPhaseIndex];
-  if (!phase) return;
-
-  G.enemyPhaseTimer += dt;
-
-  // Check for berserk override (Klingon) — enemy hull critical
-  if (key === 'klingon' && G.enemyPhase !== 'berserk') {
-    if (G.threat.hull / G.threat.maxHull < 0.25) {
-      const berserkIdx = phases.findIndex(p => p.name === 'berserk');
-      if (berserkIdx >= 0 && G.enemyPhaseIndex !== berserkIdx) {
-        G.enemyPhaseIndex = berserkIdx;
-        G.enemyPhaseTimer = 0;
-        _applyPhase(phases[berserkIdx]);
-        postLogEvent(`WORF: ${phases[berserkIdx].note}`, 'warn');
-        postCrewReport && postCrewReport('worf', "Captain — Klingon vessel entering berserk combat mode. Hull critical.", 'alert');
-        return;
-      }
-    }
-  }
-
-  // Romulan: force 'strike' phase on first decloak after shadow
-  if (key === 'romulan' && G.enemyPhase === 'shadow' && !G.enemyCloaked) {
-    const strikeIdx = phases.findIndex(p => p.name === 'strike');
-    if (strikeIdx >= 0) {
-      G.enemyPhaseIndex = strikeIdx;
-      G.enemyPhaseTimer = 0;
-      _applyPhase(phases[strikeIdx]);
-      postLogEvent(`WORF: ${phases[strikeIdx].note}`, 'warn');
-      return;
-    }
-  }
-
-  // Romulan: fade if heavily damaged and not already fading
-  if (key === 'romulan' && G.enemyPhase === 'strike' && G.threat.hull / G.threat.maxHull < 0.45) {
-    const fadeIdx = phases.findIndex(p => p.name === 'fade');
-    if (fadeIdx >= 0 && !G.enemyCloaked) {
-      G.enemyPhaseIndex = fadeIdx;
-      G.enemyPhaseTimer = 0;
-      _applyPhase(phases[fadeIdx]);
-      postLogEvent(`WORF: ${phases[fadeIdx].note}`, 'warn');
-      return;
-    }
-  }
-
-  // Dominion: sacrifice phase when ramming is triggered
-  if (key === 'dominion' && G.enemyRammingRun && G.enemyPhase !== 'sacrifice') {
-    const sacIdx = phases.findIndex(p => p.name === 'sacrifice');
-    if (sacIdx >= 0) {
-      G.enemyPhaseIndex = sacIdx; G.enemyPhaseTimer = 0;
-      _applyPhase(phases[sacIdx]);
-      return;
-    }
-  }
-
-  // Borg: escalate phase based on adaptation progress
-  if (key === 'borg') {
-    const totalResist  = Object.values(G.enemyAdaptiveResist).reduce((s, v) => s + v, 0);
-    const overwhelmIdx = phases.findIndex(p => p.name === 'overwhelm');
-    const adaptIdx     = phases.findIndex(p => p.name === 'adapt');
-    if (totalResist > 1.5 && G.enemyPhaseIndex < overwhelmIdx && overwhelmIdx >= 0) {
-      G.enemyPhaseIndex = overwhelmIdx; G.enemyPhaseTimer = 0;
-      _applyPhase(phases[overwhelmIdx]);
-      postLogEvent(`WORF: ${phases[overwhelmIdx].note}`, 'crit');
-      return;
-    } else if (totalResist > 0.4 && G.enemyPhaseIndex < adaptIdx && adaptIdx >= 0) {
-      G.enemyPhaseIndex = adaptIdx; G.enemyPhaseTimer = 0;
-      _applyPhase(phases[adaptIdx]);
-      postLogEvent(`WORF: ${phases[adaptIdx].note}`, 'warn');
-      return;
-    }
-  }
-
-  // Duration-based phase advance
-  if (phase.duration !== null && G.enemyPhaseTimer >= phase.duration) {
-    const nextIdx = G.enemyPhaseIndex + 1;
-    if (nextIdx < phases.length) {
-      G.enemyPhaseIndex = nextIdx;
-      G.enemyPhaseTimer = 0;
-      _applyPhase(phases[nextIdx]);
-      postLogEvent(`WORF: ${phases[nextIdx].note}`, 'warn');
-      postCrewReport && postCrewReport('worf', phases[nextIdx].note, 'alert');
-    }
-  }
-}
-
-// ============================================================
-// HULL MILESTONE EVENTS — faction-specific reactions at 75/50/25/10%
-// ============================================================
-
-const _MILESTONE_DATA = {
-  75: {
-    klingon:    { msg:"TACTICAL: Klingon vessel taking hull damage — watch for increased aggression.", tier:'warn',  crew:'worf',   crewMsg:"Klingon hull at seventy-five percent, Captain. Still fully combat-capable." },
-    romulan:    { msg:"TACTICAL: Romulan hull breached. Enemy may attempt evasive cloaking.", tier:'warn',          crew:'worf',   crewMsg:"Romulan vessel registering hull damage. Expect a cloaking manoeuvre, Captain." },
-    cardassian: { msg:"CARDASSIAN VESSEL: 'Your weapons are noted, Defiant. Cardassia does not yield easily.'", tier:'warn', crew:null },
-    dominion:   { msg:"TACTICAL: Jem'Hadar at 75% hull — no defensive posture. They are accelerating.", tier:'warn', crew:'worf',  crewMsg:"Jem'Hadar are taking damage and speeding up, Captain. No signs of retreat." },
-    borg:       { msg:"BORG: 'Your offensive capabilities are noted. Adaptation is in progress.'", tier:'warn',     crew:null },
-  },
-  50: {
-    klingon:    { msg:"TACTICAL: Klingon hull at 50% — entering maximum aggression threshold!", tier:'warn',        crew:'worf',   crewMsg:"Captain — Klingon hull at fifty percent. Fire rate is increasing. Stay focused." },
-    romulan:    { msg:"TACTICAL: Romulan hull at 50% — enemy will attempt fade and repair under cloak.", tier:'warn', crew:'worf', crewMsg:"Romulan vessel at fifty percent hull, Captain. Anticipate emergency cloaking." },
-    cardassian: { msg:"CARDASSIAN VESSEL: 'You fight well for a Starfleet crew. This engagement is not over.'", tier:'warn', crew:null },
-    dominion:   { msg:"JEM'HADAR: 'Victory is life. We do not retreat — we accelerate!' Fire rate escalating.", tier:'crit', crew:'worf', crewMsg:"Jem'Hadar vessel at fifty percent hull and increasing fire rate. They never stop, Captain." },
-    borg:       { msg:"BORG: 'We are the Borg. Your crew will be assimilated. Your biological distinctiveness will be added to our own.'", tier:'crit', crew:null },
-  },
-  25: {
-    klingon:    { msg:"TACTICAL: KLINGON HULL CRITICAL — BERSERK STATE! 'TODAY IS A GOOD DAY TO DIE!'", tier:'crit', crew:'worf', crewMsg:"Klingon vessel at critical hull, Captain. They will fight to absolute destruction!" },
-    romulan:    { msg:"TACTICAL: Romulan hull critical — emergency cloak imminent. They will not surrender.", tier:'crit', crew:'worf', crewMsg:"Romulan vessel severely damaged, Captain. They are cloaking for emergency repairs." },
-    cardassian: { msg:"CARDASSIAN VESSEL: 'Shields failing... structural integrity compromised... Cardassia Prime will hear of this.'", tier:'crit', crew:null },
-    dominion:   { msg:"JEM'HADAR: 'We are already dead. The Founders will be avenged!' Ramming protocol approaching!", tier:'crit', crew:'worf', crewMsg:"Jem'Hadar at twenty-five percent hull. Ramming run is imminent, Captain — fore shields!" },
-    borg:       { msg:"BORG: 'Your resistance has been... inefficient. Assimilation will now proceed. Prepare yourself.'", tier:'crit', crew:null },
-  },
-  10: {
-    klingon:    { msg:"KLINGON VESSEL CRITICAL — FIRING DEATH SALVO! 'Qa'pla! Hegh'bat! Glory to the Empire!'", tier:'crit', crew:'worf', crewMsg:"EVASIVE! Klingon death salvo incoming — all hands brace for impact!" },
-    romulan:    { msg:"TACTICAL: Romulan hull at 10% — they will self-destruct before surrender.", tier:'crit', crew:'worf',          crewMsg:"Romulan vessel at ten percent hull, Captain. Their honour code forbids capture." },
-    cardassian: { msg:"CARDASSIAN VESSEL: 'Power failing... life support critical... *static*... Garak was right about you.'", tier:'crit', crew:null },
-    dominion:   { msg:"JEM'HADAR: 'FOR THE FOUNDERS! VICTORY IS LIFE!' Maximum ramming velocity!", tier:'crit', crew:'worf',          crewMsg:"BRACE! Jem'Hadar at ten percent — ramming run confirmed! All power to fore shields!" },
-    borg:       { msg:"BORG: 'Your crew will service us well. Resistance is — ' [HULL BREACH DETECTED]", tier:'crit', crew:null },
-  },
-};
-
-function checkEnemyHullMilestones() {
-  if (!G.running || G.dead) return;
-  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
-  const key = _getFactionKey(cfg);
-  const pct = G.threat.hull / G.threat.maxHull;
-
-  [75, 50, 25, 10].forEach(threshold => {
-    if (pct <= threshold / 100 && !G.enemyHullMilestones[threshold]) {
-      G.enemyHullMilestones[threshold] = true;
-      const data = key ? _MILESTONE_DATA[threshold][key] : null;
-      if (data) {
-        postLogEvent(data.msg, data.tier);
-        if (data.crew && typeof postCrewReport === 'function') {
-          postCrewReport(data.crew, data.crewMsg, 'alert');
-        }
-      }
-      // Faction-specific reactions
-      if (threshold === 10 && key === 'klingon') _triggerKlingonDeathSalvo();
-      if (threshold === 25 && key === 'romulan' && !G.enemyCloaked) triggerEnemyCloak(cfg);
-      if (threshold === 25 && key === 'dominion') {
-        // Jem'Hadar final push — lock the phase to sacrifice/overwhelm
-        G.enemyPhaseFireMult = Math.min(G.enemyPhaseFireMult, 0.60);
-      }
-    }
-  });
-}
-
-function _triggerKlingonDeathSalvo() {
-  // Fire three rapid volleys — the Klingon death salvo
-  postLogEvent("KLINGON DEATH SALVO — MAXIMUM WEAPONS DISCHARGE!", 'crit');
-  [300, 700, 1100].forEach(delay => {
-    setTimeout(() => {
-      if (!G.dead && G.running) executeThreatCounterVolley();
-    }, delay);
-  });
-}
-
-// ============================================================
-// ENEMY-AI.JS — Enemy AI, firing, cloaking, auto-delegation
+// ENEMY AI — cloaking, sensor ghosts, mechanics timers,
+//            ramming, AI loop, enemy fire
 // Depends on: config.js, state.js, engineering.js, crew.js,
-//             sensors.js, tactical.js, helm.js
+//             sensors.js, tactical.js, helm.js, encounter-phases.js
 // ============================================================
 
 // ── Enemy cloaking ────────────────────────────────────────────
@@ -259,13 +55,13 @@ function triggerEnemyDecloak(cfg, reason) {
   postLogEvent(`${cfg.label} DECLOAKING (${reason}) — shields offline 1.5s! Fire now!`, 'crit');
   crewReportEnemyDecloak();
   postTacticalAdvisory("Enemy shields down during decloak — maximum yield fire window open!");
-  // Romulan strike phase: fire plasma immediately on decloak — terrifying DS9-accurate behavior
+  // Romulan strike phase: fire plasma immediately on decloak — terrifying DS9-accurate behaviour
   if (cfg.faction === 'Romulan' && G.enemyPhase === 'strike' && G.plasmaTorpedoReady) {
     setTimeout(() => {
       if (!G.dead && G.running) {
         postLogEvent("ROMULAN PLASMA TORPEDO — FIRED ON DECLOAK! BRACE!", 'crit');
-        // Force the fire cycle to trigger on the next main-loop tick — do NOT call
-        // executeThreatCounterVolley() directly here or the Romulan fires twice
+        // Set timer past threshold so the main loop fires on next tick;
+        // do NOT call executeThreatCounterVolley() directly or it fires twice
         G.threatCycleTimer = G.threat.fireInterval + 1;
       }
     }, 800);
@@ -273,18 +69,18 @@ function triggerEnemyDecloak(cfg, reason) {
   setTimeout(() => {
     if (G.dead) return;
     G.enemyCloakVulnTimer = 0;
-    const eSS       = G.enemySystems.shields_sys;
-    const eRegen    = (eSS ? eSS.health / 100 : 1) * 1.2;
-    const cloakSecs = (performance.now() - G.enemyCloakEngagedAt) / 1000;
+    const eSS        = G.enemySystems.shields_sys;
+    const eRegen     = (eSS ? eSS.health / 100 : 1) * 1.2;
+    const cloakSecs  = (performance.now() - G.enemyCloakEngagedAt) / 1000;
     const regenEarned = eRegen * cloakSecs;
-    const frozen    = G.enemyFrozenShields || { fore:0, port:0, starboard:0, aft:0 };
-    const cfg2      = ENEMY_CONFIGS[G.enemyArchetype];
+    const frozen     = G.enemyFrozenShields || { fore:0, port:0, starboard:0, aft:0 };
+    const cfg2       = ENEMY_CONFIGS[G.enemyArchetype];
     ['fore','port','starboard','aft'].forEach(s => { G.threat.shields[s] = Math.min(cfg2.shields[s], frozen[s] + regenEarned); });
     postLogEvent(`${cfg.label} decloaked — shields partially restored.`, 'warn');
   }, 1500);
 }
 
-// ── Sensor ghosts ─────────────────────────────────────────────
+// ── Sensor ghosts (Romulan) ───────────────────────────────────
 function processEnemySensorGhosts(dt) {
   const cfg = ENEMY_CONFIGS[G.enemyArchetype];
   if (!cfg.hasSensorGhosts || !G.enemyCloaked) return;
@@ -305,8 +101,6 @@ function processEnemySensorGhosts(dt) {
 
 // ── Mechanics timers (called each frame from main loop) ───────
 function processNewMechanicsTimers(dt) {
-  const sc = dt / 1000;
-
   // Evasive manoeuvre countdown
   if (G.evasiveActive) {
     G.evasiveCooldown = Math.max(0, G.evasiveCooldown - dt);
@@ -371,7 +165,7 @@ function processNewMechanicsTimers(dt) {
     if (G.shieldFreqCooldown <= 0) updateShieldFreqButton();
   }
 
-  // Klingon range bracket
+  // Klingon range-closing
   const cfg = ENEMY_CONFIGS[G.enemyArchetype];
   if (cfg.prefersCloseRange && !G.enemyCloaked) {
     G.enemyRangeTimer += dt;
@@ -398,7 +192,7 @@ function processNewMechanicsTimers(dt) {
     }
   }
 
-  // Jem'Hadar ramming run countdown
+  // Jem'Hadar ramming countdown
   if (G.enemyRammingRun) {
     G.enemyRammingTimer = Math.max(0, G.enemyRammingTimer - dt);
     if (G.enemyRammingTimer <= 0) {
@@ -407,7 +201,7 @@ function processNewMechanicsTimers(dt) {
     }
   }
 
-  processHelmTimers(dt); // → helm.js
+  processHelmTimers(dt);
 }
 
 // ── Jem'Hadar ramming ─────────────────────────────────────────
@@ -480,20 +274,19 @@ function processEnemyAI(dt) {
   }
 
   // Enemy lock rate
-  const eSens      = G.enemySystems.sensors;
-  const sMod       = eSens ? eSens.health / 100 : 1;
-  const evasiveMod = G.evasiveActive ? getHelmEvasiveModifier() : 1.0;
-  const tetryonMod = (G.scanBonus && G.scanBonus.type === 'tetryon' && performance.now() < G.scanBonus.expiry) ? G.scanBonus.value : 1.0;
+  const eSens         = G.enemySystems.sensors;
+  const sMod          = eSens ? eSens.health / 100 : 1;
+  const evasiveMod    = G.evasiveActive ? getHelmEvasiveModifier() : 1.0;
+  const tetryonMod    = (G.scanBonus && G.scanBonus.type === 'tetryon' && performance.now() < G.scanBonus.expiry) ? G.scanBonus.value : 1.0;
   const helmSpeedCfg  = HELM_SPEED_CONFIG[G.helmSpeed] || HELM_SPEED_CONFIG.half;
   const helmSpeedMod  = G.comeAboutActive ? 1.25 : helmSpeedCfg.enemyLockMult;
-  const alphaLockMod  = G.evasiveAlphaActive    ? 0.5 : 1.0;
-  const picardLockMod = G.picardManoeuverActive  ? 0.0 : 1.0;
-  const silentRunMod  = G.silentRunning          ? 0.6 : 1.0;
-  // Saucer separation: dual-contact decoy (−60%) + stardrive agility (−15% extra when fully separated)
+  const alphaLockMod  = G.evasiveAlphaActive   ? 0.5 : 1.0;
+  const picardLockMod = G.picardManoeuverActive ? 0.0 : 1.0;
+  const silentRunMod  = G.silentRunning         ? 0.6 : 1.0;
   const saucerSepMod  = G.saucerSepActive
-    ? (G.saucerSepReconnecting ? 0.75 : 0.34)   // docking: −25% | separated: −66% total
+    ? (G.saucerSepReconnecting ? 0.75 : 0.34)
     : 1.0;
-  const phaseLockMod  = G.enemyPhaseLockMult     || 1.0;
+  const phaseLockMod  = G.enemyPhaseLockMult || 1.0;
   G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * saucerSepMod * phaseLockMod * sc);
 
   // Jem'Hadar ramming check
@@ -502,7 +295,7 @@ function processEnemyAI(dt) {
     if (hullPct < 0.20 && Math.random() < 0.008 * sc * 60) initiateRammingRun(cfg);
   }
 
-  // Manoeuvre — fixed threshold
+  // Manoeuvre
   G.enemyManeuverTimer += dt;
   if (!G.enemyManeuverThreshold) G.enemyManeuverThreshold = 7000 + Math.random() * 5000;
   if (G.enemyManeuverTimer > G.enemyManeuverThreshold) {
@@ -545,7 +338,6 @@ function processEnemyAI(dt) {
       postTacticalAdvisory("All primary weapons fully adapted — target subsystems or use photon torpedoes!");
   }
 
-  // Hull milestone events — faction-specific reactions at 75/50/25/10%
   checkEnemyHullMilestones();
 
   // Enemy weapon degradation below 35% hull — ship is falling apart
@@ -554,7 +346,7 @@ function processEnemyAI(dt) {
     const weaponKeys = Object.keys(G.enemySystems).filter(k => G.enemySystems[k].isWeapon && G.enemySystems[k].health > 10);
     if (weaponKeys.length > 0) {
       const hitKey = weaponKeys[Math.floor(Math.random() * weaponKeys.length)];
-      const dmg = Math.floor(Math.random() * 12) + 5;
+      const dmg    = Math.floor(Math.random() * 12) + 5;
       G.enemySystems[hitKey].health = Math.max(0, G.enemySystems[hitKey].health - dmg);
       if (G.enemySystems[hitKey].health <= 0) {
         postLogEvent(`INTEL: Enemy ${G.enemySystems[hitKey].label} destroyed by internal damage!`, 'good');
@@ -575,7 +367,6 @@ function processEnemyAI(dt) {
     postTacticalAdvisory(advisories[Math.floor(Math.random() * advisories.length)]);
   }
 
-  // Hull regen advisory
   if (G.lastPlayerFireTime > 0 && (performance.now() - G.lastPlayerFireTime) > 10000) {
     const enemyHullPct = G.threat.hull / G.threat.maxHull;
     if (enemyHullPct < 0.9 && Math.random() < 0.003 * sc * 60) {
@@ -591,8 +382,8 @@ function processEnemyAI(dt) {
     const sl  = document.getElementById('lbl-enemy-state-left');
     const rng = cfg.prefersCloseRange ? ` [${G.enemyRangeBracket.toUpperCase()}]` : '';
     const m   = {
-      neutral:`Holding — ${G.enemyPreferredSector.toUpperCase()} exposed${rng}`,
-      angling:`Manoeuvring: ${G.enemyPreferredSector.toUpperCase()}${rng}`,
+      neutral: `Holding — ${G.enemyPreferredSector.toUpperCase()} exposed${rng}`,
+      angling: `Manoeuvring: ${G.enemyPreferredSector.toUpperCase()}${rng}`,
     };
     if (sl) { sl.textContent = m[G.enemyManeuverState] || '—'; sl.style.color = G.enemyManeuverState === 'angling' ? 'var(--warn)' : '#aabbcc'; }
   }
@@ -634,7 +425,7 @@ function executeThreatCounterVolley() {
       } else {
         [chosenKey, chosenSys] = torps;
         dmgMin = chosenSys.dmgMin; dmgMax = chosenSys.dmgMax;
-        const torpArc = chosenSys.firingArc.length ? chosenSys.firingArc : ['fore','port','starboard','aft'];
+        const torpArc        = chosenSys.firingArc.length ? chosenSys.firingArc : ['fore','port','starboard','aft'];
         const torpCandidates = ['fore','port','starboard','aft'].filter(s => torpArc.includes(s));
         targetSector = torpCandidates.reduce((w, s) => G.player.shields[s] < G.player.shields[w] ? s : w, torpCandidates[0] || 'fore');
         G.enemyLockProgress = 0; G.enemyManeuverState = 'neutral';
@@ -648,7 +439,6 @@ function executeThreatCounterVolley() {
       }
     } else {
       [chosenKey, chosenSys] = wpns[0]; dmgMin = chosenSys.dmgMin; dmgMax = chosenSys.dmgMax;
-      // Apply arc check — fallback sector must be within the weapon's firingArc
       const _fbArc = chosenSys.firingArc && chosenSys.firingArc.length ? chosenSys.firingArc : ['fore','port','starboard','aft'];
       targetSector = _fbArc.includes(G.enemyPreferredSector) ? G.enemyPreferredSector : (_fbArc[0] || 'fore');
       G.enemyLockProgress = 0; G.enemyManeuverState = 'neutral';
@@ -661,13 +451,12 @@ function executeThreatCounterVolley() {
     }
     [chosenKey, chosenSys] = candidateWpns[Math.floor(Math.random() * candidateWpns.length)];
     dmgMin = chosenSys.dmgMin; dmgMax = chosenSys.dmgMax;
-    const arc = chosenSys.firingArc.length ? chosenSys.firingArc : ['fore','port','starboard','aft'];
-    const preferred = cfg.preferredTargets || ['fore','port','starboard','aft'];
-    const validSectors   = arc.filter(s => ['fore','port','starboard','aft'].includes(s));
-    const preferredValid = validSectors.filter(s => preferred.includes(s));
-    const pool = preferredValid.length > 0 ? preferredValid : validSectors;
+    const arc             = chosenSys.firingArc.length ? chosenSys.firingArc : ['fore','port','starboard','aft'];
+    const preferred       = cfg.preferredTargets || ['fore','port','starboard','aft'];
+    const validSectors    = arc.filter(s => ['fore','port','starboard','aft'].includes(s));
+    const preferredValid  = validSectors.filter(s => preferred.includes(s));
+    const pool            = preferredValid.length > 0 ? preferredValid : validSectors;
     targetSector = pool[Math.floor(Math.random() * pool.length)] || 'fore';
-    // Only snap to attack vector if the weapon arc actually covers that sector
     if (!G.comeAboutActive && arc.includes(G.helmAttackVector) && Math.random() < 0.65) targetSector = G.helmAttackVector;
   }
 
@@ -689,7 +478,7 @@ function executeThreatCounterVolley() {
       phasers:['cannon_pu','nose_beam'], engines:['engines'], sensors:['sensors'],
       cloak:['cloak_dev'], warp:['warp_core'], shields:['shields']
     };
-    const priorities = currentDifficulty === 'elite'
+    const priorities     = currentDifficulty === 'elite'
       ? ['warp','cloak','sensors','disruptors','shields']
       : ['disruptors','sensors','shields','engines'];
     const chosenPriority = priorities[Math.floor(Math.random() * priorities.length)];
@@ -699,8 +488,6 @@ function executeThreatCounterVolley() {
   }
 
   let shieldPenMult = 1.0; let hullPassthrough = 0;
-  // Polaron bypass: 22% penetrates shields directly (reduced from 30% — Starfleet developed
-  // partial countermeasures during the Dominion War; Defiant's shields partially compensate)
   if (chosenSys.isPolaron) { shieldPenMult = 0.78; hullPassthrough = rawDmg * 0.22; }
 
   if (G.shieldFreqActive) {
@@ -768,122 +555,4 @@ function executeThreatCounterVolley() {
   }
 
   if (G.player.hull <= 0) concludeSimulationRun(false, "Vessel destroyed.", false);
-}
-
-// ── Auto-delegation ───────────────────────────────────────────
-function processAutomatedDelegation(dt) {
-  const isCaptain  = G.playerChosenStation === 'captain';
-  const runAutoEng = G.playerChosenStation === 'tactical' || G.playerChosenStation === 'helm' || isCaptain;
-  const runAutoTac = G.playerChosenStation === 'engineering' || G.playerChosenStation === 'helm' || isCaptain;
-
-  if (runAutoEng) {
-    const ce = getCrewEfficiency('engineering');
-    Object.keys(G.systems).forEach(key => {
-      const sys = G.systems[key];
-      if (sys.tripped && Math.random() < 0.06 * ce * (dt / 1000)) {
-        if (key === 'warp_core' && sys.health < 25) return;
-        sys.tripped = false; sys.stress = 0;
-        const def = { cannon_pu:8, cannon_pl:8, cannon_su:8, cannon_sl:6, nose_beam:10, torpedoes:10, shields:28, sensors:16, engines:10, cloak_dev:0, warp_core:10 };
-        sys.allocatedPower = Object.prototype.hasOwnProperty.call(def, key) ? def[key] : 10;
-        postLogEvent(`Computer: relay restored [${sys.label}]`, 'info');
-        refreshEngineeringPanelGraphics();
-      }
-    });
-    const damaged = Object.keys(G.systems)
-      .filter(k => (G.systems[k].health < 70 || G.systems[k].tripped) && !G.repairTeams.some(t => t.sysKey === k))
-      .sort((a, b) => G.systems[a].health - G.systems[b].health);
-    G.repairTeams.forEach((team, idx) => {
-      if (!team.sysKey && damaged.length > idx) {
-        const target = damaged[idx];
-        const sys    = G.systems[target];
-        const damage = Math.max(1, 100 - sys.health + (sys.tripped ? 20 : 0));
-        const repairTime = Math.max(5000, (damage / 10) * 5000);
-        team.sysKey = target; team.label = sys.label; team.totalTime = repairTime; team.remaining = repairTime;
-        postLogEvent(`Computer: repair team dispatched to [${sys.label}].`, 'info');
-      }
-    });
-
-    if (isCaptain) {
-      if (G.systems.warp_core.tripped && !G.batteryActive && G.batteryCharge > 20) {
-        G.batteryActive = true;
-        postLogEvent("O'Brien: Emergency battery online — warp core offline.", 'good');
-        crewReportWarpCoreTrip();
-      }
-      if (!G.cloaked && !G.shieldTransferInProgress) {
-        const max = G.player.shields.maxSectorValue;
-        const sectors = ['fore','port','starboard','aft'];
-        const critSector = sectors.find(s => G.player.shields[s] < max * 0.15);
-        const totalShields = sectors.reduce((sum, s) => sum + G.player.shields[s], 0);
-        if (critSector && totalShields > max * 0.5 && Math.random() < 0.01 * (dt / 1000) * 60) {
-          rebalanceShieldArrays();
-          postLogEvent(`O'Brien: Auto-equalising — ${critSector.toUpperCase()} shields critical.`, 'warn');
-        }
-      }
-    }
-  }
-
-  if (runAutoTac && !G.holdFire) {
-    G.autoTacticalFireClock += dt;
-    if (G.autoTacticalFireClock > 2400) {
-      G.autoTacticalFireClock = 0;
-      if (!G.cloaked && G.cloakVulnTimer === 0 && G.lockProgress >= 8) {
-        const ce = getCrewEfficiency('tactical');
-        if (Math.random() < ce) {
-          const warpOnline = !G.systems.warp_core.tripped || G.batteryActive;
-          if (warpOnline) {
-            const _aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
-            const pk = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
-            pk.filter(k => {
-              if (!_aw[k]) return false;
-              const s = G.systems[_aw[k].parentSystem];
-              return !s.tripped && s.health >= 15 && s.cap >= _aw[k].cost;
-            }).forEach(k => fireSelectedArray(k));
-            if (Math.random() < 0.5 * ce)  fireSelectedArray('emitter_nose');
-            if (Math.random() < 0.25 * ce && G.player.torpedoes > 3)       fireSelectedArray('torpedo_quantum');
-            if (Math.random() < 0.20 * ce && G.player.photonTorpedoes > 0) fireSelectedArray('torpedo_photon');
-          }
-        }
-      }
-    }
-    if (isCaptain) {
-      if (G.burstFireReady && G.lockProgress >= 55 && !G.cloaked &&
-          G.threat.hull / G.threat.maxHull > 0.10 &&
-          Math.random() < 0.015 * (dt / 1000) * 60) {
-        executeBurstFireSalvo();
-        postLogEvent("Worf: Initiating burst salvo.", 'info');
-      }
-      if (G.enemyLockProgress > 88 && !G.evasiveActive && G.evasiveCooldown === 0 &&
-          G.systems.engines.health >= 20 && Math.random() < 0.02 * (dt / 1000) * 60) {
-        executeEvasivePattern();
-        postCrewReport('worf', "Captain — enemy lock critical. Evasive manoeuvres engaged.", 'alert');
-      }
-      if (G.shieldUnderAttackTimer > 1500 && G.shieldFreqCooldown === 0 && !G.shieldFreqActive &&
-          Math.random() < 0.008 * (dt / 1000) * 60) {
-        rotateShieldFrequency();
-        postCrewReport('worf', "Detecting sustained fire pattern — rotating shield frequencies, Captain.", 'status');
-      }
-    }
-  }
-
-  if (isCaptain) {
-    if (!G.comeAboutActive && G.comeAboutCooldown === 0 && !G.autoShieldTrack) {
-      const currentFacing = G.helmAttackVector;
-      const max = G.player.shields.maxSectorValue;
-      if (G.player.shields[currentFacing] < max * 0.10) {
-        const strongest = ['fore','port','starboard','aft'].reduce(
-          (best, s) => G.player.shields[s] > G.player.shields[best] ? s : best, 'fore');
-        if (strongest !== currentFacing) {
-          G.helmAttackVector = strongest;
-          postCrewReport('nog', `${currentFacing.toUpperCase()} shields failing — presenting ${strongest.toUpperCase()} to enemy, Captain.`, 'alert');
-          postLogEvent(`Nog: Auto-presenting ${strongest.toUpperCase()} shields.`, 'warn');
-        }
-      }
-    }
-    if (!G.attackRunActive && G.attackRunCooldown === 0 && !G.comeAboutActive &&
-        G.systems.engines.health >= 25 && G.threat.hull / G.threat.maxHull > 0.40 &&
-        G.lockProgress > 30 && Math.random() < 0.003 * (dt / 1000) * 60) {
-      executeAttackRun();
-      postCrewReport('nog', "Initiating attack run on your behalf, Captain.", 'status');
-    }
-  }
 }
