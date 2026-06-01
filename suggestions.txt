@@ -31,14 +31,22 @@ Core Combat & Tactical Depth
 [~] Expand sensors into a full gameplay layer:
     [x] stealth signatures -- enemy cloak lock collapse, blind-fire torpedoes
     [x] decoys             -- Romulan sensor ghosts (false contacts while cloaked)
-    [~] electronic warfare -- scan profiles (disrupt -50% fire rate, tetryon -70% lock)
+    [x] electronic warfare -- deep scan system: permanent frequency locks per enemy faction
+                              (shield_freq −25% incoming, hull_weakness +20% dmg,
+                              sensor_blind −40% lock, weapon_disrupt −23% fire rate);
+                              Borg scan expires on adaptation escalation (10s rescan CD)
     [ ] signal masking
 [x] Improve faction AI personality:
     [x] Klingon aggression    -- prefersCloseRange, closes to combat range, +35-40% disruptors at close
     [x] Romulan deception     -- 2.5× cloak aggression, sensor ghosts, plasma torpedo cycle
     [x] Borg adaptation       -- per-weapon resistance 0-75%, escalating regen, dialogue milestones
     [x] Dominion sacrifice    -- polaron bypass 30% shields, Jem'Hadar ramming run at <20% hull
-[ ] Add campaign/meta progression between battles.
+[~] Add campaign/meta progression between battles.
+    -- 9-level linear campaign (CAMPAIGN_ORDER): Jem'Hadar → Cardassian → Romulan BoP →
+    -- Galor → Jem'Hadar BC → K'Tinga → Vor'Cha → D'Deridex → Borg (final boss).
+    -- Score accumulates; ship fully restored between levels; station/ship locked to
+    -- campaign start choice. Level summary shows per-level breakdown + next preview.
+    -- Missing: persistent ship upgrades, resource management, branching paths.
 
 Systems & Engineering Improvements
 [~] Add bridge drama/UI events:
@@ -84,11 +92,16 @@ Mission Variety & Replayability
 [~] Add sensor delay and information lag.
     -- Sensor health <40% → hull shown as degraded/rounded; <70% → approximate values.
 [ ] Add critical hit visual moments/cinematics.
-[~] Add "last stand" mechanics during critical hull states.
-    -- Emergency warp escape at hull ≤35%; ablative armour 6-layer buffer.
-[~] Add chain-reaction system failures.
-    -- EPS breaker trips propagate; warp core trip scales all allocations to impulse budget;
-    -- sector breach triggers random system damage from sector pool.
+[x] Add "last stand" mechanics during critical hull states.
+    -- checkLastStandCondition triggers at ≤20% hull: viewport pulses red
+    -- (last-stand-flash CSS), auto-sets full impulse, boosts shield EPS,
+    -- crew reacts with staggered comms. Stands down above 25%. Emergency
+    -- warp escape at hull ≤35%. Ablative armour 6-layer buffer throughout.
+[x] Add chain-reaction system failures.
+    -- EPS breaker trips propagate; warp core trip cascades: engines +35 stress,
+    -- shields +22, sensors +15 — can trip multiple systems simultaneously.
+    -- Gradual warp core restart (health ramps over 12s). Sector breach triggers
+    -- random system damage from sector pool. EPS heat buildup from sustained fire.
 [ ] Add Defiant refits and ship variants.
 
 Advanced Tactical Features
@@ -107,5 +120,9 @@ Advanced Tactical Features
     -- MISSION_INTEL in config.js: per-archetype intel cards (4 per enemy) with
     -- revealAt thresholds (50/70/90%). Cards start [CLASSIFIED], unlock as sensor
     -- scan progresses. Threat level badge, mission context, tactical recommendations.
-[~] Add post-battle debriefs and combat analysis reports.
-    -- Scoring screen with breakdown (damage, repairs, hull integrity bonus, difficulty multiplier).
+[x] Add post-battle debriefs and combat analysis reports.
+    -- Full tactical debrief: enemy vessel + faction, phase reached, time in combat,
+    -- hull at end; weapons fired by type + total yield; breaches per sector + peak hit;
+    -- systems tripped list; crew status with casualty counts; last 15 battle log entries.
+    -- Score breakdown: time, damage, systems, repairs, hull integrity, crew/breach penalties.
+    -- Single "NEW ENGAGEMENT" button — no other setup UI shown during debrief.
