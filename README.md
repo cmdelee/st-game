@@ -17,8 +17,11 @@ You command the USS Defiant NX-74205 in real-time combat. Choose your operationa
 ## Features
 
 - **Four Command Stations**: Tactical (weapons), Engineering (power & repairs), Helm (navigation), or Captain's Chair (command overview with crew orders)
+- **Two Game Modes**:
+  - **Single Engagement** — pick Normal / Hard / Elite, fight one random enemy from that pool
+  - **Campaign Run** — fight all 9 enemies in order from easiest to hardest; score accumulates, ship restores fully between fights; Borg Probe is the final boss
 - **Authentic DS9 Interface**: Full LCARS styling with canon ships from Klingons, Romulans, Cardassians, Dominion, and Borg
-- **9 Enemy Vessels**: Each with faction-specific AI, weapons, and unique mechanics
+- **9 Enemy Vessels**: Each with faction-specific AI, weapons, combat phase arcs, and hull milestone events
 - **3D Spatial Battle View**: Three.js WebGL rendering — ships move, bank, and close range dynamically
 - **Advanced Combat**:
   - Real-time four-sector shield management with sector reinforcement
@@ -29,15 +32,15 @@ You command the USS Defiant NX-74205 in real-time combat. Choose your operationa
   - Four sensor scan profiles (shields / hull fissures / weapons disrupt / tetryon ECM)
   - Enemy subsystem targeting
   - Ablative armour (6 regenerating layers)
-  - **Canon weapon arcs** — pulse cannons are forward-only; aft torpedo tubes bear on port, starboard, and aft; all enemy weapons respect their Trek-accurate firing arcs
-- **Engineering Power System**: Zero-sum EPS allocation across 11 systems, thermal buildup, breaker trips, one-click power presets (Attack / Silent Running / Evasive / Damage Control)
-- **Warp Core Cascade**: Tripping the warp core sends an EPS backwash stress spike into engines, shields, and sensors — already-stressed systems cascade-trip
+  - **Canon weapon arcs** — pulse cannons are forward-only; aft torpedo tubes (DS9-accurate) bear on port, starboard, and aft; all enemy weapons respect their Trek-accurate firing arcs
+- **Engineering Power System**: Zero-sum EPS allocation across 11 systems, thermal buildup, breaker trips, warp core cascade failures, one-click power presets
+- **Battle Realism**: Enemy hull milestone events (75/50/25/10%) trigger faction-specific dialogue and automatic reactions — Klingon death salvo, Romulan emergency cloak, Jem'Hadar fury scaling (gets faster as they take damage)
 - **Helm Controls**: Speed, attack vector, engagement range, attack runs, come-about, and advanced manoeuvres
-- **Dynamic AI**: Klingons close range; Romulans generate sensor ghosts; Borg adapt per-weapon; Jem'Hadar can ram
+- **Dynamic AI**: Klingons close range; Romulans fire plasma immediately on decloak; Borg adapt per-weapon and never cloak; Jem'Hadar fire faster as their hull drops
 - **Captain's Chair**: Live crew comms feed, 40+ order buttons across Worf/O'Brien/Nog, autonomous crew automation with command overrides
 - **Named Crew**: Worf, O'Brien, Bashir, Nog — casualties degrade their station's effectiveness
-- **Last Stand**: Below 20% hull the crew acts autonomously — Nog pushes to full impulse, O'Brien reroutes shield power, Worf calls battle stations; the viewport pulses red
-- **Post-battle Debrief**: Full tactical report after every engagement — weapons fired by type, breaches by shield sector, systems tripped, peak hit, crew status, enemy phase reached
+- **Last Stand**: Below 20% hull the crew reacts instantly — Nog pushes to full impulse, O'Brien reroutes shield power, Worf calls battle stations; viewport pulses red
+- **Post-battle Debrief**: Full tactical report — weapons by type, breaches by sector, systems tripped, peak hit, crew status, enemy phase reached
 - **Emergency Systems**: Battery backup, emergency warp escape, damage control, emergency thrusters
 
 ---
@@ -66,7 +69,7 @@ Direct weapons fire, manage evasive manoeuvres, operate the cloaking device, and
 | Control | Arc | Effect |
 |---|---|---|
 | All Pulse Cannons ×N | **Fore** (upper); **Fore/Port** or **Fore/Stbd** (lower) | Fire all cannons currently in arc — button label updates dynamically |
-| Nose Beam | **Fore only** | Heavy emitter — 55-unit yield |
+| Nose Beam | **Fore only** | Heavy emitter — 65-unit yield |
 | Fwd Quantum Torpedo | **Fore / Port / Stbd** | Binary damage — full yield at ≥60% lock |
 | Fwd Photon Torpedo | **Fore / Port / Stbd** | Flat damage, no lock required |
 | Aft Quantum Torpedo | **Aft / Port / Stbd** | Same yield as forward tube; shares quantum magazine |
@@ -128,17 +131,17 @@ The crew acts independently — Worf fires weapons and uses burst fire when cond
 
 ## Enemy Vessels
 
-| Vessel | Faction | Signature Mechanic |
-|---|---|---|
-| K'Tinga Battle Cruiser | Klingon | Closes to disruptor range over 45s (+40% damage at close) |
-| Vor'Cha Attack Cruiser | Klingon | Heavier close-range disruptors (+35%), cloak |
-| Romulan Bird-of-Prey | Romulan | Plasma torpedo (18s reload), sensor ghosts while cloaked |
-| D'Deridex Warbird | Romulan | Heaviest plasma banks (22s reload), sensor ghosts, massive hull |
-| Cardassian Scout | Cardassian | Fast lock (7.5/s), frequent harassment fire |
-| Galor-Class Warship | Cardassian | Balanced weapons, photon torpedoes |
-| Jem'Hadar Attack Ship | Dominion | Polaron bypass (30% of shots penetrate shields), will **ram** at <20% hull |
-| Jem'Hadar Battle Cruiser | Dominion | Heavy polaron, ram damage 380, elite pool only |
-| Borg Probe | Borg | Per-weapon resistance 0–65%, tractor beam, escalating damage |
+| Vessel | Faction | Signature Mechanic | Campaign Level |
+|---|---|---|---|
+| Jem'Hadar Attack Ship | Dominion | Polaron bypass (22%), will **ram** at <20% hull | L1 |
+| Cardassian Scout | Cardassian | Fast lock (7.5/s), frequent harassment fire | L2 |
+| Romulan Bird-of-Prey | Romulan | Plasma torpedo (18s reload), fires **immediately on decloak**, sensor ghosts | L3 |
+| Galor-Class Warship | Cardassian | Balanced phasers, photon torpedoes | L4 |
+| Jem'Hadar Battle Cruiser | Dominion | Heavy polaron bypass, fury scaling (fires faster as hull drops), ramming | L5 |
+| K'Tinga Battle Cruiser | Klingon | Closes to disruptor range over 45s (+40% close), cloak, **death salvo** at 10% | L6 |
+| Vor'Cha Attack Cruiser | Klingon | Wing disruptors, heavy torpedoes, close-range aggression, cloak | L7 |
+| D'Deridex Warbird | Romulan | Massive plasma (22s reload), sensor ghosts, emergency cloak at 25% hull | L8 |
+| Borg Probe | Borg | Per-weapon resistance 0–65%, tractor beam, escalating damage — **final boss** | L9 |
 
 ---
 
@@ -158,6 +161,25 @@ The crew acts independently — Worf fires weapons and uses burst fire when cond
 12. **Subsystem targeting**: Destroying enemy weapons or cloak device changes the whole fight
 13. **Power presets**: Switch to Damage Control mode when shields are low; Attack mode for a decisive strike
 14. **Read the debrief**: The post-battle report shows which shield sector took the most breaches — adjust your default attack vector accordingly next run
+15. **Campaign**: Each level restores your ship fully — don't hold back on torpedoes or overload modes. The score multiplier jumps at Hard and Elite, so finishing the Borg cleanly is worth far more than surviving early levels with hull intact
+
+---
+
+## Campaign Run
+
+Pick your station once, then fight all 9 enemies in order. Your ship is fully restored between every fight. Score accumulates across all levels — harder levels award more points due to the difficulty multiplier.
+
+| Level | Enemy | Key Challenge |
+|---|---|---|
+| L1 | Jem'Hadar Fighter | Fast, polaron bypass, ramming — learn the basics |
+| L2 | Cardassian Scout | Fast lock, constant harassment — don't let them build momentum |
+| L3 | Romulan Bird-of-Prey | Decloak → instant plasma torpedo — rotate shields and use Evasive |
+| L4 | Galor Warship | Heavier fight, Hard multipliers begin |
+| L5 | Jem'Hadar Battle Cruiser | Gets faster as it takes damage — kill it quickly |
+| L6 | K'Tinga Battle Cruiser | Closes to brawling range — death salvo at 10% hull |
+| L7 | Vor'Cha Attack Cruiser | Wing disruptors devastate at close range |
+| L8 | D'Deridex Warbird | Longest fight — plasma reload windows are your opportunity |
+| **L9** | **Borg Probe** | Rotate all 7 weapon types; never fire the same weapon consecutively |
 
 ---
 
@@ -174,11 +196,16 @@ The crew acts independently — Worf fires weapons and uses burst fire when cond
 
 ## Difficulty
 
-| Level | Enemy Hull | Enemy Damage | Enemy Lock | Enemy Fire | Player Hull | Features |
-|---|---|---|---|---|---|---|
-| Normal | ×1.0 | ×1.0 | ×1.0 | ×1.0 | ×1.0 | Hull-sector targeting only |
-| Hard | ×1.2 | ×1.15 | ×1.3 | ×0.85 | ×0.85 | AI targets player subsystems (20%) |
-| Elite | ×1.35 | ×1.28 | ×1.5 | ×0.78 | ×0.78 | Subsystem strikes (30%), slower repairs |
+| Level | Enemy Pool | Enemy Hull | Enemy Damage | Enemy Lock | Enemy Fire | Player Hull | Features |
+|---|---|---|---|---|---|---|---|
+| Normal | Fighter, Scout, BoP, Galor, K'Tinga | ×1.0 | ×1.0 | ×1.0 | ×1.0 | ×1.0 | Hull-sector targeting only |
+| Hard | All 8 conventional ships | ×1.12 | ×1.10 | ×1.25 | ×0.88 | ×0.88 | AI targets player subsystems (20%) |
+| Elite | **Borg Probe only** | ×1.40 | ×1.20 | ×1.25 | ×0.80 | ×0.85 | Subsystem strikes (25%); Borg's challenge is adaptation, not stat inflation |
+
+### Campaign Run difficulty brackets
+- Levels 1–3: Normal multipliers
+- Levels 4–8: Hard multipliers
+- Level 9 (Borg): Elite multipliers
 
 ---
 

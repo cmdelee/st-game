@@ -18,7 +18,7 @@ index.html (HTML shell + script tags)
 
 | File | Responsibility |
 |---|---|
-| `config.js` | All game constants: `C` colour palette, `DIFFICULTY`, `ENEMY_CONFIGS`, `ARRAYS_DICTIONARY`, `CREW_STATIONS`, `WARP_CORE`, `ABLATIVE_ARMOUR`, `HELM_SPEED_CONFIG`; `let currentDifficulty` |
+| `config.js` | All game constants: `C` colour palette, `DIFFICULTY`, `ENEMY_CONFIGS`, `ARRAYS_DICTIONARY`, `CREW_STATIONS`, `WARP_CORE`, `ABLATIVE_ARMOUR`, `HELM_SPEED_CONFIG`, `CAMPAIGN_ORDER`; `let currentDifficulty` |
 | `state.js` | `G` game state object; `getWarpOutput()`, `getTotalAllocatedPower()`, `setDifficulty()`, `postLogEvent()` |
 | `engineering.js` | Warp core trip, emergency battery, ablative armour processing, shield regen rate calculation, repair queue (2 independent teams), engineering matrix UI, power allocation (`tuneBusAllocation`), power presets (`applyPowerPreset`), EPS conduit conduction + thermal buildup, system degradation thresholds, shield manipulation |
 | `crew.js` | Crew casualties (`inflictCrewCasualty`), efficiency modifiers (`getCrewEfficiency`, `getMedicalEfficiency`, `getHelmEvasiveModifier`), `updateCrewStatusDisplay`, `attemptEmergencyWarp`, `updateWarpAvailability`, `postTacticalAdvisory` |
@@ -30,7 +30,7 @@ index.html (HTML shell + script tags)
 | `canvas-three.js` | Three.js 3D spatial battle view (ships, weapon beams, torpedoes, particles, engine glow, starfield) |
 | `canvas-2d.js` | Enemy schematic 2D canvas (silhouette + system nodes); hull schematic 2D canvas (Defiant outline + ablative rings); power distribution 2D canvas (EPS bars + thermal) |
 | `ui.js` | Deck switching (`toggleActiveDeck` — handles tactical/engineering/helm/captain), global UI sync (`synchronizeGlobalInterfaceDisplays`), scoring with hull integrity bonus (`calculateFinalScore`), end-game (`concludeSimulationRun`) |
-| `main.js` | Main game loop (`masterSimulationCoreLoop`), simulation init with full state reset (`initiateVesselSimulation`), boot sequence (`runMasterBootSequence`), captain manoeuvre tickers, splash screen (`dismissSplash`) |
+| `main.js` | Main game loop (`masterSimulationCoreLoop`), simulation init with full state reset (`initiateVesselSimulation`), boot sequence (`runMasterBootSequence`), captain manoeuvre tickers, splash screen (`dismissSplash`), campaign mode (`startCampaign`, `_launchCampaignLevel`, `concludeCampaignLevel`, `_nextCampaignLevel`), `returnToSetup()` |
 
 ---
 
@@ -91,8 +91,21 @@ G.plasmaTorpedoReady / G.plasmaTorpedoReloadTimer  // Romulan 18/22s reload
 G.enemyAdaptiveResist  // { cannon_pu, cannon_pl, cannon_su, cannon_sl, nose_beam, torpedoes, photon }
 G.enemyAdaptiveHits    // legacy counter for Borg regen scaling
 
+// Campaign mode
+G.campaignMode         // bool — true during campaign run
+G.campaignStation      // station chosen at campaign start (persists all 9 levels)
+G.campaignLevel        // 0-indexed into CAMPAIGN_ORDER (0–8)
+G.campaignScore        // accumulated score across completed levels
+G.campaignLevelResults // [{ level, title, score, hullPct, time, won, escaped }]
+
+// Last stand
+G.lastStandActive / G.lastStandReported  // true below 20% hull; crew responds
+
+// Enemy hull milestones
+G.enemyHullMilestones  // plain object {}; keys = threshold % already fired (75/50/25/10)
+
 // Player tactical mechanics
-G.burstFireReady / G.burstFireCooldown   // 12s cooldown
+G.burstFireReady / G.burstFireCooldown   // 9s cooldown
 G.shieldFreqActive / G.shieldFreqTimer / G.shieldFreqCooldown / G.shieldFreqWeaponType
 G.evasiveActive / G.evasiveCooldown / G.evasiveDuration / G.evasiveCooldownTime
 G.overchargeReady / G.overchargeCooldown           // 30s CD
@@ -127,7 +140,10 @@ G.silentRunning / G.silentRunningTimer      // 12s enemy lock −40%
 
 // Scoring
 G.score = { totalDmgDealt, volleysFired, hullBreaches, systemsDestroyed,
-            repairsCompleted, timeSurvived, warpedOut }
+            repairsCompleted, timeSurvived, warpedOut,
+            weaponsFired:{ cannons, nose, quantum, photon },
+            sectorBreaches:{ fore, port, starboard, aft },
+            peakHullHit, systemsTripped[], enemyPhaseReached }
 ```
 
 ---
@@ -167,10 +183,22 @@ G.score = { totalDmgDealt, volleysFired, hullBreaches, systemsDestroyed,
 | `jem_hadar_battleship` | Jem'Hadar Battle Cruiser | Dominion | Heavy polaron, ramming 380 dmg |
 | `borg_probe` | Borg Probe | Borg | Per-weapon adaptation 0–65%, tractor beam, escalating damage |
 
-### Enemy pools by difficulty
-- **Normal:** ktinga, romulan_bop, cardassian_scout, galor_class, jem_hadar_fighter, vor_cha
+### Enemy pools by difficulty (single engagement)
+- **Normal:** ktinga, romulan_bop, cardassian_scout, galor_class, jem_hadar_fighter
 - **Hard:** ktinga, vor_cha, romulan_bop, romulan_warbird, galor_class, jem_hadar_fighter, jem_hadar_battleship
-- **Elite:** vor_cha, romulan_warbird, jem_hadar_battleship, borg_probe
+- **Elite:** borg_probe **ONLY** — the adaptation encounter is its own challenge tier
+
+### Campaign order (data-driven, easiest → hardest)
+`CAMPAIGN_ORDER` in config.js — 9 entries, each `{ level, archetype, diff, label, title, subtitle }`:
+1. jem_hadar_fighter (normal) — polaron + ramming intro
+2. cardassian_scout (normal) — fast-lock harassment
+3. romulan_bop (normal) — cloak + plasma + sensor ghosts
+4. galor_class (hard) — heavier phasers + photon
+5. jem_hadar_battleship (hard) — heavy polaron + fury scaling
+6. ktinga (hard) — range-closing + berserk + death salvo
+7. vor_cha (hard) — wing disruptors + heavy torps
+8. romulan_warbird (hard) — massive plasma + emergency cloak at 25%
+9. borg_probe (elite) — adaptive shielding + tractor — FINAL BOSS
 
 ---
 
@@ -216,9 +244,11 @@ Aft tubes share the same `torpedoes` parent system (same magazine, same power, s
 
 | Setting | Enemy Hull | Enemy Dmg | Enemy Lock | Enemy Fire | Player Hull | Targets Systems | Repair Speed |
 |---|---|---|---|---|---|---|---|
-| Normal | ×1.0  | ×1.0  | ×1.0 | ×1.0  | ×1.0  | No        | ×1.0  |
-| Hard   | ×1.2  | ×1.15 | ×1.3 | ×0.85 | ×0.85 | Yes (20%) | ×0.85 |
-| Elite  | ×1.35 | ×1.28 | ×1.5 | ×0.78 | ×0.78 | Yes (30%) | ×0.72 |
+| Normal | ×1.0  | ×1.0  | ×1.0  | ×1.0  | ×1.0  | No        | ×1.0  |
+| Hard   | ×1.12 | ×1.10 | ×1.25 | ×0.88 | ×0.88 | Yes (20%) | ×0.88 |
+| Elite  | ×1.40 | ×1.20 | ×1.25 | ×0.80 | ×0.85 | Yes (25%) | ×0.80 |
+
+Elite is tuned specifically for the Borg probe encounter — the challenge comes from the adaptation mechanic, not raw stat inflation.
 
 `systemTargetChance` lives in the DIFFICULTY config; `processAutomatedDelegation` uses `diff.systemTargetChance` (was hardcoded 0.45/0.25).
 
@@ -438,6 +468,31 @@ In `processEnemyAI`: below 35% enemy hull, 0.4% chance per frame-second of rando
 | Burst fire CD | **9s** | Defiant's rapid burst sequences in DS9 were frequent and characterised its style |
 | Borg adaptation | **+0.024/hit** | Weapons cycle frequency engineered against Borg; 28 hits to cap vs 17 previously |
 
+### Campaign mode (`main.js`)
+`CAMPAIGN_ORDER` (config.js) defines 9 levels. State:
+```js
+G.campaignMode / G.campaignStation / G.campaignLevel (0–8) / G.campaignScore / G.campaignLevelResults[]
+```
+
+**`startCampaign(station)`** — sets campaign state, calls `_launchCampaignLevel()`
+
+**`_launchCampaignLevel()`** — saves campaign state, calls `initiateVesselSimulation`, then:
+1. Restores `G.campaignMode/Station/Level/Score/Results`
+2. Overrides `G.enemyArchetype` with the level's archetype
+3. Re-applies difficulty-scaled stats (hull, fireInterval, lockRate, shields, systems)
+4. Sets `G.running = true` and calls `initEncounterPhases()`
+5. Shows campaign HUD strip (`#campaign-hud`)
+
+**`concludeSimulationRun`** routes to **`concludeCampaignLevel(victory, escaped)`** when `G.campaignMode`:
+- Computes level score via `calculateFinalScore` and adds to `G.campaignScore`
+- Shows `#campaign-level-summary` with score breakdown and next enemy preview
+- Shows `#campaign-action-btns`: "NEXT ENGAGEMENT" / "RUN CAMPAIGN AGAIN" / "RETURN TO BRIDGE"
+- On loss: campaign ends immediately
+
+**`_nextCampaignLevel()`** — increments `G.campaignLevel`, hides summary panels, calls `_launchCampaignLevel()`
+
+**`returnToSetup()`** — resets all campaign fields to 0/false, hides campaign UI, restores overlay to station-select state. No page reload — splash stays hidden after first load.
+
 ### Sector-weighted internal damage
 On shield breach, random system drawn from sector pool:
 - Fore → cannon_pu, cannon_su, nose_beam, torpedoes, sensors
@@ -520,6 +575,21 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 23. `fireSelectedArray` branching on `weaponKey` string — refactored to use `weapon.isQuantum`/`weapon.isPhoton` flags so aft tube variants work without separate code paths
 24. 8 enemy weapon arcs were canon-inaccurate — aft-only `['aft']` arcs corrected to `['aft','port','starboard']`; forward torpedo arcs widened to `['fore','port','starboard']`; Borg tractor corrected to omnidirectional
 25. Defiant under-powered vs canon — pulse cannons 18→22, nose emitter 55→65, quantum torpedo 90→125, burst fire CD 12s→9s; Borg adaptation rate reduced 40% (weapons engineered to cycle frequency)
+26. `shieldHitFlash` timers never decremented — set on every hit but never ticked down; CSS shield flash restarted every frame after first hit; 3D shield bubble permanently lit; primary cause of "displays stop working" degradation
+27. Ablative armour displayed `/5` not `/6` — three separate locations (engineering.js, ui.js, canvas-2d.js)
+28. `capTgtWeapons()` only found Klingon disruptors — `_capTargetSystem('disruptors')` failed on 7 of 9 enemy types; now delegates to `capTgtWeaponsAny()`
+29. Enemy repair `remaining` hardcoded to 25000 regardless of randomised `totalTime` (25000–40000ms)
+30. `_capDamageControl` could assign both repair teams to the same damaged system
+31. Shield frequency 30s cooldown ticked during the 12s active window — effective CD was only 18s; changed to `if/else if`
+32. Romulan decloak fired double volley — `G.threatCycleTimer` set AND `executeThreatCounterVolley()` called directly; removed direct call
+33. `_capPumpShields` used broken self-multiplying math — added fore's own value to fore instead of draining others; replaced with correct drain-from-others logic
+34. `G.crewReports` not reset between games — only cleared in `initCaptainStation()`, not in `initiateVesselSimulation()`
+35. Shield scan bonus excluded quantum torpedoes — `weapon.parentSystem !== 'torpedoes'` removed from condition
+36. `G._captainLowHullReported`, `G.cloakEngagedAt`, `G.enemyCloakEngagedAt`, `G.frozenShields`, `G.enemyFrozenShields` not reset between games
+37. Aft torpedo capacitor bars (`bar-cap-tqa`, `bar-cap-tpa`) missing from HTML — player fired them with no charge readout
+38. Overcharge/unstable flags not in `try/finally` — exception in `fireSelectedArray` would leave permanent damage multiplier
+39. `btn.firstChild.textContent` in `_updateCaptainOrderButtons` had no null guard — could crash captain panel
+40. Torpedo fallback fire path used `enemyPreferredSector` without arc check
 
 ---
 
