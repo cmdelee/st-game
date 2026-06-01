@@ -197,6 +197,8 @@ function fireSelectedArray(weaponKey) {
     if (G.scanBonus.type === 'shields' && !weapon.isPhoton) dmg *= G.scanBonus.value;
     if (G.scanBonus.type === 'hull') dmg *= G.scanBonus.value;
   }
+  // Permanent scan bonuses
+  if (G.permanentScanBonuses.hull_weakness) dmg *= 1.20;
 
   const cfg = ENEMY_CONFIGS[G.enemyArchetype];
 
@@ -290,23 +292,63 @@ function applyDamageToEnemy(dmg, weapon, targetSectorOverride) {
   if (G.threat.hull <= 0) concludeSimulationRun(true, "Enemy vessel destroyed.", false);
 }
 
-function firePulseCannons() {
-  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
-  const inArc = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower']
-    .filter(k => aw[k] && aw[k].arc.includes(G.helmAttackVector));
-  if (inArc.length === 0) { postLogEvent("No primary weapons bear on current attack vector.", 'warn'); return; }
-  inArc.forEach(k => fireSelectedArray(k));
+// ── Simplified fire commands ──────────────────────────────────
+
+// Fire all in-arc energy weapons (cannons/phasers + nose emitter)
+function fireEnergyWeapons() {
+  if (!G.running || G.dead) return;
+  const aw  = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  const cfg = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
+  // All non-torpedo keys that bear on current attack vector
+  const energyKeys = Object.keys(aw).filter(k => {
+    const w = aw[k];
+    return w && !w.isQuantum && !w.isPhoton && w.arc.includes(G.helmAttackVector);
+  });
+  if (energyKeys.length === 0) {
+    postLogEvent("No energy weapons bear on current attack vector.", 'warn'); return;
+  }
+  energyKeys.forEach(k => fireSelectedArray(k));
 }
 
-// Enterprise-E: fire all in-arc phaser arrays (up to 9 arrays across all groups)
-function fireAllPhaserArrays() {
-  const aw   = G.activeWeaponArrays || ARRAYS_DICTIONARY;
-  const cfg  = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
-  const keys = cfg.primaryWeaponKeys || ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
-  const inArc = keys.filter(k => aw[k] && aw[k].arc.includes(G.helmAttackVector));
-  if (inArc.length === 0) { postLogEvent("No phaser arrays bear on current attack vector.", 'warn'); return; }
-  inArc.forEach(k => fireSelectedArray(k));
+// Fire best available torpedoes for current arc + lock
+function fireTorpedoBanks() {
+  if (!G.running || G.dead) return;
+  const aw  = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  const aft = G.helmAttackVector === 'aft';
+
+  // Choose tube set based on current facing
+  const quantumKey = aft ? 'torpedo_quantum_aft' : 'torpedo_quantum';
+  const photonKey  = aft ? 'torpedo_photon_aft'  : 'torpedo_photon';
+
+  // Also check the other facing's quantum as a fallback for non-aft vectors
+  const altQuantum = aft ? 'torpedo_quantum' : 'torpedo_quantum_aft';
+
+  let fired = false;
+  // Prefer quantum if we have lock and magazine
+  if (aw[quantumKey] && aw[quantumKey].arc.includes(G.helmAttackVector) &&
+      G.lockProgress >= 5 && G.player.torpedoes > 0) {
+    fireSelectedArray(quantumKey); fired = true;
+  } else if (!aft && aw[altQuantum] && aw[altQuantum].arc.includes(G.helmAttackVector) &&
+      G.lockProgress >= 5 && G.player.torpedoes > 0) {
+    fireSelectedArray(altQuantum); fired = true;
+  }
+  // Fire photon alongside (or as fallback)
+  if (aw[photonKey] && aw[photonKey].arc.includes(G.helmAttackVector) &&
+      G.player.photonTorpedoes > 0) {
+    fireSelectedArray(photonKey); fired = true;
+  }
+  if (!fired) postLogEvent("No torpedoes available on current attack vector.", 'warn');
 }
+
+// Fire everything in arc (energy + torpedoes)
+function fireAllWeapons() {
+  fireEnergyWeapons();
+  fireTorpedoBanks();
+}
+
+// ── Keep for internal / delegation use ───────────────────────
+function firePulseCannons() { fireEnergyWeapons(); }
+function fireAllPhaserArrays() { fireEnergyWeapons(); }
 
 function executeAlphaSalvoFire() {
   const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;

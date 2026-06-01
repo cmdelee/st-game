@@ -1,57 +1,163 @@
 'use strict';
 
 // ============================================================
-// SENSORS.JS — Scan profiles, subsystem targeting, active sensors
+// SENSORS.JS — Deep sensor scan, subsystem targeting
 // Depends on: config.js, state.js
 // ============================================================
 
-// ── Scan profiles ─────────────────────────────────────────────
-function activateScanProfile(type) {
-  G.activeScanProfile = type;
-  G.scanAnalysisProgress = 0;
-  document.querySelectorAll('.scan-profile-btn').forEach(b => b.classList.remove('active-scan'));
-  const btn = document.getElementById(`scan-btn-${type}`); if (btn) btn.classList.add('active-scan');
-  postLogEvent(`Sensor sweep: [${type.toUpperCase()}] profile selected.`, 'info');
-}
+// ── Per-enemy scan results (permanent bonuses revealed) ───────
+// Each entry is an array of bonus objects the deep scan finds.
+// shield_freq: permanent 25% damage reduction vs that weapon type
+// hull_weakness: permanent +20% outgoing damage
+// sensor_blind: permanent −40% enemy lock rate
+// weapon_disrupt: permanent +30% slower enemy fire interval
+const _SCAN_RESULTS = {
+  ktinga:              [ { type:'shield_freq',   weaponType:'disruptors', label:'Disruptor freq locked'  },
+                         { type:'hull_weakness',  label:'Structural weak points mapped'                  } ],
+  vor_cha:             [ { type:'shield_freq',   weaponType:'disruptors', label:'Wing disruptor freq locked' },
+                         { type:'weapon_disrupt', label:'Fire control disrupted'                          } ],
+  romulan_bop:         [ { type:'shield_freq',   weaponType:'plasma',    label:'Plasma torpedo freq locked' },
+                         { type:'sensor_blind',   label:'Sensor masking identified'                       } ],
+  romulan_warbird:     [ { type:'shield_freq',   weaponType:'plasma',    label:'Plasma torpedo freq locked' },
+                         { type:'hull_weakness',  label:'D\'Deridex stress fractures mapped'              } ],
+  cardassian_scout:    [ { type:'weapon_disrupt', label:'Fire control jammed'                             },
+                         { type:'sensor_blind',   label:'Sensor frequency identified'                     } ],
+  galor_class:         [ { type:'hull_weakness',  label:'Galor hull stress points mapped'                 },
+                         { type:'weapon_disrupt', label:'Targeting subroutines disrupted'                 } ],
+  jem_hadar_fighter:   [ { type:'shield_freq',   weaponType:'polaron',   label:'Polaron freq partially locked' },
+                         { type:'sensor_blind',   label:'Dominion sensor pattern identified'              } ],
+  jem_hadar_battleship:[ { type:'hull_weakness',  label:'Battle cruiser stress fractures mapped'          },
+                         { type:'shield_freq',   weaponType:'polaron',   label:'Polaron freq partially locked' } ],
+  borg_probe:          [ { type:'shield_freq',   weaponType:'phasers',   label:'Borg freq (temporary)'   },
+                         { type:'hull_weakness',  label:'Borg hull gap identified (temporary)'            },
+                         { type:'sensor_blind',   label:'Borg sensor frequency (temporary)'              },
+                         { type:'weapon_disrupt', label:'Borg targeting disrupted (temporary)'            } ],
+};
 
-function commitScanProfile() {
-  if (!G.activeScanProfile || G.scanAnalysisProgress < 100) { postLogEvent("Analysis incomplete — hold profile longer.", 'warn'); return; }
-  const bonuses = {
-    shields: { type:'shields', value:1.25, duration:25000, msg:"+25% weapon yield vs shields for 25s." },
-    hull:    { type:'hull',    value:1.35, duration:20000, msg:"+35% all damage for 20s." },
-    weapons: { type:'weapons', value:1.0,  duration:30000, msg:"Enemy weapons disrupted for 30s." },
-    tetryon: { type:'tetryon', value:0.3,  duration:15000, msg:"Tetryon pulse — false warp signature. Enemy lock rate −70% for 15s." },
-  };
-  const b = bonuses[G.activeScanProfile];
-  G.scanBonus = { type:b.type, value:b.value, expiry:performance.now() + b.duration };
-  if (b.type === 'weapons') {
-    G.weaponsDisrupted = true;
-    G.weaponsDisruptedTimer = b.duration;
+// ── Deep sensor scan ──────────────────────────────────────────
+function startDeepScan() {
+  if (!G.running || G.dead) return;
+  if (G.deepScanActive) { postLogEvent("Deep scan already in progress.", 'info'); return; }
+  if (G.deepScanCooldown > 0) {
+    postLogEvent(`Sensor array recharging — ${Math.ceil(G.deepScanCooldown/1000)}s.`, 'warn'); return;
   }
-  postLogEvent(b.msg, 'good');
-  crewReportScanCommitted(G.activeScanProfile);
-  if (b.type === 'weapons') crewReportWeaponsDisrupted();
-  G.activeScanProfile = null;
-  G.scanAnalysisProgress = 0;
-  document.querySelectorAll('.scan-profile-btn').forEach(btn => btn.classList.remove('active-scan'));
-  const bl = document.getElementById('lbl-scan-bonus');
-  if (bl) { bl.textContent = `ACTIVE: ${b.type.toUpperCase()}`; bl.style.cssText = 'background:rgba(0,204,102,0.15);color:var(--green);border:1px solid var(--green);font-size:9px'; }
+  if (G.systems.sensors.tripped || G.systems.sensors.health < 15) {
+    postLogEvent("Sensors too damaged for deep analysis.", 'crit'); return;
+  }
+  G.deepScanActive   = true;
+  G.deepScanProgress = 0;
+  postLogEvent("DEEP SENSOR SCAN initiated — analysing enemy frequencies...", 'info');
+  _updateDeepScanButton();
 }
 
-function toggleActiveSensorSystems() {
-  G.activeScanningProfile = !G.activeScanningProfile;
-  ['btn-active-scanner-toggle','btn-active-scanner-toggle-tac'].forEach(id => {
-    const btn = document.getElementById(id); if (!btn) return;
-    btn.textContent = G.activeScanningProfile ? "ACTIVE SWEEP ON" : "Passive Scan";
-    if (G.activeScanningProfile) btn.classList.add('red-btn'); else btn.classList.remove('red-btn');
+// Called each frame from masterSimulationCoreLoop
+function processDeepScan(dt) {
+  if (G.deepScanCooldown > 0) {
+    G.deepScanCooldown = Math.max(0, G.deepScanCooldown - dt);
+    if (G.deepScanCooldown === 0) _updateDeepScanButton();
+  }
+  if (!G.deepScanActive) return;
+
+  const sH = G.systems.sensors.health;
+  const sP = G.systems.sensors.allocatedPower;
+  const rate = 0.012 * (sH / 100) * (0.5 + (sP / 20) * 0.5);
+  G.deepScanProgress = Math.min(100, G.deepScanProgress + rate * dt);
+
+  const bar = document.getElementById('bar-scan-analysis');
+  if (bar) bar.style.width = `${G.deepScanProgress}%`;
+  _updateDeepScanButton();
+
+  if (G.deepScanProgress >= 100) {
+    G.deepScanActive = false;
+    _commitDeepScan();
+  }
+}
+
+function _commitDeepScan() {
+  const cfg     = ENEMY_CONFIGS[G.enemyArchetype];
+  const results = _SCAN_RESULTS[G.enemyArchetype] || [{ type:'hull_weakness', label:'Hull stress points mapped' }];
+  const isBorg  = cfg.faction === 'Borg';
+
+  G.permanentScanBonuses = {};
+  const _borgLevelAtScan = isBorg ? (G.borgEscalationLevel || 0) : -1;
+
+  results.forEach(r => {
+    G.permanentScanBonuses[r.type] = {
+      weaponType:     r.weaponType || null,
+      label:          r.label,
+      borgScanLevel:  _borgLevelAtScan,   // −1 for non-Borg (never expires)
+    };
   });
-  if (G.activeScanningProfile) {
-    G.threat.fireInterval = Math.round(G.threat.fireInterval * 0.85);
-    postLogEvent("Active scanning on — enemy also benefits from better targeting.", 'warn');
-  } else {
-    G.threat.fireInterval = Math.round(ENEMY_CONFIGS[G.enemyArchetype].fireInterval * DIFFICULTY[currentDifficulty].enemyFireMult);
-    postLogEvent("Passive tracking restored.", 'info');
+
+  // Apply weapon_disrupt by extending the fire interval immediately
+  if (G.permanentScanBonuses.weapon_disrupt) {
+    G.threat.fireInterval = Math.round(G.threat.fireInterval * 1.30);
+    postLogEvent("DEEP SCAN: Fire control disrupted — enemy fire rate −23%.", 'good');
   }
+
+  G.deepScanCooldown = 60000;  // 60s before rescan
+
+  postLogEvent(`DEEP SCAN COMPLETE — ${results.length} frequency lock${results.length>1?'s':''} established.`, 'good');
+  if (isBorg) postLogEvent("WARNING: Borg frequencies adapt over time — rescan as they escalate.", 'warn');
+
+  _updateDeepScanButton();
+  _renderScanResults();
+}
+
+// Clear Borg bonuses when adaptation level increases
+function checkBorgScanExpiry() {
+  if (!G.permanentScanBonuses || !ENEMY_CONFIGS[G.enemyArchetype]) return;
+  if (ENEMY_CONFIGS[G.enemyArchetype].faction !== 'Borg') return;
+  const currentLevel = G.borgEscalationLevel || 0;
+  const anyEntry = Object.values(G.permanentScanBonuses)[0];
+  if (!anyEntry || anyEntry.borgScanLevel < 0) return;
+  if (currentLevel > anyEntry.borgScanLevel) {
+    G.permanentScanBonuses = {};
+    // Also restore fire interval
+    const diff = DIFFICULTY[currentDifficulty];
+    G.threat.fireInterval = Math.round(ENEMY_CONFIGS[G.enemyArchetype].fireInterval * diff.enemyFireMult);
+    postLogEvent("BORG: Frequency adaptation complete — scan data expired. Rescan required.", 'crit');
+    _updateDeepScanButton();
+    _renderScanResults();
+  }
+}
+
+function _updateDeepScanButton() {
+  const btn = document.getElementById('btn-deep-scan'); if (!btn) return;
+  if (G.deepScanActive) {
+    btn.textContent = `🔭 SCANNING ${Math.round(G.deepScanProgress)}%`;
+    btn.style.background = 'var(--p)'; btn.style.color = '#fff';
+    btn.disabled = true;
+  } else if (G.deepScanCooldown > 0) {
+    btn.textContent = `🔭 RESCAN ${Math.ceil(G.deepScanCooldown/1000)}s`;
+    btn.style.background = 'var(--dim2)'; btn.style.color = '#aabbcc';
+    btn.disabled = true;
+  } else {
+    btn.textContent = '🔭 DEEP SCAN';
+    btn.style.background = ''; btn.style.color = '';
+    btn.disabled = false;
+  }
+}
+
+function _renderScanResults() {
+  const el = document.getElementById('scan-results-display'); if (!el) return;
+  const bonuses = G.permanentScanBonuses || {};
+  const keys = Object.keys(bonuses);
+  if (keys.length === 0) {
+    el.innerHTML = '<div style="color:#4466aa;font-size:9px;font-style:italic;">No frequency data — run deep scan</div>';
+    return;
+  }
+  const icons = { shield_freq:'🛡', hull_weakness:'💥', sensor_blind:'〜', weapon_disrupt:'⚡' };
+  const descs = { shield_freq:'−25% incoming', hull_weakness:'+20% damage', sensor_blind:'−40% lock', weapon_disrupt:'−23% fire rate' };
+  el.innerHTML = keys.map(k => {
+    const b = bonuses[k];
+    const extra = b.weaponType ? ` [${b.weaponType}]` : '';
+    return `<div style="display:flex;align-items:center;gap:4px;padding:2px 0;border-bottom:1px solid #0a1828;">
+      <span style="font-size:11px;">${icons[k]||'◈'}</span>
+      <span style="font-size:9px;color:var(--green);flex:1;">${b.label}${extra}</span>
+      <span style="font-size:9px;color:var(--o);font-weight:bold;">${descs[k]||''}</span>
+    </div>`;
+  }).join('');
 }
 
 // ── Enemy subsystem targeting ─────────────────────────────────
@@ -82,14 +188,30 @@ function buildEnemySubsystemTargetGrid() {
 
 function setEnemyTarget(key, label, arc) {
   G.targetedSubsystemType = key;
-  if (G.activeScanProfile && G.scanAnalysisProgress > 20) {
-    postLogEvent(`Scan analysis interrupted — switching target resets sensor focus. Progress lost.`, 'warn');
-  }
   G.lockProgress = Math.max(0, G.lockProgress - 30);
-  G.scanAnalysisProgress = 0;
+  G.deepScanProgress = 0;
   document.querySelectorAll('[id^="enemy-tgt-btn-"]').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById(`enemy-tgt-btn-${key}`); if (btn) btn.classList.add('active');
   const t = document.getElementById('txt-current-target'); if (t) t.textContent = label.toUpperCase();
   const a = document.getElementById('txt-firing-arc');     if (a) a.textContent = `Arc: ${arc}`;
   postLogEvent(`Target: [${label.toUpperCase()}]. Lock partially reset.`, 'info');
+}
+
+// Expose for legacy compat (captain orders etc)
+function toggleActiveSensorSystems() {
+  G.activeScanningProfile = !G.activeScanningProfile;
+  ['btn-active-scanner-toggle','btn-active-scanner-toggle-tac'].forEach(id => {
+    const btn = document.getElementById(id); if (!btn) return;
+    btn.textContent = G.activeScanningProfile ? "ACTIVE SWEEP ON" : "Passive Scan";
+    if (G.activeScanningProfile) btn.classList.add('red-btn'); else btn.classList.remove('red-btn');
+  });
+  if (G.activeScanningProfile) {
+    G.threat.fireInterval = Math.round(G.threat.fireInterval * 0.85);
+    postLogEvent("Active scanning on — enemy also benefits from better targeting.", 'warn');
+  } else {
+    const diff = DIFFICULTY[currentDifficulty];
+    const base = Math.round(ENEMY_CONFIGS[G.enemyArchetype].fireInterval * diff.enemyFireMult);
+    G.threat.fireInterval = G.permanentScanBonuses.weapon_disrupt ? Math.round(base * 1.30) : base;
+    postLogEvent("Passive tracking restored.", 'info');
+  }
 }

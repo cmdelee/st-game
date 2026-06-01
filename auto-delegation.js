@@ -71,16 +71,8 @@ function processAutomatedDelegation(dt) {
         if (Math.random() < ce) {
           const warpOnline = !G.systems.warp_core.tripped || G.batteryActive;
           if (warpOnline) {
-            const _aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
-            const pk  = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
-            pk.filter(k => {
-              if (!_aw[k]) return false;
-              const s = G.systems[_aw[k].parentSystem];
-              return !s.tripped && s.health >= 15 && s.cap >= _aw[k].cost;
-            }).forEach(k => fireSelectedArray(k));
-            if (Math.random() < 0.5 * ce)  fireSelectedArray('emitter_nose');
-            if (Math.random() < 0.25 * ce && G.player.torpedoes > 3)       fireSelectedArray('torpedo_quantum');
-            if (Math.random() < 0.20 * ce && G.player.photonTorpedoes > 0) fireSelectedArray('torpedo_photon');
+            fireEnergyWeapons();
+            if (Math.random() < 0.35 * ce) fireTorpedoBanks();
           }
         }
       }

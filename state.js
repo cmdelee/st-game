@@ -33,6 +33,8 @@ const G = {
 
   // Scan
   activeScanProfile:null, scanAnalysisProgress:0, scanBonus:null,
+  permanentScanBonuses:{},    // { shield_freq, hull_weakness, sensor_blind, weapon_disrupt }
+  deepScanActive:false, deepScanProgress:0, deepScanCooldown:0,
 
   // Emergency battery
   batteryCharge:100,

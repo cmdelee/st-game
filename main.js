@@ -31,54 +31,37 @@ function rebuildWeaponFireMatrix() {
   const overMat = document.getElementById('overload-fire-matrix');
   if (!fireMat) return;
 
-  if (isEnt) {
-    // Enterprise-E: full 9-array + 5-launcher tactical panel
-    fireMat.innerHTML = `
-      <button class="pill-action-btn" style="grid-column:span 2;" id="btn-cannons" onclick="fireAllPhaserArrays()">⚡ All Phaser Arrays ×9</button>
-      <button class="pill-action-btn p-btn" id="btn-nose"    onclick="fireSelectedArray('emitter_nose')">Primary Emitter <span style="font-size:9px;">[FWD 90]</span></button>
-      <button class="pill-action-btn p-btn"                  onclick="fireSelectedArray('phaser_aft_emitter')">Aft Emitter <span style="font-size:9px;">[AFT 55]</span></button>
-      <button class="pill-action-btn"                        onclick="fireSelectedArray('cannon_port_upper')">Saucer Dorsal Fwd <span style="font-size:9px;">[F/P/S]</span></button>
-      <button class="pill-action-btn"                        onclick="fireSelectedArray('phaser_saucer_port')">Saucer Port Array <span style="font-size:9px;">[F/P/A]</span></button>
-      <button class="pill-action-btn"                        onclick="fireSelectedArray('cannon_port_lower')">Saucer Ventral Fwd <span style="font-size:9px;">[F/P/S]</span></button>
-      <button class="pill-action-btn"                        onclick="fireSelectedArray('phaser_saucer_stbd')">Saucer Stbd Array <span style="font-size:9px;">[F/S/A]</span></button>
-      <button class="pill-action-btn"                        onclick="fireSelectedArray('cannon_stbd_upper')">Stardrive Fwd <span style="font-size:9px;">[F/P/S]</span></button>
-      <button class="pill-action-btn"                        onclick="fireSelectedArray('phaser_secondary')">Secondary Hull <span style="font-size:9px;">[F/P/S]</span></button>
-      <button class="pill-action-btn"                        onclick="fireSelectedArray('cannon_stbd_lower')">Saucer Aft Arrays <span style="font-size:9px;">[A/P/S]</span></button>
-      <button class="pill-action-btn red-btn" style="grid-column:span 1;" id="btn-burst-fire" onclick="executeConcentratedPhaserFire()">⚡⚡ CONCENTRATED FIRE</button>
-      <button class="pill-action-btn p-btn" id="btn-quantum"     onclick="fireSelectedArray('torpedo_quantum')">Fwd Quantum A</button>
-      <button class="pill-action-btn p-btn"                      onclick="fireSelectedArray('torpedo_quantum_b')">Fwd Quantum B</button>
-      <button class="pill-action-btn p-btn" id="btn-photon"      onclick="fireSelectedArray('torpedo_photon')">Fwd Photon <span style="font-size:9px;">[No lock]</span></button>
-      <button class="pill-action-btn p-btn" id="btn-quantum-aft" onclick="fireSelectedArray('torpedo_quantum_aft')">Aft Quantum <span style="font-size:9px;">[AFT]</span></button>
-      <button class="pill-action-btn"       id="btn-photon-aft"  onclick="fireSelectedArray('torpedo_photon_aft')">Aft Photon <span style="font-size:9px;">[AFT/No lock]</span></button>
-      <button class="pill-action-btn warn-btn" id="btn-cloak"    onclick="toggleSaucerSeparation()">◯ SEPARATE SAUCER</button>
-      <button class="pill-action-btn"         id="btn-shield-freq" onclick="rotateShieldFrequency()">🛡 ROTATE FREQ</button>
-      <button class="pill-action-btn p-btn"   id="btn-evasive"    onclick="executeEvasivePattern()">◈ EVASIVE</button>
-      <button class="pill-action-btn red-btn" id="btn-alpha"      onclick="executeAlphaSalvoFire()">ALPHA SALVO</button>
-    `;
-    if (overMat) overMat.innerHTML = `
-      <button class="pill-action-btn red-btn" id="btn-overcharge"    onclick="executeMaxPhaserOutput()">⚡ MAX PHASER OUTPUT<br><span style="font-size:11px;">All phasers +60% · 1 salvo · CD 30s</span></button>
-      <button class="pill-action-btn red-btn" id="btn-unstable-torp" onclick="executeTricobalWarhead()">☢ TRICOBALT WARHEAD<br><span style="font-size:11px;">300 yield · No lock · 1 per engagement</span></button>
-      <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-power-dump" onclick="executeEmergencyPowerDump()">⚡⚡ EMERGENCY POWER DUMP — Wpn+40% 10s · EPS spike · Shld−30% · CD 50s</button>
-    `;
-  } else {
-    fireMat.innerHTML = `
-      <button class="pill-action-btn" style="grid-column:span 2;" id="btn-cannons" onclick="firePulseCannons()">⚡ All Pulse Cannons ×4</button>
-      <button class="pill-action-btn p-btn"  id="btn-nose"        onclick="fireSelectedArray('emitter_nose')">Nose Beam <span style="font-size:9px;">[FWD]</span></button>
-      <button class="pill-action-btn p-btn"  id="btn-quantum"     onclick="fireSelectedArray('torpedo_quantum')">Quantum Torpedo</button>
-      <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-burst-fire" onclick="executeBurstFireSalvo()">⚡⚡ BURST SALVO — 4-CANNON BARRAGE</button>
-      <button class="pill-action-btn p-btn"  id="btn-photon"      onclick="fireSelectedArray('torpedo_photon')">Photon Torp <span style="font-size:9px;">[No lock]</span></button>
-      <button class="pill-action-btn p-btn"  id="btn-quantum-aft" onclick="fireSelectedArray('torpedo_quantum_aft')">Aft Quantum <span style="font-size:9px;">[AFT]</span></button>
-      <button class="pill-action-btn"        id="btn-photon-aft"  onclick="fireSelectedArray('torpedo_photon_aft')">Aft Photon <span style="font-size:9px;">[AFT/No lock]</span></button>
-      <button class="pill-action-btn warn-btn" id="btn-cloak"     onclick="toggleCloakingDevice()">◉ ENGAGE CLOAK</button>
-      <button class="pill-action-btn"         id="btn-shield-freq" onclick="rotateShieldFrequency()">🛡 ROTATE FREQ</button>
-      <button class="pill-action-btn p-btn"   id="btn-evasive"    onclick="executeEvasivePattern()">◈ EVASIVE PATTERN</button>
-      <button class="pill-action-btn red-btn" style="grid-column:span 1;" id="btn-alpha" onclick="executeAlphaSalvoFire()">ALPHA SALVO — ALL IN ARC</button>
-    `;
-    if (overMat) overMat.innerHTML = `
-      <button class="pill-action-btn red-btn" id="btn-overcharge"    onclick="executeCannonOvercharge()">⚡ OVERCHARGE<br><span style="font-size:11px;">Cannon +50% · Breaker risk · CD 30s</span></button>
-      <button class="pill-action-btn red-btn" id="btn-unstable-torp" onclick="executeUnstableTorpedo()">☢ UNSTABLE TORP<br><span style="font-size:11px;">Quantum +70% · Misfire 25% · CD 35s</span></button>
-      <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-power-dump" onclick="executeEmergencyPowerDump()">⚡⚡ EMERGENCY POWER DUMP — Wpn+40% 10s · EPS spike · Shld−30% · CD 50s</button>
-    `;
+  const energyLabel = isEnt ? '⚡ FIRE PHASERS' : '⚡ FIRE CANNONS';
+  const burstBtn    = isEnt
+    ? `<button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-burst-fire" onclick="executeConcentratedPhaserFire()">⚡⚡ CONCENTRATED FIRE</button>`
+    : `<button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-burst-fire" onclick="executeBurstFireSalvo()">⚡⚡ BURST SALVO</button>`;
+  const specialBtn  = isEnt
+    ? `<button class="pill-action-btn warn-btn" id="btn-cloak" onclick="toggleSaucerSeparation()">◯ SAUCER SEP</button>`
+    : `<button class="pill-action-btn warn-btn" id="btn-cloak" onclick="toggleCloakingDevice()">◉ CLOAK</button>`;
+
+  fireMat.innerHTML = `
+    <button class="pill-action-btn" id="btn-cannons"  onclick="fireEnergyWeapons()">${energyLabel}</button>
+    <button class="pill-action-btn p-btn"              onclick="fireTorpedoBanks()">⬟ FIRE TORPEDOES</button>
+    <button class="pill-action-btn green-btn" style="grid-column:span 2;" id="btn-alpha" onclick="fireAllWeapons()">⚡⚡ FIRE ALL — ENERGY + TORPS IN ARC</button>
+    ${burstBtn}
+    ${specialBtn}
+    <button class="pill-action-btn p-btn" id="btn-evasive" onclick="executeEvasivePattern()">◈ EVASIVE</button>
+  `;
+
+  if (overMat) {
+    if (isEnt) {
+      overMat.innerHTML = `
+        <button class="pill-action-btn red-btn" id="btn-overcharge"    onclick="executeMaxPhaserOutput()">⚡ MAX PHASER OUTPUT<br><span style="font-size:11px;">All phasers +60% · 1 salvo · CD 30s</span></button>
+        <button class="pill-action-btn red-btn" id="btn-unstable-torp" onclick="executeTricobalWarhead()">☢ TRICOBALT WARHEAD<br><span style="font-size:11px;">300 yield · No lock · 1 per engagement</span></button>
+        <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-power-dump" onclick="executeEmergencyPowerDump()">⚡⚡ EMERGENCY POWER DUMP — Wpn+40% 10s · EPS spike · Shld−30% · CD 50s</button>
+      `;
+    } else {
+      overMat.innerHTML = `
+        <button class="pill-action-btn red-btn" id="btn-overcharge"    onclick="executeCannonOvercharge()">⚡ OVERCHARGE<br><span style="font-size:11px;">Cannon +50% · Breaker risk · CD 30s</span></button>
+        <button class="pill-action-btn red-btn" id="btn-unstable-torp" onclick="executeUnstableTorpedo()">☢ UNSTABLE TORP<br><span style="font-size:11px;">Quantum +70% · Misfire 25% · CD 35s</span></button>
+        <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-power-dump" onclick="executeEmergencyPowerDump()">⚡⚡ EMERGENCY POWER DUMP — Wpn+40% 10s · EPS spike · Shld−30% · CD 50s</button>
+      `;
+    }
   }
 
   // Rebuild capacitor bar grid layout for active ship
@@ -516,23 +499,8 @@ function masterSimulationCoreLoop(ts) {
     G.lockProgress = Math.max(0, G.lockProgress - 0.012 * dt);
   }
 
-  // Scan analysis progress
-  if (G.activeScanProfile) {
-    const sP = G.systems.sensors.allocatedPower;
-    const sH = G.systems.sensors.health;
-    const r  = 0.014 * (sH / 100) * (0.5 + (sP / 20) * 0.5);
-    G.scanAnalysisProgress = Math.min(100, G.scanAnalysisProgress + r * dt);
-    const bar = document.getElementById('bar-scan-analysis'); if (bar) bar.style.width = `${G.scanAnalysisProgress}%`;
-    const txt = document.getElementById('txt-scan-analysis'); if (txt) txt.textContent = `${Math.round(G.scanAnalysisProgress)}%`;
-  }
-
-  // Scan bonus expiry
-  if (G.scanBonus && performance.now() > G.scanBonus.expiry && G.scanBonus.type !== 'weapons') {
-    postLogEvent("Scan bonus expired.", 'info');
-    G.scanBonus = null;
-    const bl = document.getElementById('lbl-scan-bonus');
-    if (bl) { bl.textContent = 'No Profile'; bl.style.cssText = 'background:rgba(255,170,0,0.1);color:var(--warn);border:1px solid var(--warn);font-size:9px'; }
-  }
+  // Deep scan progress + Borg scan expiry
+  processDeepScan(dt);
 
   // Enemy hull slow natural recovery
   G.threat.hull = Math.min(G.threat.maxHull, G.threat.hull + G.threat.recoveryCoefficient * (dt / 1000));
@@ -546,6 +514,7 @@ function masterSimulationCoreLoop(ts) {
     : 1.0;
   const fi = G.threat.fireInterval * (G.enemyPhaseFireMult || 1.0) * (G.weaponsDisrupted ? 2 : 1) * _jemFury;
   if (G.threatCycleTimer > fi) { G.threatCycleTimer = 0; executeThreatCounterVolley(); }
+
 
   updateWarpAvailability();
   checkLastStandCondition();
@@ -710,9 +679,13 @@ function initiateVesselSimulation(station) {
   G.enemyLockProgress  = 0;
   G.weaponsDisrupted   = false;
   G.weaponsDisruptedTimer = 0;
-  G.scanBonus          = null;
-  G.activeScanProfile  = null;
-  G.scanAnalysisProgress = 0;
+  G.scanBonus             = null;
+  G.activeScanProfile     = null;
+  G.scanAnalysisProgress  = 0;
+  G.permanentScanBonuses  = {};
+  G.deepScanActive        = false;
+  G.deepScanProgress      = 0;
+  G.deepScanCooldown      = 0;
   G.sensorGhostActive  = false;
   G.sensorGhostTimer   = 0;
   G.enemyTractorActive = false;

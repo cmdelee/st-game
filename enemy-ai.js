@@ -287,7 +287,8 @@ function processEnemyAI(dt) {
     ? (G.saucerSepReconnecting ? 0.75 : 0.34)
     : 1.0;
   const phaseLockMod  = G.enemyPhaseLockMult || 1.0;
-  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * saucerSepMod * phaseLockMod * sc);
+  const permSensorBlind = (G.permanentScanBonuses && G.permanentScanBonuses.sensor_blind) ? 0.60 : 1.0;
+  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * saucerSepMod * phaseLockMod * permSensorBlind * sc);
 
   // Jem'Hadar ramming check
   if (cfg.canRam && !G.enemyRammingRun) {
@@ -339,6 +340,7 @@ function processEnemyAI(dt) {
   }
 
   checkEnemyHullMilestones();
+  checkBorgScanExpiry();
 
   // Enemy weapon degradation below 35% hull — ship is falling apart
   const _enemyHullPct = G.threat.hull / G.threat.maxHull;
@@ -496,6 +498,15 @@ function executeThreatCounterVolley() {
                       (G.shieldFreqWeaponType === 'polaron'    && chosenSys.isPolaron)                        ||
                       (G.shieldFreqWeaponType === 'plasma'     && chosenSys.isTorpedo && chosenSys.label.includes('Plasma'));
     if (freqMatch) rawDmg *= 0.75;
+  }
+  // Permanent scan: shield frequency lock
+  if (G.permanentScanBonuses && G.permanentScanBonuses.shield_freq) {
+    const psf = G.permanentScanBonuses.shield_freq;
+    const permFreqMatch = (psf.weaponType === 'disruptors' && chosenSys.systemTargetKey === 'disruptors') ||
+                          (psf.weaponType === 'phasers'    && chosenSys.systemTargetKey === 'phasers')    ||
+                          (psf.weaponType === 'polaron'    && chosenSys.isPolaron)                        ||
+                          (psf.weaponType === 'plasma'     && chosenSys.isTorpedo && chosenSys.label.includes('Plasma'));
+    if (permFreqMatch) rawDmg *= 0.75;
   }
 
   if (G.cloakVulnTimer > 0) {
