@@ -187,7 +187,7 @@ function fireSelectedArray(weaponKey) {
   if (G.powerDumpActive)     dmg *= 1.40;
 
   if (G.scanBonus && performance.now() < G.scanBonus.expiry) {
-    if (G.scanBonus.type === 'shields' && !weapon.isPhoton && weapon.parentSystem !== 'torpedoes') dmg *= G.scanBonus.value;
+    if (G.scanBonus.type === 'shields' && !weapon.isPhoton) dmg *= G.scanBonus.value;
     if (G.scanBonus.type === 'hull') dmg *= G.scanBonus.value;
   }
 

@@ -598,7 +598,7 @@ function updateEngUtilityPanel() {
       if (ab.regenTimers[i] > 0) return `<span style="color:var(--t);">▒</span>`;
       return `<span style="color:var(--warn);">░</span>`;
     }).join('');
-    abl.innerHTML = `${layerStr} <span style="color:#aabbcc;font-size:9px;">${ab.layers}/5 layers</span>`;
+    abl.innerHTML = `${layerStr} <span style="color:#aabbcc;font-size:9px;">${ab.layers}/6 layers</span>`;
   }
 }
 

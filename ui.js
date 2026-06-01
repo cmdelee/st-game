@@ -175,7 +175,7 @@ function synchronizeGlobalInterfaceDisplays() {
       if (ab.regenTimers[i] > 0) return `<span style="color:var(--t);" title="Regen in ${Math.ceil(ab.regenTimers[i]/1000)}s">▒</span>`;
       return `<span style="color:var(--warn);" title="Regenerating">░</span>`;
     }).join('');
-    abDiv.innerHTML = `<span style="font-family:'Antonio';font-size:9px;color:#6688aa;">ABLATIVE</span> ${layerStr} <span style="font-size:9px;color:${col};">${ab.layers}/5</span>`;
+    abDiv.innerHTML = `<span style="font-family:'Antonio';font-size:9px;color:#6688aa;">ABLATIVE</span> ${layerStr} <span style="font-size:9px;color:${col};">${ab.layers}/6</span>`;
   }
 
   // Weapon health strip

@@ -264,8 +264,9 @@ function triggerEnemyDecloak(cfg, reason) {
     setTimeout(() => {
       if (!G.dead && G.running) {
         postLogEvent("ROMULAN PLASMA TORPEDO — FIRED ON DECLOAK! BRACE!", 'crit');
-        G.threatCycleTimer = G.threat.fireInterval + 1; // force fire cycle to trigger
-        executeThreatCounterVolley();
+        // Force the fire cycle to trigger on the next main-loop tick — do NOT call
+        // executeThreatCounterVolley() directly here or the Romulan fires twice
+        G.threatCycleTimer = G.threat.fireInterval + 1;
       }
     }, 800);
   }
@@ -357,7 +358,7 @@ function processNewMechanicsTimers(dt) {
     if (G.powerDumpCooldown <= 0) { G.powerDumpReady = true; postLogEvent("EPS power dump capacitors recharged.", 'good'); }
   }
 
-  // Shield frequency rotation
+  // Shield frequency rotation — cooldown only ticks AFTER active window expires
   if (G.shieldFreqActive) {
     G.shieldFreqTimer = Math.max(0, G.shieldFreqTimer - dt);
     if (G.shieldFreqTimer <= 0) {
@@ -365,8 +366,7 @@ function processNewMechanicsTimers(dt) {
       postLogEvent("Shield frequency rotation lapsed — modulator recharging.", 'info');
     }
     updateShieldFreqButton();
-  }
-  if (G.shieldFreqCooldown > 0) {
+  } else if (G.shieldFreqCooldown > 0) {
     G.shieldFreqCooldown = Math.max(0, G.shieldFreqCooldown - dt);
     if (G.shieldFreqCooldown <= 0) updateShieldFreqButton();
   }

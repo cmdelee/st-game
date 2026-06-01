@@ -155,7 +155,7 @@ function _updateCaptainOrderButtons() {
     const cd = G.captainOrderCooldowns[key] || 0;
     const lbl = btn.getAttribute('data-label') || btn.textContent.split('\n')[0];
     btn.setAttribute('data-label', lbl);
-    btn.firstChild.textContent = ready ? lbl : lbl + ' (' + Math.ceil(cd / 1000) + 's)';
+    if (btn.firstChild) btn.firstChild.textContent = ready ? lbl : lbl + ' (' + Math.ceil(cd / 1000) + 's)';
   });
 }
 
@@ -416,13 +416,15 @@ function tickCaptainManoeuvres(dt) {
 // ── Engineering wrappers (bypass station guards) ──────────────
 
 function _capPumpShields() {
-  // Re-implement pumpShieldSector for captain (bypasses station guard in engineering.js)
+  // Drain from port/stbd/aft and redirect to fore — mirrors pumpShieldSector() in engineering.js
   if (G.cloaked) return;
-  const spill = Math.min(30, G.player.shields.fore * 0.1);
-  G.player.shields.fore = Math.min(G.player.shields.maxSectorValue, G.player.shields.fore + spill * 3);
-  G.player.shields.port     = Math.max(0, G.player.shields.port     - spill);
-  G.player.shields.starboard= Math.max(0, G.player.shields.starboard- spill);
-  G.player.shields.aft      = Math.max(0, G.player.shields.aft      - spill);
+  let avail = 0;
+  ['port','starboard','aft'].forEach(s => {
+    const d = Math.min(20, G.player.shields[s]);
+    avail += d;
+    G.player.shields[s] = Math.max(0, G.player.shields[s] - d);
+  });
+  G.player.shields.fore = Math.min(G.player.shields.maxSectorValue, G.player.shields.fore + avail);
   postLogEvent("O'Brien: power rerouted — fore shields reinforced.", 'good');
 }
 
