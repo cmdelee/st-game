@@ -2,7 +2,7 @@
 
 "Star Trek and all related marks, logos and characters are solely owned by CBS Studios Inc. This fan production is not endorsed by, sponsored by, nor affiliated with CBS, Paramount Pictures, or any other Star Trek franchise, and is a non-commercial fan-made interactive experience intended for recreational use. No commercial exhibition or distribution is permitted. No alleged independent rights will be asserted against CBS or Paramount Pictures."
 
-A Star Trek: Deep Space Nine inspired tactical combat game featuring the USS Defiant in intense one-on-one starship battles against iconic adversaries.
+Command a Starfleet vessel in real-time tactical combat. Choose from two iconic ships and four command stations — the computer handles everything you don't.
 
 **[Play Now →](https://cmdelee.github.io/st-game/)**
 
@@ -10,38 +10,78 @@ A Star Trek: Deep Space Nine inspired tactical combat game featuring the USS Def
 
 ## Overview
 
-You command the USS Defiant NX-74205 in real-time combat. Choose your operational station — **Tactical**, **Engineering**, **Helm**, or **Captain's Chair** — and the computer automatically handles the stations you don't occupy. Fight across three difficulty levels while managing weapons, shields, power, cloaking systems, navigation, and crew casualties.
+You command either the **USS Defiant NX-74205** (Defiant-class) or the **USS Enterprise NCC-1701-E** (Sovereign-class) in one-on-one starship combat. Choose your operational station — **Tactical**, **Engineering**, **Helm**, or **Captain's Chair** — and the computer automatically handles the stations you don't occupy. Fight across three difficulty levels while managing weapons, shields, power, navigation, and crew casualties.
+
+---
+
+## Choose Your Ship
+
+### ⬟ USS Defiant NX-74205 — Defiant-class
+
+The overpowered escort from Deep Space Nine. Compact, aggressive, and uncompromising.
+
+| Stat | Value |
+|---|---|
+| Hull | 500 |
+| Fore Shields | 320 |
+| Quantum Torps | 18 |
+| Photon Torps | 12 |
+| Special | Ablative armor (6 layers), Cloaking device |
+| Crew | Worf · O'Brien · Nog · Dr. Bashir |
+
+**Weapons:** 4× pulse cannons, heavy nose emitter (65yd), fwd/aft torpedo tubes  
+**Overload modes:** Cannon Overcharge (+50%), Unstable Torpedo (+70%), Emergency Power Dump  
+**Burst:** 4-cannon burst salvo (800ms window)
+
+---
+
+### ◈ USS Enterprise NCC-1701-E — Sovereign-class
+
+Starfleet's flagship from the TNG films. Larger, tougher, and bristling with phaser arrays.
+
+| Stat | Value |
+|---|---|
+| Hull | 750 |
+| Fore Shields | 500 |
+| Quantum Torps | 24 |
+| Photon Torps | 30 |
+| Special | Regenerative shielding (×1.4 regen), Saucer Separation |
+| Crew | Worf · La Forge · Data · Dr. Crusher |
+
+**Weapons:** 9× Type-XII phaser arrays (all arcs), Primary Stardrive Emitter (90yd), Aft Stardrive Emitter (55yd), 2× fwd quantum tubes + aft tube  
+**Overload modes:** Max Phaser Output (+60%), Tricobalt Warhead (300yd, 1/game), Emergency Power Dump  
+**Burst:** Concentrated Phaser Fire (all in-arc arrays, 180ms/array)
 
 ---
 
 ## Features
 
-- **Four Command Stations**: Tactical (weapons), Engineering (power & repairs), Helm (navigation), or Captain's Chair (command overview with crew orders)
+- **Ship Selection**: Choose USS Defiant or USS Enterprise NCC-1701-E before each engagement — each with unique weapons, stats, special abilities, and crew
+- **Four Command Stations**: Tactical (weapons), Engineering (power & repairs), Helm (navigation), Captain's Chair (command overview + crew orders)
 - **Two Game Modes**:
   - **Single Engagement** — pick Normal / Hard / Elite, fight one random enemy from that pool
-  - **Campaign Run** — fight all 9 enemies in order from easiest to hardest; score accumulates, ship restores fully between fights; Borg Probe is the final boss
-- **Authentic DS9 Interface**: Full LCARS styling with canon ships from Klingons, Romulans, Cardassians, Dominion, and Borg
+  - **Campaign Run** — fight all 9 enemies in order from easiest to hardest; score accumulates, ship restores between fights; Borg Probe is the final boss
+- **Authentic LCARS Interface**: Full LCARS styling with canon ships from Klingons, Romulans, Cardassians, Dominion, and Borg
 - **9 Enemy Vessels**: Each with faction-specific AI, weapons, combat phase arcs, and hull milestone events
-- **3D Spatial Battle View**: Three.js WebGL rendering — ships move, bank, and close range dynamically
+- **3D Spatial Battle View**: Three.js WebGL — Defiant and Sovereign-class meshes, ships close range, weapon beams, torpedo tracks, engine glow
 - **Advanced Combat**:
-  - Real-time four-sector shield management with sector reinforcement
-  - Cloaking device with vulnerability windows (player and enemy)
-  - Burst-fire salvos, alpha salvo, and overload weapon modes
+  - Real-time four-sector shield management with sector reinforcement and equalisation
+  - Cloaking device (Defiant) / Saucer Separation (Enterprise-E) with distinct mechanics
+  - Burst salvos, alpha salvo, and ship-specific overload weapon modes
   - Shield frequency rotation countering enemy weapon types
   - Evasive Pattern Delta, Pattern Alpha, Attack Pattern Omega, Picard Manoeuvre
   - Four sensor scan profiles (shields / hull fissures / weapons disrupt / tetryon ECM)
   - Enemy subsystem targeting
-  - Ablative armour (6 regenerating layers)
-  - **Canon weapon arcs** — pulse cannons are forward-only; aft torpedo tubes (DS9-accurate) bear on port, starboard, and aft; all enemy weapons respect their Trek-accurate firing arcs
+  - Ablative armour — 6 regenerating layers (Defiant only)
+  - Regenerative shielding (Enterprise-E only)
+  - **Canon weapon arcs** — all weapons respect Trek-accurate firing arcs across both ships
 - **Engineering Power System**: Zero-sum EPS allocation across 11 systems, thermal buildup, breaker trips, warp core cascade failures, one-click power presets
-- **Battle Realism**: Enemy hull milestone events (75/50/25/10%) trigger faction-specific dialogue and automatic reactions — Klingon death salvo, Romulan emergency cloak, Jem'Hadar fury scaling (gets faster as they take damage)
-- **Helm Controls**: Speed, attack vector, engagement range, attack runs, come-about, and advanced manoeuvres
-- **Dynamic AI**: Klingons close range; Romulans fire plasma immediately on decloak; Borg adapt per-weapon and never cloak; Jem'Hadar fire faster as their hull drops
-- **Captain's Chair**: Live crew comms feed, 40+ order buttons across Worf/O'Brien/Nog, autonomous crew automation with command overrides
-- **Named Crew**: Worf, O'Brien, Bashir, Nog — casualties degrade their station's effectiveness
-- **Last Stand**: Below 20% hull the crew reacts instantly — Nog pushes to full impulse, O'Brien reroutes shield power, Worf calls battle stations; viewport pulses red
+- **Battle Realism**: Enemy hull milestones (75/50/25/10%) trigger faction dialogue and automatic reactions — Klingon death salvo, Romulan emergency cloak, Jem'Hadar fury scaling
+- **Dynamic AI**: Klingons close range; Romulans fire plasma immediately on decloak; Borg adapt per-weapon; Jem'Hadar fire faster as they take damage
+- **Captain's Chair**: Live crew comms feed (ship-appropriate crew voices), 40+ order buttons, autonomous crew automation with command overrides
+- **Named Crew**: Casualties degrade station effectiveness — both crews fully voiced with distinct speech patterns
+- **Last Stand**: Below 20% hull the crew reacts — helm goes full impulse, engineering reroutes shield power, Worf calls battle stations; viewport pulses red
 - **Post-battle Debrief**: Full tactical report — weapons by type, breaches by sector, systems tripped, peak hit, crew status, enemy phase reached
-- **Emergency Systems**: Battery backup, emergency warp escape, damage control, emergency thrusters
 
 ---
 
@@ -64,68 +104,90 @@ Open `http://localhost:8000`. No build step, no bundler.
 ## Stations
 
 ### 🔴 Tactical
-Direct weapons fire, manage evasive manoeuvres, operate the cloaking device, and run sensor sweeps. Engineering runs on auto-delegation.
+
+Direct weapons fire, manage evasive manoeuvres, operate cloak or saucer sep, and run sensor sweeps. Engineering runs on auto-delegation.
+
+**Defiant weapons:**
 
 | Control | Arc | Effect |
 |---|---|---|
-| All Pulse Cannons ×N | **Fore** (upper); **Fore/Port** or **Fore/Stbd** (lower) | Fire all cannons currently in arc — button label updates dynamically |
-| Nose Beam | **Fore only** | Heavy emitter — 65-unit yield |
-| Fwd Quantum Torpedo | **Fore / Port / Stbd** | Binary damage — full yield at ≥60% lock |
-| Fwd Photon Torpedo | **Fore / Port / Stbd** | Flat damage, no lock required |
-| Aft Quantum Torpedo | **Aft / Port / Stbd** | Same yield as forward tube; shares quantum magazine |
-| Aft Photon Torpedo | **Aft / Port / Stbd** | Flat damage; shares photon magazine |
-| ⚡⚡ Burst Salvo | In-arc cannons only | 4-cannon (or fewer) 800ms barrage; overwhelms shield regen |
-| 🛡 Rotate Frequency | — | 25% incoming reduction for 12s; counters enemy weapon type |
-| ◈ Evasive Delta | — | Enemy lock rate −60% for 8s; 20s cooldown |
-| Cloak | — | 1200ms vulnerability on engage/disengage; regen credit accumulates |
-| Alpha Salvo | All in-arc weapons | Fires every weapon that bears on current attack vector |
-| ⚡ Overcharge | — | Cannons +50% yield, breaker risk; 30s CD |
-| ☢ Unstable Torpedo | — | Quantum +70% yield, 25% misfire chance; 35s CD |
-| ⚡⚡ Power Dump | — | All weapons +40% for 10s, EPS spike, shields −30%; 50s CD |
-| Sensor Scans | — | +25% vs shields / +35% all dmg / −50% enemy fire / −70% enemy lock |
-| Subsystem Grid | — | Target enemy weapons, shields, engines, sensors individually |
-| Emergency Warp | — | Escape at hull ≤35% |
+| All Pulse Cannons ×N | Fore (upper); Fore/Port or Fore/Stbd (lower) | All in-arc cannons — label updates dynamically |
+| Nose Beam | Fore only | Heavy emitter — 65yd |
+| Fwd/Aft Quantum Torpedo | Fore/Port/Stbd · Aft/Port/Stbd | Binary — full yield ≥60% lock |
+| Fwd/Aft Photon Torpedo | Fore/Port/Stbd · Aft/Port/Stbd | Flat damage, no lock required |
+| ⚡⚡ Burst Salvo | In-arc cannons | 4-cannon 800ms barrage |
+| ◉ Cloak | — | 1200ms vulnerability window; regen credit accrues while cloaked |
+| ⚡ Overcharge | — | Cannons +50%, breaker risk, 30s CD |
+| ☢ Unstable Torpedo | — | Quantum +70%, 25% misfire, 35s CD |
+
+**Enterprise-E weapons:**
+
+| Control | Arc | Effect |
+|---|---|---|
+| All Phaser Arrays ×9 | Various (see below) | All in-arc arrays fire simultaneously |
+| Primary Stardrive Emitter | Fore only | Heaviest single array — 90yd |
+| Aft Stardrive Emitter | Aft/Port/Stbd | Powerful aft defence — 55yd |
+| Individual phaser buttons | F/P/S or F/P/A or A/P/S | 9 individually targetable arrays |
+| Fwd Quantum Tube A + B | Fore/Port/Stbd | Dual forward quantum launchers |
+| Aft Quantum / Photon | Aft/Port/Stbd | Aft launcher |
+| ◯ Saucer Separation | — | Enemy lock −60% for 15s, 50s CD |
+| ⚡ Max Phaser Output | — | All phasers +60%, 30s CD |
+| ☢ Tricobalt Warhead | — | 300yd, no lock, 40% hull bleed-through, 1 per engagement |
+
+Both ships share: Alpha Salvo, Shield Frequency Rotation, Evasive Pattern, Emergency Power Dump, Sensor Scans (4 profiles), Subsystem Targeting Grid, Emergency Warp.
 
 ### 🟣 Engineering
-Allocate power, manage repairs, and run the cloaking device. Auto-tactical fires weapons on a 2.4s clock.
+
+Allocate power, manage repairs. Auto-tactical fires weapons on a 2.4s clock.
 
 | Control | Effect |
 |---|---|
 | EPS Allocation | Distribute up to 120MW across 11 systems (zero-sum) |
-| Power Presets | One-click Attack / Silent Running / Evasive / Damage Control modes |
-| Repair Teams | Alpha and Beta teams independently dispatched to damaged systems |
+| Power Presets | Attack / Silent Running / Evasive / Damage Control |
+| Repair Teams | Alpha and Beta teams independently dispatched |
 | Shield Regen | Boost or normalise shield power |
 | Emergency Battery | Backup power when warp core trips |
 | Breaker Grid | Re-latch tripped EPS conduits |
-| Flush All | Clear all conduit stress instantly |
-| Damage Control | Emergency +30% repair to weapons or systems (costs battery) |
+| Ablative Armour | Status display (Defiant only) |
+| Saucer Separation | Status + trigger (Enterprise-E only) |
 
 ### 🩷 Helm
-Navigate the ship and control the engagement. Both auto-tactical (weapons) and auto-engineering (repairs/power) run simultaneously.
+
+Navigate the ship and control the engagement. Both auto-tactical and auto-engineering run simultaneously.
 
 | Control | Options | Effect |
 |---|---|---|
-| Speed | Stop / Maneuvering / Half / Full Impulse | Scales enemy lock rate (×0.65–1.35) and player weapon yield (×0.88–1.10) |
-| Attack Vector | Fore / Port / Stbd / Aft | 65% chance enemy fire hits the selected shield sector |
-| Engagement Range | Long / Medium / Close | Torpedoes +15% at long; cannons +20% at close |
-| Attack Run | — | 8s cannon +20%, closes to combat range. 20s CD |
-| Come About | — | 3s rotation; auto-presents strongest shields on completion. 18s CD |
-| Evasive Pattern Delta | — | Enemy lock −60% for 8s. 20s CD |
-| Picard Manoeuvre | — | Micro-warp jump; enemy cannot fire for 3s. 60s CD |
-| Attack Pattern Omega | — | All weapons +40% for 10s. 45s CD |
-| Evasive Pattern Alpha | — | Maximum evasion for 5s. 15s CD |
+| Speed | Stop / Maneuvering / Half / Full Impulse | Enemy lock ×0.65–1.35; player yield ×0.88–1.10 |
+| Attack Vector | Fore / Port / Stbd / Aft | 65% chance enemy fire hits selected shield sector |
+| Engagement Range | Long / Medium / Close | Torpedoes +15% long; cannons/arrays +20% close |
+| Attack Run | — | 8s weapon +20%, closes range. 20s CD |
+| Come About | — | 3s rotation; auto-presents strongest shields. 18s CD |
+| Evasive Delta | — | Enemy lock −60% for 8s. 20s CD |
+| Picard Manoeuvre | — | Micro-warp; enemy cannot fire for 3s. 60s CD |
+| Pattern Omega | — | All weapons +40% for 10s. 45s CD |
+| Evasive Alpha | — | Maximum evasion for 5s. 15s CD |
+| Cloak / Saucer Sep | — | Ship-specific special ability |
 | Emergency Warp | — | Escape at hull ≤35% |
 
 ### ⭐ Captain's Chair
-Command overview with all three stations fully automated. Issue orders to the crew and override their autonomous decisions.
 
-The crew acts independently — Worf fires weapons and uses burst fire when conditions are right, O'Brien manages repairs and activates the emergency battery, Nog presents shields and initiates attack runs. The captain directs priorities and timing.
+All three stations fully automated. Issue orders and override crew decisions.
 
-| Crew | Orders Available |
+**Defiant crew:**
+
+| Crew | Orders |
 |---|---|
-| **Worf** | Fire Cannons, Quantum/Photon Torpedo, Burst Salvo, Alpha Salvo, Rotate Freq, Cloak/Decloak, Hold Fire, Target enemy subsystems (7), Sensor scans (4), Evasive Pattern |
-| **O'Brien** | Equalise Shields, Boost Shield Regen, Emergency Battery, Repair Weapons/Systems/Cloak, Flush EPS, Damage Control |
-| **Nog** | Attack Vector (4), Speed (3), Range (3), Attack Run, Come About, Picard Manoeuvre, Pattern Omega, Evasive Alpha, Auto Shield Track, Silent Running, Emergency Thrusters, Emergency Warp |
+| **Worf** | Fire Cannons/Quantum/Photon/Burst/Alpha, Rotate Freq, Cloak, Hold Fire, Target subsystems (7), Sensor scans (4), Evasive |
+| **O'Brien** | Equalise Shields, Boost Regen, Battery, Repair Weapons/Systems/Cloak, Flush EPS, Damage Control |
+| **Nog** | Vectors (4), Speed (3), Range (3), Attack Run, Come About, Picard, Omega, Evasive Alpha, Auto Shield Track, Silent Running, Emergency Thrusters, Emergency Warp |
+
+**Enterprise-E crew (same order buttons, different voices):**
+
+| Crew | Voice |
+|---|---|
+| **Worf** | Tactical — same character, same orders |
+| **La Forge** | Engineering — enthusiastic, can-do. *"La Forge here — we'll have it sorted, Captain."* |
+| **Data** | Helm/Ops — precise, formal, no contractions. *"Enemy targeting solution at precisely 47 percent."* |
 
 ---
 
@@ -133,79 +195,88 @@ The crew acts independently — Worf fires weapons and uses burst fire when cond
 
 | Vessel | Faction | Signature Mechanic | Campaign Level |
 |---|---|---|---|
-| Jem'Hadar Attack Ship | Dominion | Polaron bypass (22%), will **ram** at <20% hull | L1 |
+| Jem'Hadar Attack Ship | Dominion | Polaron bypass (22%), **ram** at <20% hull | L1 |
 | Cardassian Scout | Cardassian | Fast lock (7.5/s), frequent harassment fire | L2 |
 | Romulan Bird-of-Prey | Romulan | Plasma torpedo (18s reload), fires **immediately on decloak**, sensor ghosts | L3 |
 | Galor-Class Warship | Cardassian | Balanced phasers, photon torpedoes | L4 |
-| Jem'Hadar Battle Cruiser | Dominion | Heavy polaron bypass, fury scaling (fires faster as hull drops), ramming | L5 |
-| K'Tinga Battle Cruiser | Klingon | Closes to disruptor range over 45s (+40% close), cloak, **death salvo** at 10% | L6 |
-| Vor'Cha Attack Cruiser | Klingon | Wing disruptors, heavy torpedoes, close-range aggression, cloak | L7 |
-| D'Deridex Warbird | Romulan | Massive plasma (22s reload), sensor ghosts, emergency cloak at 25% hull | L8 |
+| Jem'Hadar Battle Cruiser | Dominion | Heavy polaron bypass, fury scaling, ramming | L5 |
+| K'Tinga Battle Cruiser | Klingon | Closes range (+40% close disruptors), cloak, **death salvo** at 10% | L6 |
+| Vor'Cha Attack Cruiser | Klingon | Wing disruptors, heavy torpedoes, close aggression, cloak | L7 |
+| D'Deridex Warbird | Romulan | Massive plasma (22s reload), sensor ghosts, emergency cloak at 25% | L8 |
 | Borg Probe | Borg | Per-weapon resistance 0–65%, tractor beam, escalating damage — **final boss** | L9 |
 
 ---
 
 ## Combat Tips
 
-1. **Attack Vector & Arcs**: Stay on FORE vector for maximum firepower (all 4 cannons + nose + forward torps). Aft vector gives you aft torpedo tubes but silences everything else — useful for shield tanking while still firing
-2. **Port/Stbd vectors**: All torpedo tubes (fore and aft) bear on port and starboard — maximum torpedo throughput when flanking
-3. **Burst Fire**: Use when lock ≥20% to overwhelm enemy shield regen before it recovers
-4. **Cloak timing**: Engage during a lull; regen credit accrues while cloaked, restoring shields on decloak
-5. **Warp core trips cascade**: A tripped core spikes stress on engines (+35%), shields (+22%), and sensors (+15%) — if systems are already stressed the cascade can chain-trip them; keep EPS stress low before a core risk
-6. **Last stand**: Below 20% hull the crew acts immediately — don't fight it; use the window to issue orders the auto-delegation won't think of (burst fire, overload modes, emergency scan)
-7. **Borg weapons**: Rotate through all weapon types — each builds resistance independently (caps at 65%)
-8. **Klingons**: Stay at long range or use Evasive Pattern when they close to brawling distance
-9. **Romulan ghosts**: False sensor contacts while cloaked — hold fire and await the real decloak window
-10. **Jem'Hadar ram**: Pump fore shields and activate Evasive Pattern when you see "RAMMING RUN"
-11. **EPS heat**: Sustained fire heats conduits — above 70% reduces capacitor recharge rate
-12. **Subsystem targeting**: Destroying enemy weapons or cloak device changes the whole fight
-13. **Power presets**: Switch to Damage Control mode when shields are low; Attack mode for a decisive strike
-14. **Read the debrief**: The post-battle report shows which shield sector took the most breaches — adjust your default attack vector accordingly next run
-15. **Campaign**: Each level restores your ship fully — don't hold back on torpedoes or overload modes. The score multiplier jumps at Hard and Elite, so finishing the Borg cleanly is worth far more than surviving early levels with hull intact
+1. **Attack Vector & Arcs (Defiant)**: FORE for maximum firepower (4 cannons + nose + fwd torps). Port/Stbd for maximum torpedo throughput. Aft for aft tubes while tanking with fore shields
+2. **Attack Vector (Enterprise-E)**: FORE brings 7 of 9 phaser arrays into arc. AFT still fields 4 arrays + aft tubes — the Enterprise fights effectively in every direction
+3. **Burst Fire / Concentrated Fire**: Use at ≥20% lock to overwhelm shield regen before it recovers
+4. **Cloak timing (Defiant)**: Engage during a lull; regen credit accrues while cloaked, restoring shields on decloak
+5. **Saucer Separation (Enterprise-E)**: Cuts enemy lock by 60% for 15s — use offensively when building lock, or defensively when enemy lock is dangerously high
+6. **Tricobalt Warhead (Enterprise-E)**: 40% bypasses shields directly to hull. Save it for the Borg (adaptation doesn't apply to subspace weapons) or a Klingon berserk window
+7. **Regenerative Shields (Enterprise-E)**: The ×1.4 regen bonus means even heavily damaged shield sectors recover quickly — play aggressively and let the shields do their job
+8. **Warp core cascades**: A tripped core spikes stress on engines (+35%), shields (+22%), sensors (+15%) — keep EPS stress low before a core risk
+9. **Last stand**: Below 20% hull the crew acts immediately — use the window for overload modes the auto-delegation won't think of
+10. **Borg**: Rotate through all weapon types — each builds resistance independently. The Enterprise's broad array roster makes rotation easier but you must still do it
+11. **Klingons**: Stay at long range; their disruptors gain +40% at close quarters
+12. **Romulan ghosts**: False sensor contacts while cloaked — hold fire and await the real decloak window
+13. **Jem'Hadar ram**: Pump fore shields and activate Evasive when you see "RAMMING RUN"
+14. **EPS heat**: Sustained fire heats conduits — above 70% reduces capacitor recharge up to 30%
+15. **Campaign**: Each level restores your ship fully — don't hold back on torpedoes or overload modes
 
 ---
 
 ## Campaign Run
 
-Pick your station once, then fight all 9 enemies in order. Your ship is fully restored between every fight. Score accumulates across all levels — harder levels award more points due to the difficulty multiplier.
+Pick your ship and station once, then fight all 9 enemies in order. Ship fully restored between every fight.
 
 | Level | Enemy | Key Challenge |
 |---|---|---|
 | L1 | Jem'Hadar Fighter | Fast, polaron bypass, ramming — learn the basics |
-| L2 | Cardassian Scout | Fast lock, constant harassment — don't let them build momentum |
-| L3 | Romulan Bird-of-Prey | Decloak → instant plasma torpedo — rotate shields and use Evasive |
+| L2 | Cardassian Scout | Fast lock, constant harassment |
+| L3 | Romulan Bird-of-Prey | Decloak → instant plasma torpedo |
 | L4 | Galor Warship | Heavier fight, Hard multipliers begin |
 | L5 | Jem'Hadar Battle Cruiser | Gets faster as it takes damage — kill it quickly |
 | L6 | K'Tinga Battle Cruiser | Closes to brawling range — death salvo at 10% hull |
 | L7 | Vor'Cha Attack Cruiser | Wing disruptors devastate at close range |
 | L8 | D'Deridex Warbird | Longest fight — plasma reload windows are your opportunity |
-| **L9** | **Borg Probe** | Rotate all 7 weapon types; never fire the same weapon consecutively |
+| **L9** | **Borg Probe** | Rotate all weapon types; never fire the same weapon consecutively |
 
 ---
 
 ## Crew
 
+### USS Defiant — DS9 Crew
+
 | Officer | Station | Wounded | Incapacitated |
 |---|---|---|---|
 | Lt. Cmdr Worf | Tactical | 65% targeting accuracy | 30% accuracy |
 | Chief O'Brien | Engineering | 65% repair speed | 30% repair speed |
-| Ensign Nog | Helm | Evasive: 40% lock reduction | Evasive: 20% lock reduction |
+| Ensign Nog | Helm | Evasive: 40% lock reduction | Evasive: 20% reduction |
 | Dr. Bashir | Medical | Casualty threshold ×0.7 | Casualty threshold ×0.4 |
+
+### USS Enterprise — TNG Films Crew
+
+| Officer | Station | Wounded | Incapacitated |
+|---|---|---|---|
+| Lt. Cmdr Worf | Tactical | 65% targeting accuracy | 30% accuracy |
+| Lt. Cmdr La Forge | Engineering | 65% repair speed | 30% repair speed |
+| Lt. Cmdr Data | Helm/Ops | Evasive: 40% lock reduction | Evasive: 20% reduction |
+| Dr. Beverly Crusher | Medical | Casualty threshold ×0.7 | Casualty threshold ×0.4 |
 
 ---
 
 ## Difficulty
 
-| Level | Enemy Pool | Enemy Hull | Enemy Damage | Enemy Lock | Enemy Fire | Player Hull | Features |
+| Level | Enemy Pool | Enemy Hull | Damage | Lock | Fire | Player Hull | Features |
 |---|---|---|---|---|---|---|---|
 | Normal | Fighter, Scout, BoP, Galor, K'Tinga | ×1.0 | ×1.0 | ×1.0 | ×1.0 | ×1.0 | Hull-sector targeting only |
 | Hard | All 8 conventional ships | ×1.12 | ×1.10 | ×1.25 | ×0.88 | ×0.88 | AI targets player subsystems (20%) |
-| Elite | **Borg Probe only** | ×1.40 | ×1.20 | ×1.25 | ×0.80 | ×0.85 | Subsystem strikes (25%); Borg's challenge is adaptation, not stat inflation |
+| Elite | **Borg Probe only** | ×1.40 | ×1.20 | ×1.25 | ×0.80 | ×0.85 | Subsystem strikes (25%) |
 
-### Campaign Run difficulty brackets
-- Levels 1–3: Normal multipliers
-- Levels 4–8: Hard multipliers
-- Level 9 (Borg): Elite multipliers
+### Campaign difficulty brackets
+- Levels 1–3: Normal · Levels 4–8: Hard · Level 9 (Borg): Elite
 
 ---
 
@@ -214,22 +285,28 @@ Pick your station once, then fight all 9 enemies in order. Your ship is fully re
 No build step. 13 plain JS files loaded in order:
 
 ```
-config.js       — all game constants (DIFFICULTY, ENEMY_CONFIGS, ARRAYS_DICTIONARY, …)
-state.js        — G state object + utility functions (getWarpOutput, postLogEvent, …)
-engineering.js  — power allocation, repairs, EPS conduit, ablative armour, power presets
-crew.js         — crew casualties, efficiency modifiers, emergency warp
-sensors.js      — scan profiles, subsystem targeting grid
-tactical.js     — player weapons, cloaking, burst/evasive/overload modes
-helm.js         — speed, attack vector, range, all helm manoeuvres
-enemy-ai.js     — enemy AI, enemy fire, cloaking AI, mechanics timers, auto-delegation
-command.js      — Captain's Chair: crew comms, order cooldowns, autonomous crew behaviors
-canvas-three.js — Three.js 3D battle view
-canvas-2d.js    — 2D enemy schematic / hull / power canvases
-ui.js           — deck switching (4 stations), global UI sync, scoring, end-game
-main.js         — game loop, simulation init, boot sequence, captain manoeuvre tickers
+config.js       — constants: DIFFICULTY, ENEMY_CONFIGS, ARRAYS_DICTIONARY,
+                  PLAYER_SHIP_CONFIGS (both ships + weapon arrays + crew)
+state.js        — G state object; G.playerShipKey/Config/activeWeaponArrays
+engineering.js  — power, repairs, EPS, ablative armour (Defiant), shield regen
+crew.js         — casualties, efficiency modifiers, emergency warp
+sensors.js      — scan profiles, subsystem targeting
+tactical.js     — player weapons, cloaking/saucer sep, burst/overload/Enterprise modes
+helm.js         — speed, vector, range, all helm manoeuvres
+enemy-ai.js     — enemy AI, fire, cloaking AI, auto-delegation
+command.js      — Captain's Chair: crew reports (ship-aware), order cooldowns, crew AI
+canvas-three.js — Three.js 3D view; Defiant + Sovereign-class meshes
+canvas-2d.js    — 2D schematics: Defiant hull / Enterprise hull / enemy / power
+ui.js           — deck switching, global UI sync, scoring, end-game
+main.js         — game loop, sim init, ship selection (selectPlayerShip,
+                  rebuildWeaponFireMatrix, _rebuildCapBarGrid), campaign
 lcars.css       — LCARS styling
-index.html      — splash screen, shell + script tags
+index.html      — splash, ship selection UI, shell + script tags
 ```
+
+### Ship config architecture
+
+`PLAYER_SHIP_CONFIGS` in `config.js` defines each vessel — hull, shields, torpedoes, system labels, default power, crew, weapon array definitions, and overload mode variants. `G.activeWeaponArrays` switches between `ARRAYS_DICTIONARY` (Defiant) and Enterprise-E's `weaponArrays` at game start. Adding a third ship means a new entry in `PLAYER_SHIP_CONFIGS` and a geometry function in `canvas-three.js`.
 
 ---
 
@@ -237,16 +314,16 @@ index.html      — splash screen, shell + script tags
 
 Requires WebGL for the 3D spatial view (Three.js r128).
 
-- Chrome / Chromium ✓
-- Firefox ✓
-- Edge ✓
+- Chrome / Chromium ✓  
+- Firefox ✓  
+- Edge ✓  
 - Safari ✓ (WebGL must be enabled)
 
 ---
 
 ## Credits
 
-Inspired by Star Trek: Deep Space Nine. Ship designs and faction mechanics based on canon DS9/TNG/TOS encounters.
+Inspired by Star Trek: Deep Space Nine and the TNG films. Ship designs and faction mechanics based on canon DS9/TNG/TOS encounters.
 
 ---
 
