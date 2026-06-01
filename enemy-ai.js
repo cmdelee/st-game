@@ -692,7 +692,9 @@ function executeThreatCounterVolley() {
   }
 
   let shieldPenMult = 1.0; let hullPassthrough = 0;
-  if (chosenSys.isPolaron) { shieldPenMult = 0.7; hullPassthrough = rawDmg * 0.3; }
+  // Polaron bypass: 22% penetrates shields directly (reduced from 30% — Starfleet developed
+  // partial countermeasures during the Dominion War; Defiant's shields partially compensate)
+  if (chosenSys.isPolaron) { shieldPenMult = 0.78; hullPassthrough = rawDmg * 0.22; }
 
   if (G.shieldFreqActive) {
     const freqMatch = (G.shieldFreqWeaponType === 'disruptors' && chosenSys.systemTargetKey === 'disruptors') ||

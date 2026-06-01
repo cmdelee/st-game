@@ -139,9 +139,12 @@ function initiateVesselSimulation(station) {
   const diff = DIFFICULTY[currentDifficulty];
 
   // Enemy pool by difficulty
-  const normalPool = ['ktinga','romulan_bop','cardassian_scout','galor_class','jem_hadar_fighter','vor_cha'];
+  // Normal: lighter threats only — Vor'Cha excluded (1050 hull + cloak is too punishing for newcomers)
+  const normalPool = ['ktinga','romulan_bop','cardassian_scout','galor_class','jem_hadar_fighter'];
+  // Hard: full roster including heavyweights; calibrated for experienced players
   const hardPool   = ['ktinga','vor_cha','romulan_bop','romulan_warbird','galor_class','jem_hadar_fighter','jem_hadar_battleship'];
-  const elitePool  = ['vor_cha','romulan_warbird','jem_hadar_battleship','borg_probe'];
+  // Elite: Borg probe ONLY — the adaptation encounter is its own unique challenge tier
+  const elitePool  = ['borg_probe'];
   const pool = currentDifficulty === 'elite' ? elitePool : currentDifficulty === 'hard' ? hardPool : normalPool;
   G.enemyArchetype = pool[Math.floor(Math.random() * pool.length)];
 

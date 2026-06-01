@@ -11,9 +11,14 @@ const C = { b:'#4477ff', o:'#ff9900', t:'#cc6699', p:'#9966cc', red:'#ff3333', w
 // ── Difficulty settings ───────────────────────────────────────
 const DIFFICULTY = {
   //                         enemy HP    enemy dmg   enemy lock  enemy fire  player HP   targets sys  chance    repair spd
+  // Normal — accessible, hull-sector targeting only, standard stats
   normal: { label:'Normal',  enemyHullMult:1.0,  enemyDmgMult:1.0,  enemyLockMult:1.0,  enemyFireMult:1.0,  playerHullMult:1.0,  targetsSystems:false, systemTargetChance:0.00, repairSpeedMult:1.0  },
-  hard:   { label:'Hard',    enemyHullMult:1.2,  enemyDmgMult:1.15, enemyLockMult:1.3,  enemyFireMult:0.85, playerHullMult:0.85, targetsSystems:true,  systemTargetChance:0.20, repairSpeedMult:0.85 },
-  elite:  { label:'Elite',   enemyHullMult:1.35, enemyDmgMult:1.28, enemyLockMult:1.5,  enemyFireMult:0.78, playerHullMult:0.78, targetsSystems:true,  systemTargetChance:0.30, repairSpeedMult:0.72 },
+  // Hard — full enemy roster including Warbird and Jem'Hadar battleship; subsystem targeting;
+  // multipliers calibrated so the toughest ships are challenging but not impossible
+  hard:   { label:'Hard',    enemyHullMult:1.12, enemyDmgMult:1.10, enemyLockMult:1.25, enemyFireMult:0.88, playerHullMult:0.88, targetsSystems:true,  systemTargetChance:0.20, repairSpeedMult:0.88 },
+  // Elite — Borg probe ONLY; multipliers tuned for the adaptation encounter specifically;
+  // challenge comes from adaptation mechanic, not pure stat inflation
+  elite:  { label:'Elite',   enemyHullMult:1.40, enemyDmgMult:1.20, enemyLockMult:1.25, enemyFireMult:0.80, playerHullMult:0.85, targetsSystems:true,  systemTargetChance:0.25, repairSpeedMult:0.80 },
 };
 let currentDifficulty = 'normal';
 
@@ -155,9 +160,9 @@ const ENEMY_CONFIGS = {
   jem_hadar_battleship: {
     label:"JEM'HADAR BATTLE CRUISER", faction:'Dominion', era:'DS9',
     description:"Elite Dominion warship. Heaviest polaron weapons. High hull, thick shields. Will ram as last resort.",
-    hull:1100, maxHull:1100,
+    hull:920, maxHull:920,
     shields:{ fore:240, port:220, starboard:220, aft:190, maxSectorValue:240 },
-    hasCloakDevice:false, recoveryCoefficient:0.6, fireInterval:4000, lockRate:6.0,
+    hasCloakDevice:false, recoveryCoefficient:0.6, fireInterval:4000, lockRate:5.5,
     preferredTargets:['fore','port'],
     polaronWeapons:true,
     canRam:true,

@@ -242,9 +242,9 @@ function getTotalAllocatedPower() {
 function setDifficulty(level) {
   currentDifficulty = level;
   const descs = {
-    normal:'Standard engagement. Enemy fires at hull sectors only. Balanced for all players.',
-    hard:'Enhanced AI. 20% chance to target player subsystems. Faster enemy fire, reduced repair speed.',
-    elite:'Elite threat. 30% subsystem targeting. Enemy fires 28% faster. Slower repairs. Tough but beatable.'
+    normal:'Standard engagement. Five enemy types. Hull-sector targeting only. Balanced for all players.',
+    hard:'Full enemy roster including D\'Deridex Warbird and Jem\'Hadar Battle Cruiser. Subsystem targeting. Experienced players.',
+    elite:'BORG PROBE ONLY. Adaptive shielding — each weapon type faces escalating resistance. The adaptation mechanic is the challenge. Winnable with excellent weapon rotation.'
   };
   const d = document.getElementById('diff-desc'); if (d) d.textContent = descs[level];
   ['normal','hard','elite'].forEach(l => {
