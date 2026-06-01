@@ -386,6 +386,11 @@ function executeUnstableTorpedo() {
   if (G.player.torpedoes <= 0) { postLogEvent("Quantum torpedo magazine empty.", 'warn'); return; }
   const sys = G.systems.torpedoes;
   if (!sys || sys.tripped || sys.health < 10) { postLogEvent("Torpedo tube offline.", 'warn'); return; }
+  // Validate arc before consuming cooldown — torpedo_quantum is fore/port/stbd only
+  const _utWeapon = (G.activeWeaponArrays || ARRAYS_DICTIONARY)['torpedo_quantum'];
+  if (_utWeapon && !_utWeapon.arc.includes(G.helmAttackVector)) {
+    postLogEvent("Unstable torpedo — forward tubes not bearing on current attack vector.", 'warn'); return;
+  }
   postLogEvent("UNSTABLE TORPEDO — +70% yield, misfire risk!", 'crit');
   G.unstableTorpReady    = false;
   G.unstableTorpCooldown = 35000;
@@ -652,7 +657,7 @@ function executeTricobalWarhead() {
   const shieldDmg    = Math.min(shieldSector, dmg * 0.60);
   const hullDmg      = Math.max(0, dmg - shieldBlock);
   G.threat.shields[G.helmAttackVector] = Math.max(0, (G.threat.shields[G.helmAttackVector] || 0) - shieldDmg);
-  applyDamageToEnemy(hullDmg, 'torpedoes');
+  applyDamageToEnemy(hullDmg, { parentSystem:'torpedoes', isQuantum:true, isPhoton:false, label:'Tricobalt Warhead' });
   G.score.totalDmgDealt     += dmg;
   G.score.weaponsFired.quantum++;
   G.renderedBeamsVector.push({ type:'torpedo', fromPlayer:true, targetSector:G.helmAttackVector, trackingStartTime:performance.now(), duration:900, col:'#ff6600' });

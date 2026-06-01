@@ -18,10 +18,8 @@ function inflictCrewCasualty() {
   else if (crew.status === 'wounded')  { crew.status = 'incapacitated'; crew.casualties++; postLogEvent(`CREW LOSS: ${crew.name} incapacitated.`, 'crit'); }
   updateCrewStatusDisplay();
   if (crew.status === 'incapacitated') {
-    if (station === 'medical')     postLogEvent("Dr. Bashir incapacitated — crew casualty rate will increase.", 'crit');
-    if (station === 'helm')        postLogEvent("Ensign Nog incapacitated — evasive pattern effectiveness reduced.", 'crit');
-    if (station === 'tactical')    postLogEvent("Lt. Cmdr Worf incapacitated — targeting accuracy severely degraded.", 'crit');
-    if (station === 'engineering') postLogEvent("Chief O'Brien incapacitated — repair speed critically reduced.", 'crit');
+    const effects = { medical:'crew casualty rate will increase', helm:'evasive pattern effectiveness reduced', tactical:'targeting accuracy severely degraded', engineering:'repair speed critically reduced' };
+    postLogEvent(`${crew.name} incapacitated — ${effects[station] || 'station performance critically reduced'}.`, 'crit');
   }
 }
 

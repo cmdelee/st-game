@@ -686,6 +686,8 @@ function initiateVesselSimulation(station) {
   G.deepScanProgress      = 0;
   G.deepScanCooldown      = 0;
   G.fireAtWill            = false;
+  G.activeScanningProfile = false;   // active scanner toggle — not reset elsewhere
+  G.captainOrderCooldowns = {};      // stale CDs persist between games otherwise
   // Refresh scan UI so results/button from previous game are cleared
   if (typeof _updateDeepScanButton === 'function') _updateDeepScanButton();
   if (typeof _renderScanResults    === 'function') _renderScanResults();

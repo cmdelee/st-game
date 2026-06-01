@@ -326,7 +326,7 @@ function processEnemyAI(dt) {
   // Borg escalating damage milestones
   if (cfg.adaptiveShields) {
     const fullyAdapted = Object.entries(G.enemyAdaptiveResist).filter(([k, v]) => v >= 0.65);
-    const newLevel = Math.min(3, Math.floor(fullyAdapted.length / 2));
+    const newLevel = Math.min(2, Math.floor(fullyAdapted.length / 2));  // capped at 2 — matches rawDmg * (1 + min(2,level)*0.10)
     if (newLevel > G.borgEscalationLevel) {
       G.borgEscalationLevel = newLevel;
       postLogEvent(`BORG: Cutting beam power increased — ${Math.round(newLevel * 10)}% more damage.`, 'crit');

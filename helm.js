@@ -327,10 +327,14 @@ function updateHelmPanel() {
   // Auto-tactical summary
   const at = document.getElementById('lbl-helm-autotac');
   if (at) {
-    const healthy = ['cannon_pu','cannon_pl','cannon_su','cannon_sl'].filter(k => !G.systems[k].tripped && G.systems[k].health >= 15).length;
+    const _isEnt    = G.playerShipKey === 'enterprise_e';
+    const _wpnKeys  = (_isEnt ? G.playerShipConfig?.primaryWeaponKeys : null) || ['cannon_pu','cannon_pl','cannon_su','cannon_sl'];
+    const _sysList  = [...new Set(_wpnKeys.map(k => (G.activeWeaponArrays||ARRAYS_DICTIONARY)[k]?.parentSystem).filter(Boolean))];
+    const healthy   = _sysList.filter(k => G.systems[k] && !G.systems[k].tripped && G.systems[k].health >= 15).length;
+    const _wpnLabel = _isEnt ? `arrays` : 'cannons';
     const torpsOk = !G.systems.torpedoes.tripped && G.player.torpedoes > 0;
     const lockCol = G.lockProgress >= 60 ? '#00cc66' : G.lockProgress >= 20 ? '#ffaa00' : '#ff4444';
-    at.innerHTML = `${healthy}/4 cannons · Torps: <b style="color:${torpsOk?'#00cc66':'#ff4444'};">${torpsOk?'RDY':'LOW'}</b> · Lock: <b style="color:${lockCol};">${Math.round(G.lockProgress)}%</b> · ${G.cloaked ? '<span style="color:#9966cc;">[CLOAKED]</span>' : '<span style="color:#00cc66;">FIRING</span>'}`;
+    at.innerHTML = `${healthy}/${_sysList.length||4} ${_wpnLabel} · Torps: <b style="color:${torpsOk?'#00cc66':'#ff4444'};">${torpsOk?'RDY':'LOW'}</b> · Lock: <b style="color:${lockCol};">${Math.round(G.lockProgress)}%</b> · ${G.cloaked ? '<span style="color:#9966cc;">[CLOAKED]</span>' : '<span style="color:#00cc66;">FIRING</span>'}`;
   }
 
   // Auto-engineering summary

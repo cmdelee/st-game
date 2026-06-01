@@ -114,9 +114,10 @@ function checkBorgScanExpiry() {
   if (currentLevel > anyEntry.borgScanLevel) {
     G.permanentScanBonuses = {};
     G.deepScanCooldown     = 0;   // Borg adapted — allow immediate rescan
-    // Restore fire interval (weapon_disrupt bonus no longer applies)
+    // Restore fire interval (weapon_disrupt + active scan modifiers)
     const diff = DIFFICULTY[currentDifficulty];
     G.threat.fireInterval = Math.round(ENEMY_CONFIGS[G.enemyArchetype].fireInterval * diff.enemyFireMult);
+    if (G.activeScanningProfile) G.threat.fireInterval = Math.round(G.threat.fireInterval * 0.85);
     postLogEvent("BORG: Frequency adaptation complete — scan data expired. Rescan now!", 'crit');
     _updateDeepScanButton();
     _renderScanResults();
@@ -207,7 +208,11 @@ function toggleActiveSensorSystems() {
     if (G.activeScanningProfile) btn.classList.add('red-btn'); else btn.classList.remove('red-btn');
   });
   if (G.activeScanningProfile) {
-    G.threat.fireInterval = Math.round(G.threat.fireInterval * 0.85);
+    // Compute from base to avoid multiplicative drift on repeated toggles
+    const diff = DIFFICULTY[currentDifficulty];
+    const base = Math.round(ENEMY_CONFIGS[G.enemyArchetype].fireInterval * diff.enemyFireMult);
+    const withDisrupt = G.permanentScanBonuses.weapon_disrupt ? Math.round(base * 1.30) : base;
+    G.threat.fireInterval = Math.round(withDisrupt * 0.85);
     postLogEvent("Active scanning on — enemy also benefits from better targeting.", 'warn');
   } else {
     const diff = DIFFICULTY[currentDifficulty];

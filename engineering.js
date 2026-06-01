@@ -336,7 +336,7 @@ function refreshEngineeringPanelGraphics() {
       const teamB = G.repairTeams[1].sysKey === key;
       if (teamA || teamB) {
         const team   = teamA ? G.repairTeams[0] : G.repairTeams[1];
-        const p      = Math.round((1 - team.remaining / team.totalTime) * 100);
+        const p      = team.totalTime > 0 ? Math.round((1 - team.remaining / team.totalTime) * 100) : 0;
         const label  = teamA ? '🔧A' : '🔧B';
         const newContent = `<span style="color:var(--warn);font-size:8px;">${label}${p}%</span>`;
         if (rl.dataset.mode !== 'progress' || parseInt(rl.dataset.pct) !== p || rl.dataset.team !== (teamA?'A':'B')) {

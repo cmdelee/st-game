@@ -23,11 +23,11 @@ index.html (HTML shell + script tags)
 | `state.js` | `G` game state object; `getWarpOutput()`, `getTotalAllocatedPower()`, `setDifficulty()`, `postLogEvent()` |
 | `engineering.js` | Warp core trip, emergency battery, ablative armour processing, shield regen rate calculation, repair queue (2 independent teams), engineering matrix UI, power allocation (`tuneBusAllocation`), power presets (`applyPowerPreset`), EPS conduit conduction + thermal buildup, system degradation thresholds, shield manipulation |
 | `crew.js` | Crew casualties (`inflictCrewCasualty`), efficiency modifiers (`getCrewEfficiency`, `getMedicalEfficiency`, `getHelmEvasiveModifier`), `updateCrewStatusDisplay`, `attemptEmergencyWarp`, `updateWarpAvailability`, `postTacticalAdvisory` |
-| `sensors.js` | Scan profiles (`activateScanProfile`, `commitScanProfile`), active sensor toggle, enemy subsystem target grid (`buildEnemySubsystemTargetGrid`, `setEnemyTarget`) |
-| `tactical.js` | Player weapons: burst-fire/concentrated phaser fire, shield freq rotation, evasive, `fireSelectedArray`, `applyDamageToEnemy`, overload modes; Defiant: `firePulseCannons`, `toggleCloakingDevice`; Enterprise-E: `fireAllPhaserArrays`, `toggleSaucerSeparation`, `fireSaucerAutomatic`, `executeConcentratedPhaserFire`, `executeMaxPhaserOutput`, `executeTricobalWarhead` |
+| `sensors.js` | Deep scan system (`startDeepScan`, `processDeepScan`, `_SCAN_RESULTS`, `checkBorgScanExpiry`), active sensor toggle, enemy subsystem target grid (`buildEnemySubsystemTargetGrid`, `setEnemyTarget`); scan results grant permanent bonuses (shields/fissures/disrupt/tetryon) until Borg expiry check |
+| `tactical.js` | Player weapons: burst-fire/concentrated phaser fire, shield freq rotation, evasive, `fireSelectedArray`, `fireEnergyWeapons`, `fireTorpedoBanks`, `fireAllWeapons`, `applyDamageToEnemy`, overload modes; Defiant: `firePulseCannons`, `toggleCloakingDevice`; Enterprise-E: `fireAllPhaserArrays`, `toggleSaucerSeparation`, `fireSaucerAutomatic`, `executeConcentratedPhaserFire`, `executeMaxPhaserOutput`, `executeTricobalWarhead` |
 | `helm.js` | Helm timer processing (`processHelmTimers`), speed control (`setHelmSpeed`), attack vector (`setHelmAttackVector`), engagement range (`setPlayerRangeBracket`), attack run, come about, Picard Manoeuvre, Attack Pattern Omega, Evasive Pattern Alpha, helm panel UI (`updateHelmPanel`) |
 | `encounter-phases.js` | Faction encounter phase arcs (`initEncounterPhases`, `processEncounterPhase`, `_applyPhase`); hull milestone events at 75/50/25/10% (`checkEnemyHullMilestones`, `_MILESTONE_DATA`); Klingon death salvo (`_triggerKlingonDeathSalvo`); `_getFactionKey` helper |
-| `enemy-ai.js` | Enemy cloaking AI (`processEnemyCloakDecision`, `triggerEnemyCloak/Decloak`), sensor ghosts (`processEnemySensorGhosts`), all mechanics timers (`processNewMechanicsTimers` — delegates to `processHelmTimers`), Jem'Hadar ramming (`initiateRammingRun`, `executeRammingImpact`), enemy AI loop (`processEnemyAI`), enemy fire (`executeThreatCounterVolley`) |
+| `enemy-ai.js` | Enemy cloaking AI (`processEnemyCloakDecision`, `triggerEnemyCloak/Decloak`), sensor ghosts (`processEnemySensorGhosts`), mechanics timers (`processNewMechanicsTimers`), Jem'Hadar ramming (`initiateRammingRun`, `executeRammingImpact`), enemy AI loop (`processEnemyAI`), enemy fire (`executeThreatCounterVolley`) |
 | `auto-delegation.js` | Computer management of uncrewed stations (`processAutomatedDelegation`): auto-engineering relay resets + repair dispatch, auto-tactical fire cycle, captain-mode Worf/O'Brien/Nog autonomous behaviours |
 | `command.js` | Captain's Chair: `postCrewReport`, `_renderCrewComms` (uses `_crewLabel`/`_crewColour` getters — ship-aware); `_CAP_CD` cooldowns; 40+ order functions; manoeuvre ticker; ship-specific periodic reports (`_WORF_REPORTS`, `_OBRIEN_REPORTS`/`_LAFORGE_REPORTS`, `_NOG_REPORTS`/`_DATA_REPORTS`); `initCaptainStation()` |
 | `canvas-three.js` | Three.js 3D spatial battle view; `buildDefiantGeometry()` + `buildSovereignGeometry()` + `rebuildPlayerMesh()` — swaps player mesh on ship select; `buildSaucerSepGeometry()` — independent saucer section; 3D beam tubes, burst shockwave rings, torpedo impact spheres, nacelle exhaust particles, ramming trajectory indicator; `_FACTION_GLOW_COL` / `_FACTION_BEAM_COL` colour maps |
@@ -408,13 +408,15 @@ Engine glow intensity and Defiant drift amplitude in the 3D view both scale with
 - <60% lock: glancing, ~55% yield
 - Does not scale gradually with lock like energy weapons
 
-### Scan profiles (4 types)
-| Profile | Effect | Duration |
+### Deep scan system (sensors.js)
+Four scan types initiated by `startDeepScan(type)`, processed by `processDeepScan(dt)`, and committed via `_SCAN_RESULTS`. Bonuses are **permanent frequency locks** (not timed) — they persist until the next scan overwrites them or `checkBorgScanExpiry` reverts the fire interval after a Borg disrupt scan lapses.
+
+| Profile | Effect | Borg Expiry |
 |---|---|---|
-| Shields | +25% weapon yield vs shields | 25s |
-| Fissures | +35% all damage | 20s |
-| Disrupt | −50% enemy fire rate | 30s |
-| Tetryon | −70% enemy lock rate | 15s |
+| Shields | +25% weapon yield vs shields | No |
+| Fissures | +35% all damage | No |
+| Disrupt | −50% enemy fire rate | Yes — `checkBorgScanExpiry` restores base rate |
+| Tetryon | −70% enemy lock rate | No |
 
 ### Borg per-weapon adaptation
 - `G.enemyAdaptiveResist[weaponKey]` tracks 0–0.65 resistance per weapon
@@ -695,6 +697,19 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 56. Torpedo mesh `_fromEnemy` flag not copied from `inFlightTorpedoes` entry — camera shake was incorrectly triggering on all torpedo impacts including enemy ones
 57. Engine glow `PointLight` position used hardcoded `-5` X offset for both ships — now uses ship-specific nacelle end positions (`-5.2`/`-0.5` Defiant, `-8.4`/`-2.4` Enterprise-E)
 58. Two separate faction→colour maps in `canvas-three.js` with inconsistent hex values — consolidated into top-level `_FACTION_GLOW_COL` (deep, for point lights) and `_FACTION_BEAM_COL` (bright, for weapon beams)
+59. Captain scan orders (`capScanShields`/`Hull`/`Weapons`/`Tetryon`) called non-existent `activateScanProfile`/`commitScanProfile` — replaced with `startDeepScan()` delegation
+60. `G.captainOrderCooldowns` not reset between games — only cleared in `initCaptainStation()` (captain station only); added reset to `initiateVesselSimulation`
+61. `G.activeScanningProfile` boolean not reset between games — active scanner stayed on permanently; added reset to `initiateVesselSimulation`
+62. Borg `borgEscalationLevel` capped at 3 but damage formula only applies up to 2 levels — fixed cap to `Math.min(2, ...)`
+63. `executeUnstableTorpedo` consumed 35s cooldown before arc check — added arc validation before setting cooldown
+64. `executeTricobalWarhead` passed string `'torpedoes'` to `applyDamageToEnemy` — Borg never built resistance to it; fixed to pass proper weapon object `{ parentSystem: 'torpedoes', isQuantum: true }`
+65. `inflictCrewCasualty` logged hardcoded DS9 crew names (Nog, O'Brien) on Enterprise-E — fixed to use `CREW_STATIONS[station].name`
+66. Repair progress display showed `NaN%` when `team.totalTime === 0` — added guard
+67. `G.historicalLogTracks` grew unbounded — added cap at 600 entries, trimmed to 500
+68. Ablative armour strip `innerHTML` updated every frame for Enterprise-E (no armour) — added `hasAblativeArmour` guard
+69. `checkBorgScanExpiry` restored fire interval without reapplying `activeScanningProfile` modifier — fixed
+70. `toggleActiveSensorSystems` applied `0.85×` multiplicatively on every toggle-on, shrinking fire interval each call — now computes from base rate each time
+71. Helm auto-tac summary hardcoded "4 cannons" for Enterprise-E — now uses `primaryWeaponKeys` system count
 
 ---
 
@@ -720,10 +735,10 @@ Weapon buttons dim (`opacity:0.35; pointer-events:none`) when the weapon's arc d
 | ◉ ENGAGE CLOAK | `toggleCloakingDevice()` | Health ≥20%, no active cooldown |
 | 🛡 ROTATE FREQ | `rotateShieldFrequency()` | 30s CD |
 | ◈ EVASIVE PATTERN | `executeEvasivePattern()` | Engines ≥20%, 20s CD |
-| 🛡 Shields scan | `activateScanProfile('shields')` | 100% analysis first |
-| 💥 Fissures scan | `activateScanProfile('hull')` | 100% analysis first |
-| ⚡ Disrupt scan | `activateScanProfile('weapons')` | 100% analysis first |
-| 〜 Tetryon scan | `activateScanProfile('tetryon')` | 100% analysis first |
+| 🛡 Shields scan | `startDeepScan('shields')` | Initiates deep scan; permanent bonus on completion |
+| 💥 Fissures scan | `startDeepScan('hull')` | Initiates deep scan; permanent bonus on completion |
+| ⚡ Disrupt scan | `startDeepScan('weapons')` | Initiates deep scan; permanent bonus on completion |
+| 〜 Tetryon scan | `startDeepScan('tetryon')` | Initiates deep scan; permanent bonus on completion |
 | Reinforce Fore/Port/Stbd/Aft | `pumpShieldSector(sector)` | Not cloaked |
 | Equalise | `rebalanceShieldArrays()` | Not cloaked, 2s delay |
 | ⚡ EMERGENCY WARP | `attemptEmergencyWarp()` | Hull ≤35%, core online |

@@ -63,14 +63,14 @@ Starfleet's flagship from the TNG films. Larger, tougher, and bristling with pha
   - **Campaign Run** — fight all 9 enemies in order from easiest to hardest; score accumulates, ship restores between fights; Borg Probe is the final boss
 - **Authentic LCARS Interface**: Full LCARS styling with canon ships from Klingons, Romulans, Cardassians, Dominion, and Borg
 - **9 Enemy Vessels**: Each with faction-specific AI, weapons, combat phase arcs, and hull milestone events
-- **3D Spatial Battle View**: Three.js WebGL — Defiant and Sovereign-class meshes, faction-coloured 3D beam tubes, torpedo impacts with shockwave rings, nacelle exhaust particles (scale with helm speed), burst-salvo shockwave, saucer separation flies independently, Jem'Hadar ramming trajectory indicator
+- **3D Spatial Battle View**: Three.js WebGL — Defiant and Sovereign-class meshes, authentic Star Trek weapon colours (amber phasers, orange-red photon torpedoes, blue-white quantum torpedoes), faction-coloured 3D beam tubes, torpedo impacts with shockwave rings, nacelle exhaust particles (scale with helm speed), burst-salvo shockwave, saucer separation flies independently, Jem'Hadar ramming trajectory indicator
 - **Advanced Combat**:
   - Real-time four-sector shield management with sector reinforcement and equalisation
   - Cloaking device (Defiant) / Saucer Separation (Enterprise-E) with distinct mechanics
   - Burst salvos, alpha salvo, and ship-specific overload weapon modes
   - Shield frequency rotation countering enemy weapon types
   - Evasive Pattern Delta, Pattern Alpha, Attack Pattern Omega, Picard Manoeuvre
-  - Four sensor scan profiles (shields / hull fissures / weapons disrupt / tetryon ECM)
+  - Four deep scan profiles (shields / hull fissures / weapons disrupt / tetryon ECM) — each grants a **permanent frequency lock** bonus that persists until overwritten
   - Enemy subsystem targeting
   - Ablative armour — 6 regenerating layers (Defiant only)
   - Regenerative shielding (Enterprise-E only)
@@ -82,6 +82,7 @@ Starfleet's flagship from the TNG films. Larger, tougher, and bristling with pha
 - **Named Crew**: Casualties degrade station effectiveness — both crews fully voiced with distinct speech patterns
 - **Last Stand**: Below 20% hull the crew reacts — helm goes full impulse, engineering reroutes shield power, Worf calls battle stations; viewport pulses red
 - **Post-battle Debrief**: Full tactical report — weapons by type, breaches by sector, systems tripped, peak hit, crew status, enemy phase reached
+- **Responsive Multi-device Support**: Tablet and mobile layouts with slide-out panels, bottom navigation bar, and compact status strip — playable on any screen size
 
 ---
 
@@ -134,7 +135,9 @@ Direct weapons fire, manage evasive manoeuvres, operate cloak or saucer sep, and
 | ⚡ Max Phaser Output | — | All phasers +60%, 30s CD |
 | ☢ Tricobalt Warhead | — | 300yd, no lock, 40% hull bleed-through, 1 per engagement |
 
-Both ships share: Alpha Salvo, Shield Frequency Rotation, Evasive Pattern, Emergency Power Dump, Sensor Scans (4 profiles), Subsystem Targeting Grid, Emergency Warp.
+Both ships share: Alpha Salvo, Shield Frequency Rotation, Evasive Pattern, Emergency Power Dump, Deep Scan Profiles (4), Subsystem Targeting Grid, Emergency Warp.
+
+**Simplified fire interface**: Quick-fire buttons — **Fire Phasers** (all in-arc energy weapons), **Fire Torpedoes** (best available tube), and **Fire All** (full alpha salvo) — let you engage immediately without selecting individual arrays.
 
 ### 🟣 Engineering
 
@@ -224,6 +227,8 @@ All three stations fully automated. Issue orders and override crew decisions.
 13. **Jem'Hadar ram**: Pump fore shields and activate Evasive when you see "RAMMING RUN"
 14. **EPS heat**: Sustained fire heats conduits — above 70% reduces capacitor recharge up to 30%
 15. **Campaign**: Each level restores your ship fully — don't hold back on torpedoes or overload modes
+16. **Deep Scan**: Scan bonuses are permanent frequency locks, not timers — run a scan early and it pays off all fight. Disrupt scan (−50% enemy fire rate) is often the strongest opener
+17. **Fire at Will**: Use the quick Fire Phasers / Fire Torpedoes / Fire All buttons to keep up pressure; the simplified interface fires the best available weapons without hunting for individual array buttons
 
 ---
 

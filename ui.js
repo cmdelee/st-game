@@ -239,7 +239,7 @@ function synchronizeGlobalInterfaceDisplays() {
     if (t) t.textContent = sys.tripped ? 'OFFLINE' : `${Math.round(cap)}%`;
   });
   const abDiv = document.getElementById('ablative-armour-strip');
-  if (abDiv) {
+  if (abDiv && G.playerShipConfig && G.playerShipConfig.hasAblativeArmour) {
     const ab = G.ablative;
     const col = ab.layers > 3 ? C.green : ab.layers > 1 ? C.warn : C.red;
     const layerStr = ab.layerHealth.map((lh, i) => {

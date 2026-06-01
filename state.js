@@ -285,6 +285,7 @@ function setDifficulty(level) {
 function postLogEvent(msg, tier='info') {
   const ts = new Date().toLocaleTimeString('en-GB',{hour12:false});
   G.historicalLogTracks.push({ts, msg, tier});
+  if (G.historicalLogTracks.length > 600) G.historicalLogTracks = G.historicalLogTracks.slice(-500);
   const box = document.getElementById('terminal-transcript-box');
   if (box && box.style.display !== 'none') {
     const cols = {info:'#aabbff', good:'#00cc66', warn:'#ffaa00', crit:'#ff4444'};

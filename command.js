@@ -316,7 +316,8 @@ function capTgtWeaponsAny() {
 }
 
 // ── WORF — Sensor Scans ───────────────────────────────────────
-// Activate a scan profile and auto-commit when analysis hits 100%.
+// All four legacy scan orders now delegate to the deep scan system.
+// The old activateScanProfile / commitScanProfile functions no longer exist.
 
 function _capScan(cdKey, scanType, worfMsg) {
   if (!_canOrder(cdKey)) return;
@@ -324,19 +325,7 @@ function _capScan(cdKey, scanType, worfMsg) {
   postCrewReport('worf', worfMsg, 'status');
   setTimeout(() => {
     try {
-      activateScanProfile(scanType);
-      // Poll until analysis complete then auto-commit
-      const sessionId = G.gameSessionId;
-      const poll = setInterval(() => {
-        if (!G.running || G.gameSessionId !== sessionId || !G.activeScanProfile) {
-          clearInterval(poll); return;
-        }
-        if (G.scanAnalysisProgress >= 100 && G.activeScanProfile === scanType) {
-          clearInterval(poll);
-          commitScanProfile();
-          postCrewReport('worf', `${scanType.charAt(0).toUpperCase()+scanType.slice(1)} scan committed, Captain.`, 'good');
-        }
-      }, 500);
+      startDeepScan();   // unified deep scan — permanent frequency analysis
     } catch(e) {}
   }, 350);
   _updateCaptainOrderButtons();
