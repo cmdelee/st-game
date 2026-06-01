@@ -116,6 +116,17 @@ function _updateSpecialAbilityButtons() {
   // Captain chair header
   const capHeader = document.getElementById('captain-chair-header');
   if (capHeader && G.playerShipConfig) capHeader.textContent = `⭐ Captain's Chair — ${G.playerShipConfig.label} ${G.playerShipConfig.registry}`;
+  // Captain mini-panel headers (crew names)
+  const panelLabels = G.playerShipConfig?.captainPanelLabels || PLAYER_SHIP_CONFIGS.defiant.captainPanelLabels;
+  const tacHdr  = document.getElementById('cap-panel-tac-header');  if (tacHdr)  tacHdr.textContent  = panelLabels?.tactical    || '⚡ TACTICAL — WORF';
+  const engHdr  = document.getElementById('cap-panel-eng-header');  if (engHdr)  engHdr.textContent  = panelLabels?.engineering || "⚙ ENGINEERING — O'BRIEN";
+  const helmHdr = document.getElementById('cap-panel-helm-header'); if (helmHdr) helmHdr.textContent = panelLabels?.helm        || '🚀 HELM — NOG';
+  // Apply ship crew stations to CREW_STATIONS (updates casualty tracking names)
+  if (G.playerShipConfig?.crewStations) {
+    Object.keys(G.playerShipConfig.crewStations).forEach(k => {
+      if (CREW_STATIONS[k]) CREW_STATIONS[k].name = G.playerShipConfig.crewStations[k].name;
+    });
+  }
   // Engineering utility panel ablative and cloak sections
   const ablSection  = document.getElementById('eng-ablative-section');
   const cloakSection = document.getElementById('eng-cloak-section');
@@ -583,7 +594,10 @@ function initiateVesselSimulation(station) {
   G.borgEscalationLevel      = 0;
 
   // Item 1 — Full state reset between games (crew, score, queues, timers, misc)
+  // Apply ship-specific crew names before resetting status
+  const _crewCfg = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).crewStations || {};
   Object.keys(CREW_STATIONS).forEach(k => {
+    if (_crewCfg[k]) CREW_STATIONS[k].name = _crewCfg[k].name;
     CREW_STATIONS[k].status = 'nominal';
     CREW_STATIONS[k].casualties = 0;
   });

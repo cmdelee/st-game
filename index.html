@@ -611,7 +611,7 @@
 
         <!-- Tactical -->
         <div class="captain-mini-panel">
-          <div class="captain-mini-header" style="color:var(--o);">⚡ TACTICAL — WORF</div>
+          <div class="captain-mini-header" style="color:var(--o);" id="cap-panel-tac-header">⚡ TACTICAL — WORF</div>
           <div class="captain-mini-row">
             <span>Lock</span>
             <div class="bar-rail" style="height:8px; flex:1; margin:0 6px;"><div class="bar-fill" id="cap-tac-lock-bar" style="color:var(--b);"></div></div>
@@ -631,7 +631,7 @@
 
         <!-- Engineering -->
         <div class="captain-mini-panel">
-          <div class="captain-mini-header" style="color:var(--b);">⚙ ENGINEERING — O'BRIEN</div>
+          <div class="captain-mini-header" style="color:var(--b);" id="cap-panel-eng-header">⚙ ENGINEERING — O'BRIEN</div>
           <div class="captain-mini-row">
             <span>EPS Power</span>
             <div class="bar-rail" style="height:8px; flex:1; margin:0 6px;"><div class="bar-fill" id="cap-eng-power-bar" style="color:var(--p);"></div></div>
@@ -643,7 +643,7 @@
 
         <!-- Helm -->
         <div class="captain-mini-panel">
-          <div class="captain-mini-header" style="color:var(--t);">🚀 HELM — NOG</div>
+          <div class="captain-mini-header" style="color:var(--t);" id="cap-panel-helm-header">🚀 HELM — NOG</div>
           <div class="captain-mini-row"><span>Speed</span><span id="cap-helm-speed"    style="color:var(--green); font-weight:bold; margin-left:8px;">HALF IMPULSE</span></div>
           <div class="captain-mini-row"><span>Range</span><span id="cap-helm-range"    style="color:var(--warn);  font-weight:bold; margin-left:8px;">MEDIUM</span></div>
           <div class="captain-mini-row"><span>Vector</span><span id="cap-helm-vector"   style="margin-left:8px;">FORE</span></div>
@@ -796,7 +796,7 @@
 <!-- ═══════════════════════════════════════════════════════════
      SCRIPTS — load order: state → engineering → tactical → canvas → ui → main
 ════════════════════════════════════════════════════════════ -->
-<script src="config.js?v=3"></script>
+<script src="config.js?v=4"></script>
 <script src="state.js?v=10"></script>
 <script src="engineering.js?v=9"></script>
 <script src="crew.js?v=2"></script>
@@ -804,11 +804,11 @@
 <script src="tactical.js?v=11"></script>
 <script src="helm.js?v=8"></script>
 <script src="enemy-ai.js?v=3"></script>
-<script src="command.js?v=2"></script>
+<script src="command.js?v=3"></script>
 <script src="canvas-three.js?v=9"></script>
 <script src="canvas-2d.js?v=9"></script>
 <script src="ui.js?v=10"></script>
-<script src="main.js?v=10"></script>
+<script src="main.js?v=11"></script>
 
 </body>
 </html>

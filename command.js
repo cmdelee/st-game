@@ -5,6 +5,7 @@
 // Loaded after helm.js, before canvas.js
 // ============================================================
 
+// Defaults — overridden at runtime by active ship config (G.playerShipConfig.crewLabels/Colours)
 const CREW_COLOURS = {
   worf:   '#ff9900',
   obrien: '#4477ff',
@@ -17,6 +18,9 @@ const CREW_LABELS = {
   nog:    'Ensign Nog',
   system: 'BRIDGE SYS',
 };
+// Active getters — always use these instead of the constants directly
+function _crewLabel(key)  { return ((G.playerShipConfig || PLAYER_SHIP_CONFIGS?.defiant)?.crewLabels  || CREW_LABELS )[key] || key; }
+function _crewColour(key) { return ((G.playerShipConfig || PLAYER_SHIP_CONFIGS?.defiant)?.crewColours || CREW_COLOURS)[key] || '#aabbcc'; }
 
 // ── Crew Report Feed ──────────────────────────────────────────
 
@@ -33,8 +37,8 @@ function _renderCrewComms() {
   if (!feed) return;
   const lines = G.crewReports.slice(0, 3);
   feed.innerHTML = lines.map(r => {
-    const col  = CREW_COLOURS[r.crew] || '#aabbcc';
-    const lbl  = CREW_LABELS[r.crew]  || r.crew;
+    const col  = _crewColour(r.crew);
+    const lbl  = _crewLabel(r.crew);
     const cls  = r.type === 'alert' ? ' comms-alert' : r.type === 'good' ? ' comms-good' : '';
     return `<div class="comms-line${cls}">` +
            `<span class="comms-speaker" style="color:${col};">${lbl}:</span> ` +
@@ -470,7 +474,8 @@ function _capDamageControl() {
   G.repairTeams[freeIdx].label     = sys.label;
   G.repairTeams[freeIdx].totalTime = rt;
   G.repairTeams[freeIdx].remaining = rt;
-  postLogEvent(`O'Brien: ${freeIdx === 0 ? 'Alpha' : 'Beta'} Team dispatched to ${sys.label} on captain's order.`, 'good');
+  const _engName = G.playerShipKey === 'enterprise_e' ? 'La Forge' : "O'Brien";
+  postLogEvent(`${_engName}: ${freeIdx === 0 ? 'Alpha' : 'Beta'} Team dispatched to ${sys.label} on captain's order.`, 'good');
 }
 
 // ── Periodic Crew Reports ─────────────────────────────────────
@@ -492,11 +497,40 @@ const _OBRIEN_REPORTS = [
     return allOk ? "All systems running within normal parameters, Captain." : "Systems showing stress — recommend repair priority, Captain.";
   },
   () => `EPS thermal ${Math.round(G.epsHeat)}%. ${G.epsHeat > 65 ? "Suggest easing weapons fire to cool conduits." : "Thermal levels nominal."}`,
-  () => `Ablative armour: ${G.ablative.layers} layer${G.ablative.layers !== 1 ? 's' : ''} active. Hull at ${Math.round((G.player.hull / G.player.maxHull) * 100)}%.`,
+  () => (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).hasAblativeArmour
+    ? `Ablative armour: ${G.ablative.layers} layer${G.ablative.layers !== 1 ? 's' : ''} active. Hull at ${Math.round((G.player.hull / G.player.maxHull) * 100)}%.`
+    : `Regenerative shields running at ${(G.shieldRegenRate || 0).toFixed(1)} SP/s. Hull integrity ${Math.round((G.player.hull / G.player.maxHull) * 100)}%.`,
   () => {
     const active = G.repairTeams.filter(t => t.sysKey).map(t => t.label);
     return active.length ? `Repair teams working on: ${active.join(', ')}.` : "Repair teams standing by, Captain.";
   },
+];
+
+// ── Enterprise-E crew periodic reports ───────────────────────
+// La Forge (Engineering) — enthusiastic, can-do, technical
+const _LAFORGE_REPORTS = [
+  () => `La Forge here — EPS grid holding at ${getTotalAllocatedPower()}MW. Shield regen ${(G.shieldRegenRate || 0).toFixed(1)} SP/s. Regenerative systems nominal.`,
+  () => {
+    const allOk = Object.values(G.systems).every(s => s.health > 70 && !s.tripped);
+    return allOk ? "All systems running clean, Captain. Nothing to worry about down here." : "Some systems showing stress — I can have repair teams on it immediately, Captain.";
+  },
+  () => `EPS thermal at ${Math.round(G.epsHeat)}%. ${G.epsHeat > 65 ? "Those phaser arrays are heating the conduits — recommend a brief cooldown, Captain." : "Thermal management nominal."}`,
+  () => `Regen shields at ${Math.round((G.player.shields.fore / G.player.shields.maxSectorValue) * 100)}% fore. Hull integrity ${Math.round((G.player.hull / G.player.maxHull) * 100)}%.`,
+  () => {
+    const active = G.repairTeams.filter(t => t.sysKey).map(t => t.label);
+    return active.length ? `Repair teams working on: ${active.join(', ')}. We'll have it sorted, Captain.` : "Repair teams standing by. Just say the word.";
+  },
+];
+
+// Data (Helm/Ops) — precise, formal, no contractions, occasionally pedantic
+const _DATA_REPORTS = [
+  () => `Helm report: ${G.helmSpeed} impulse, ${G.playerRangeBracket} range, ${G.helmAttackVector} attack vector. All navigation systems functioning within designed parameters.`,
+  () => G.attackRunActive ? "Attack run manoeuvre in progress, Captain." : G.comeAboutActive ? "Executing come-about. All shield sectors exposed during rotation." : "Maintaining current heading and velocity. I detect no navigational hazards.",
+  () => {
+    const eLock = Math.round(G.enemyLockProgress || 0);
+    return `Enemy targeting solution is currently at ${eLock} percent. ${eLock > 70 ? "Probability of hull damage increases significantly above 80 percent lock. Recommend evasive action." : "Within acceptable tactical parameters."}`;
+  },
+  () => `Navigation analysis: enemy vessel at ${G.enemyRangeBracket} range. Our engagement range is ${G.playerRangeBracket}. ${G.playerRangeBracket !== G.enemyRangeBracket ? "Range differential is tactically suboptimal — awaiting your order, Captain." : "Engagement ranges are matched."}`,
 ];
 
 const _NOG_REPORTS = [
@@ -517,16 +551,19 @@ function tickCaptainPeriodicReports(dt) {
   if (G.captainPeriodicTimer > 0) return;
   G.captainPeriodicTimer = 10000 + Math.random() * 10000; // 10–20s
 
+  const isEnt = G.playerShipKey === 'enterprise_e';
+  const engReports  = isEnt ? _LAFORGE_REPORTS : _OBRIEN_REPORTS;
+  const helmReports = isEnt ? _DATA_REPORTS    : _NOG_REPORTS;
   const r = Math.random();
   try {
     if (r < 0.38) {
-      postCrewReport('worf',   _WORF_REPORTS[_worfIdx % _WORF_REPORTS.length](),   'status');
+      postCrewReport('worf',   _WORF_REPORTS[_worfIdx % _WORF_REPORTS.length](),         'status');
       _worfIdx++;
     } else if (r < 0.70) {
-      postCrewReport('obrien', _OBRIEN_REPORTS[_obrienIdx % _OBRIEN_REPORTS.length](), 'status');
+      postCrewReport('obrien', engReports[_obrienIdx % engReports.length](),              'status');
       _obrienIdx++;
     } else {
-      postCrewReport('nog',    _NOG_REPORTS[_nogIdx % _NOG_REPORTS.length](),       'status');
+      postCrewReport('nog',    helmReports[_nogIdx % helmReports.length](),               'status');
       _nogIdx++;
     }
   } catch(e) {}
@@ -688,10 +725,14 @@ function initCaptainStation() {
   G.captainPeriodicTimer  = 6000;
   _worfIdx = 0; _obrienIdx = 0; _nogIdx = 0;
 
-  const enemy = (ENEMY_CONFIGS[G.enemyArchetype] || {}).label || 'hostile vessel';
-  postCrewReport('system', `Commanding USS Defiant NX-74205. ${enemy} on long-range sensors.`, 'system');
-  postCrewReport('nog',    "Helm responding. Half impulse, medium range, fore attack vector.", 'good');
-  postCrewReport('obrien', "Engineering nominal. Warp core online, EPS at full output.", 'good');
+  const enemy   = (ENEMY_CONFIGS[G.enemyArchetype] || {}).label || 'hostile vessel';
+  const shipCfg = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
+  const isEnt   = G.playerShipKey === 'enterprise_e';
+  postCrewReport('system', `Commanding ${shipCfg.label} ${shipCfg.registry}. ${enemy} on long-range sensors.`, 'system');
+  postCrewReport('nog',    isEnt ? "Data here. Helm responding — half impulse, medium range, fore attack vector. All navigation systems optimal."
+                                 : "Helm responding. Half impulse, medium range, fore attack vector.", 'good');
+  postCrewReport('obrien', isEnt ? "La Forge here — engineering is nominal. Warp core online, EPS at full output. Regenerative shields standing by."
+                                 : "Engineering nominal. Warp core online, EPS at full output.", 'good');
   postCrewReport('worf',   "All weapons armed and ready, Captain. Awaiting your orders.", 'good');
 
   _renderCrewComms();

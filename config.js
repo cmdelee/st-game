@@ -213,6 +213,7 @@ const ARRAYS_DICTIONARY = {
 };
 
 // ── Crew stations ─────────────────────────────────────────────
+// Default (Defiant / DS9 crew). Overridden at game start from PLAYER_SHIP_CONFIGS.
 const CREW_STATIONS = {
   tactical:    { name:'Lt. Cmdr Worf',  role:'Tactical',    status:'nominal', casualties:0 },
   engineering: { name:"Chief O'Brien",  role:'Engineering', status:'nominal', casualties:0 },
@@ -387,6 +388,15 @@ const PLAYER_SHIP_CONFIGS = {
     era:            '2371+',
     description:    'Heavily armed escort. Ablative armor, cloaking device, devastating pulse cannon burst salvo.',
     accentColor:    'var(--o)',
+    crewStations: {
+      tactical:    { name:'Lt. Cmdr Worf',  role:'Tactical',    status:'nominal', casualties:0 },
+      engineering: { name:"Chief O'Brien",  role:'Engineering', status:'nominal', casualties:0 },
+      helm:        { name:'Ensign Nog',      role:'Helm',        status:'nominal', casualties:0 },
+      medical:     { name:'Dr. Bashir',      role:'Medical',     status:'nominal', casualties:0 },
+    },
+    crewLabels:  { worf:"Lt. Cmdr Worf",    obrien:"Chief O'Brien", nog:'Ensign Nog',           system:'BRIDGE SYS' },
+    crewColours: { worf:'#ff9900',           obrien:'#4477ff',       nog:'#cc6699',              system:'#6688aa' },
+    captainPanelLabels: { tactical:'⚡ TACTICAL — WORF', engineering:"⚙ ENGINEERING — O'BRIEN", helm:'🚀 HELM — NOG' },
     hull:           500,
     torpedoes:      18, maxTorpedoes:18,
     photonTorpedoes:12, maxPhotonTorpedoes:12,
@@ -416,6 +426,15 @@ const PLAYER_SHIP_CONFIGS = {
     era:            '2373+',
     description:    "Starfleet's flagship. Regenerative shielding, heavy Type-XII phaser arrays, saucer separation.",
     accentColor:    'var(--b)',
+    crewStations: {
+      tactical:    { name:'Lt. Cmdr Worf',        role:'Tactical',       status:'nominal', casualties:0 },
+      engineering: { name:'Lt. Cmdr La Forge',    role:'Engineering',    status:'nominal', casualties:0 },
+      helm:        { name:'Lt. Cmdr Data',         role:'Helm/Ops',       status:'nominal', casualties:0 },
+      medical:     { name:'Dr. Beverly Crusher',  role:'Medical',        status:'nominal', casualties:0 },
+    },
+    crewLabels:  { worf:'Lt. Cmdr Worf',    obrien:'Lt. Cmdr La Forge', nog:'Lt. Cmdr Data',     system:'BRIDGE SYS' },
+    crewColours: { worf:'#ff9900',           obrien:'#00cccc',           nog:'#ffcc44',           system:'#6688aa' },
+    captainPanelLabels: { tactical:'⚡ TACTICAL — WORF', engineering:'⚙ ENGINEERING — LA FORGE', helm:'🚀 HELM/OPS — DATA' },
     hull:           750,
     torpedoes:      24, maxTorpedoes:24,
     photonTorpedoes:30, maxPhotonTorpedoes:30,
