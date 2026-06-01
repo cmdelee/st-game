@@ -347,12 +347,10 @@ function fireAllWeapons() {
 function firePulseCannons() { fireEnergyWeapons(); }
 function fireAllPhaserArrays() { fireEnergyWeapons(); }
 
+// Alpha salvo — all in-arc energy weapons + one torpedo (strict single-tube, arc-correct)
 function executeAlphaSalvoFire() {
-  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
-  ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower',
-   'emitter_nose','torpedo_quantum','torpedo_photon','torpedo_quantum_aft','torpedo_photon_aft']
-    .filter(k => aw[k] && aw[k].arc.includes(G.helmAttackVector))
-    .forEach(k => fireSelectedArray(k));
+  fireEnergyWeapons();
+  fireTorpedoBanks();
 }
 
 // ── Overload modes ────────────────────────────────────────────
