@@ -50,7 +50,7 @@ function rebuildWeaponFireMatrix() {
       <button class="pill-action-btn p-btn" id="btn-photon"      onclick="fireSelectedArray('torpedo_photon')">Fwd Photon <span style="font-size:9px;">[No lock]</span></button>
       <button class="pill-action-btn p-btn" id="btn-quantum-aft" onclick="fireSelectedArray('torpedo_quantum_aft')">Aft Quantum <span style="font-size:9px;">[AFT]</span></button>
       <button class="pill-action-btn"       id="btn-photon-aft"  onclick="fireSelectedArray('torpedo_photon_aft')">Aft Photon <span style="font-size:9px;">[AFT/No lock]</span></button>
-      <button class="pill-action-btn warn-btn" id="btn-cloak"    onclick="toggleSaucerSeparation()">◯ SAUCER SEP</button>
+      <button class="pill-action-btn warn-btn" id="btn-cloak"    onclick="toggleSaucerSeparation()">◯ SEPARATE SAUCER</button>
       <button class="pill-action-btn"         id="btn-shield-freq" onclick="rotateShieldFrequency()">🛡 ROTATE FREQ</button>
       <button class="pill-action-btn p-btn"   id="btn-evasive"    onclick="executeEvasivePattern()">◈ EVASIVE</button>
       <button class="pill-action-btn red-btn" id="btn-alpha"      onclick="executeAlphaSalvoFire()">ALPHA SALVO</button>
@@ -432,17 +432,23 @@ function masterSimulationCoreLoop(ts) {
   if (G.shieldHitFlash.enemy.timer  > 0) G.shieldHitFlash.enemy.timer  = Math.max(0, G.shieldHitFlash.enemy.timer  - dt);
 
   // Saucer separation timers (Enterprise-E)
-  if (G.saucerSepActive) {
-    G.saucerSepTimer = Math.max(0, G.saucerSepTimer - dt);
-    if (G.saucerSepTimer === 0) {
-      G.saucerSepActive = false;
-      postLogEvent("Saucer section reconnected — hull sections redocked.", 'good');
+  if (G.saucerSepReconnecting) {
+    G.saucerSepReconnectTimer = Math.max(0, G.saucerSepReconnectTimer - dt);
+    if (G.saucerSepReconnectTimer === 0) {
+      // Docking complete — restore saucer systems, start cooldown
+      G.saucerSepActive       = false;
+      G.saucerSepReconnecting = false;
+      G.saucerSepCooldown     = 60000;  // 60s — major structural operation
+      postLogEvent("Saucer section reconnected. All phaser arrays restored. 60s recharge.", 'good');
+      postCrewReport('nog', "Docking complete, Captain. All sections secured.", 'good');
+      if (typeof updateSaucerSepButton === 'function') updateSaucerSepButton();
+    } else {
       if (typeof updateSaucerSepButton === 'function') updateSaucerSepButton();
     }
   }
   if (G.saucerSepCooldown > 0) {
     G.saucerSepCooldown = Math.max(0, G.saucerSepCooldown - dt);
-    if (typeof updateSaucerSepButton === 'function') updateSaucerSepButton();
+    if (G.saucerSepCooldown === 0 && typeof updateSaucerSepButton === 'function') updateSaucerSepButton();
   }
 
   // Cloak cooldown timers
@@ -725,9 +731,10 @@ function initiateVesselSimulation(station) {
   Object.entries(_shipCfg.systemLabels).forEach(([k, label]) => { if (G.systems[k]) G.systems[k].label = label; });
   Object.entries(_shipCfg.defaultPower).forEach(([k, pwr])   => { if (G.systems[k]) G.systems[k].allocatedPower = pwr; });
   // Reset saucer separation and tricobalt
-  G.saucerSepActive   = false;
-  G.saucerSepTimer    = 0;
-  G.saucerSepCooldown = 0;
+  G.saucerSepActive       = false;
+  G.saucerSepReconnecting = false;
+  G.saucerSepReconnectTimer = 0;
+  G.saucerSepCooldown     = 0;
   G.tricobalReady     = true;
 
   G.dead               = false;   // latent fix: ensures G.dead cleared if play-again ever added
@@ -788,7 +795,7 @@ function initiateVesselSimulation(station) {
   if (diff.targetsSystems)   postLogEvent(`[${currentDifficulty.toUpperCase()}] Enemy AI targeting player subsystems.`, 'crit');
   if (_sc.hasAblativeArmour)      postLogEvent("Ablative armour online — 6 layers protecting pressure hull.", 'good');
   if (_sc.hasRegenerativeShields) postLogEvent("Regenerative shielding online — shields recover 40% faster.", 'good');
-  if (_sc.hasSaucerSep)           postLogEvent("Saucer separation system ready. Lock rate −60% for 15s — 50s recharge.", 'good');
+  if (_sc.hasSaucerSep)           postLogEvent("Saucer separation ready. Saucer section stands by — stardrive fights independently until you order reconnect.", 'good');
   postLogEvent(`Quantum torpedoes ×${_sc.torpedoes} and photon torpedoes ×${_sc.photonTorpedoes} loaded.`, 'info');
   postLogEvent(`${_sc.hasCloakDevice ? 'Burst salvo, cloak, shield frequency rotation' : _sc.hasSaucerSep ? 'Concentrated phaser fire, saucer separation, shield frequency' : 'Burst salvo, shield frequency rotation'} and evasive pattern available.`, 'info');
   if (station === 'helm')    postLogEvent("Helm: half impulse — fore attack vector — long engagement range. Auto-tactical and auto-engineering active.", 'info');

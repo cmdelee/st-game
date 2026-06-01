@@ -489,7 +489,10 @@ function processEnemyAI(dt) {
   const alphaLockMod  = G.evasiveAlphaActive    ? 0.5 : 1.0;
   const picardLockMod = G.picardManoeuverActive  ? 0.0 : 1.0;
   const silentRunMod  = G.silentRunning          ? 0.6 : 1.0;
-  const saucerSepMod  = G.saucerSepActive        ? 0.4 : 1.0;  // saucer decoy −60% lock
+  // Saucer separation: dual-contact decoy (−60%) + stardrive agility (−15% extra when fully separated)
+  const saucerSepMod  = G.saucerSepActive
+    ? (G.saucerSepReconnecting ? 0.75 : 0.34)   // docking: −25% | separated: −66% total
+    : 1.0;
   const phaseLockMod  = G.enemyPhaseLockMult     || 1.0;
   G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * saucerSepMod * phaseLockMod * sc);
 

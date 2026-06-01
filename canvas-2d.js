@@ -365,12 +365,23 @@ function _renderEnterpriseESchematic() {
 
   // Saucer separation overlay
   if (G.saucerSepActive) {
-    const sep = 8 + Math.sin(performance.now() * 0.005) * 4;
-    ctx.strokeStyle = `rgba(0,204,102,${0.5 + Math.sin(performance.now()*0.008)*0.3})`; ctx.lineWidth = 2; ctx.setLineDash([5,5]);
-    ctx.beginPath(); ctx.ellipse(cx, cy - 30 * sc, sauc_rx + 6, sauc_ry + 6, 0, 0, Math.PI * 2); ctx.stroke();
+    const col  = G.saucerSepReconnecting ? '255,170,0' : '0,204,102';
+    const lbl  = G.saucerSepReconnecting ? 'DOCKING...' : 'SAUCER SEPARATED';
+    // Draw saucer section offset (drifting away / approaching)
+    const drift = G.saucerSepReconnecting
+      ? 12 * (G.saucerSepReconnectTimer / 6000)   // saucer approaches
+      : 12 + Math.sin(performance.now() * 0.002) * 4; // saucer drifts
+    ctx.strokeStyle = `rgba(${col},${0.5 + Math.sin(performance.now()*0.008)*0.25})`; ctx.lineWidth = 1.5; ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.ellipse(cx, cy - 30 * sc - drift, sauc_rx, sauc_ry, 0, 0, Math.PI * 2); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(0,204,102,0.15)'; ctx.font = 'bold 10px Antonio'; ctx.textAlign = 'center';
-    ctx.fillText('SAUCER SEPARATED', cx, cy - 30 * sc);
+    // Show docking line when reconnecting
+    if (G.saucerSepReconnecting) {
+      ctx.strokeStyle = `rgba(${col},0.4)`; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(cx, cy - 30 * sc - drift + sauc_ry); ctx.lineTo(cx, cy - 8); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.fillStyle = `rgba(${col},0.15)`; ctx.font = 'bold 9px Antonio'; ctx.textAlign = 'center';
+    ctx.fillText(lbl, cx, cy - 30 * sc - drift);
   }
 
   // System nodes — mapped to Sovereign layout
@@ -432,10 +443,12 @@ function _renderEnterpriseESchematic() {
   });
 
   ry += 3; dHdr('SAUCER SEPARATION');
-  if (G.saucerSepActive) {
-    dRow('Status',    `ACTIVE — ${Math.ceil(G.saucerSepTimer/1000)}s`, C.green, 'rgba(0,204,102,0.1)');
+  if (G.saucerSepReconnecting) {
+    dRow('Status',    `DOCKING — ${Math.ceil(G.saucerSepReconnectTimer/1000)}s`, C.warn, 'rgba(255,170,0,0.08)');
+  } else if (G.saucerSepActive) {
+    dRow('Status',    'SEPARATED — stardrive independent', C.green, 'rgba(0,204,102,0.1)');
   } else if (G.saucerSepCooldown > 0) {
-    dRow('Status',    `RECONNECT ${Math.ceil(G.saucerSepCooldown/1000)}s`, C.warn);
+    dRow('Status',    `Sep CD ${Math.ceil(G.saucerSepCooldown/1000)}s`, C.warn);
   } else {
     dRow('Status',    'READY', C.green);
   }

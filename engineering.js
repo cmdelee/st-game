@@ -564,12 +564,17 @@ function updateEngUtilityPanel() {
     if (cs) {
       const dh = G.systems.cloak_dev.health;
       if (dh < 20) cs.textContent = `OFFLINE (${Math.round(dh)}%)`;
-      else if (G.saucerSepActive) cs.textContent = `SEPARATING — ${Math.ceil(G.saucerSepTimer/1000)}s`;
-      else if (G.saucerSepCooldown > 0) cs.textContent = `Reconnecting ${Math.ceil(G.saucerSepCooldown/1000)}s`;
+      else if (G.saucerSepReconnecting) cs.textContent = `DOCKING — ${Math.ceil(G.saucerSepReconnectTimer/1000)}s`;
+      else if (G.saucerSepActive) cs.textContent = 'SEPARATED — stardrive independent';
+      else if (G.saucerSepCooldown > 0) cs.textContent = `Sep CD ${Math.ceil(G.saucerSepCooldown/1000)}s`;
       else cs.textContent = `Ready (${Math.round(dh)}%)`;
     }
     const bce = document.getElementById('btn-cloak-eng');
-    if (bce) { bce.textContent = G.saucerSepActive ? '◯ Active' : '◯ Separate'; bce.style.background = G.saucerSepActive ? 'rgba(0,204,102,0.3)' : ''; bce.onclick = toggleSaucerSeparation; }
+    if (bce) {
+      bce.textContent = G.saucerSepReconnecting ? '◯ Docking' : G.saucerSepActive ? '◯ Order Reconnect' : '◯ Separate';
+      bce.style.background = G.saucerSepActive ? (G.saucerSepReconnecting ? 'rgba(255,170,0,0.3)' : 'rgba(0,204,102,0.3)') : '';
+      bce.onclick = toggleSaucerSeparation;
+    }
   } else {
     if (cloakSection) cloakSection.style.display = '';
     if (cs) {

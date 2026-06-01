@@ -119,6 +119,10 @@ function fireSelectedArray(weaponKey) {
   if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
 
   const weapon    = (G.activeWeaponArrays || ARRAYS_DICTIONARY)[weaponKey]; if (!weapon) return;
+  // Saucer-section arrays are physically unavailable while separated
+  if (_isSaucerWeapon(weapon)) {
+    postLogEvent(`${weapon.label} — saucer section separated. Array unavailable.`, 'warn'); return;
+  }
   if (weapon.arc && weapon.arc.length > 0 && !weapon.arc.includes(G.helmAttackVector)) {
     postLogEvent(`${weapon.label} — out of firing arc on ${G.helmAttackVector.toUpperCase()} vector.`, 'warn'); return;
   }
@@ -438,34 +442,77 @@ function updateCloakButton() {
 }
 
 // ── Enterprise-E: Saucer Separation ──────────────────────────
-// Separates saucer from stardrive. Creates false contact, reducing enemy lock −60% for 15s.
-// Stardrive section continues engagement. Cooldown 50s.
+// Toggle mechanic — saucer stays separated until player orders reconnect.
+//
+// SEPARATED state:  saucerSepActive=true, saucerSepReconnecting=false
+//   • Saucer-section phaser arrays (cannon_pu / cannon_pl) are physically unavailable
+//   • Enemy lock rate ×0.4 (saucer acts as false contact / decoy)
+//   • Stardrive section is lighter → helm is 15% more agile (extra ×0.85 lock multiplier)
+//   • All other weapons, shields, engines, torpedoes still available
+//
+// RECONNECTING state:  saucerSepReconnecting=true, 6s docking
+//   • Saucer arrays still offline (not yet docked)
+//   • Decoy effect drops — enemy sees the docking as it happens
+//
+// COOLDOWN: 60s after full reconnect (structural operation)
 function toggleSaucerSeparation() {
   if (!G.running || G.dead) return;
   if (G.playerShipKey !== 'enterprise_e') return;
-  if (G.saucerSepCooldown > 0) { postLogEvent(`Saucer separation recharging — ${Math.ceil(G.saucerSepCooldown/1000)}s.`, 'warn'); return; }
-  if (G.saucerSepActive)       { postLogEvent("Saucer separation already active.", 'warn'); return; }
-  if (G.systems.engines.health < 20 || G.systems.engines.tripped) { postLogEvent("Engines too damaged for saucer separation.", 'crit'); return; }
 
-  G.saucerSepActive   = true;
-  G.saucerSepTimer    = 15000;
-  G.saucerSepCooldown = 50000;
-  G.systems.engines.stress = Math.min(100, G.systems.engines.stress + 20);
-  postLogEvent("SAUCER SEPARATION — stardrive section engaging independently! Enemy lock −60% for 15s.", 'good');
-  postLogEvent("Saucer section running decoy pattern — helm control restricted to stardrive.", 'info');
-  updateSaucerSepButton();
+  if (G.saucerSepReconnecting) {
+    postLogEvent("Docking sequence in progress — stand by.", 'warn'); return;
+  }
+  if (G.saucerSepCooldown > 0) {
+    postLogEvent(`Saucer separation offline — reconnect cooldown ${Math.ceil(G.saucerSepCooldown/1000)}s.`, 'warn'); return;
+  }
+
+  if (G.saucerSepActive) {
+    // ── Order reconnect ──
+    if (G.systems.engines.health < 15 || G.systems.engines.tripped) {
+      postLogEvent("Engines too damaged for docking approach.", 'crit'); return;
+    }
+    G.saucerSepReconnecting    = true;
+    G.saucerSepReconnectTimer  = 6000;   // 6s docking sequence
+    postLogEvent("RECONNECT ORDER — saucer section on docking approach. 6s.", 'good');
+    postCrewReport('nog', "Saucer section coming about for docking. Hold steady, Captain.", 'status');
+    updateSaucerSepButton();
+  } else {
+    // ── Initiate separation ──
+    if (G.systems.engines.health < 20 || G.systems.engines.tripped) {
+      postLogEvent("Engines too damaged for saucer separation.", 'crit'); return;
+    }
+    G.saucerSepActive = true;
+    G.systems.engines.stress = Math.min(100, G.systems.engines.stress + 15);
+    postLogEvent("SAUCER SEPARATION — stardrive section independent. Saucer running decoy.", 'good');
+    postLogEvent("OFFLINE: Saucer dorsal and ventral arrays (with saucer section). All stardrive weapons nominal.", 'warn');
+    postLogEvent("Stardrive agility +15% — lighter hull profile. Enemy lock −60% (dual contact).", 'good');
+    postCrewReport('nog', "Separation complete, Captain. Saucer section clear — stardrive maneuvering at full agility.", 'good');
+    updateSaucerSepButton();
+  }
+}
+
+// Which weapon systems belong to the saucer section (offline when separated).
+const SAUCER_SECTION_SYSTEMS = new Set(['cannon_pu', 'cannon_pl']);
+
+// Returns true when a weapon's parent system is on the saucer (unavailable while separated).
+function _isSaucerWeapon(weapon) {
+  return G.saucerSepActive && weapon && SAUCER_SECTION_SYSTEMS.has(weapon.parentSystem);
 }
 
 function updateSaucerSepButton() {
   const btn = document.getElementById('btn-cloak'); if (!btn) return;
-  if (G.saucerSepActive) {
-    btn.textContent = `◯ SEPARATING ${Math.ceil(G.saucerSepTimer/1000)}s`;
+  if (G.saucerSepReconnecting) {
+    btn.textContent = `◯ DOCKING ${Math.ceil(G.saucerSepReconnectTimer/1000)}s`;
+    btn.style.background = 'var(--warn)'; btn.style.color = '#000';
+  } else if (G.saucerSepActive) {
+    btn.textContent = '◯ SEPARATED — ORDER RECONNECT';
     btn.style.background = 'var(--green)'; btn.style.color = '#000';
+    btn.className = 'pill-action-btn green-btn';
   } else if (G.saucerSepCooldown > 0) {
-    btn.textContent = `◯ RECONNECTING ${Math.ceil(G.saucerSepCooldown/1000)}s`;
+    btn.textContent = `◯ SEP CD ${Math.ceil(G.saucerSepCooldown/1000)}s`;
     btn.style.background = 'var(--dim2)'; btn.style.color = '#aabbcc';
   } else {
-    btn.textContent = '◯ SAUCER SEPARATION';
+    btn.textContent = '◯ SEPARATE SAUCER';
     btn.style.background = ''; btn.style.color = '';
     btn.className = 'pill-action-btn warn-btn';
   }

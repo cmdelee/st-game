@@ -20,10 +20,12 @@ const G = {
   playerShipConfig: null,      // reference to PLAYER_SHIP_CONFIGS[key], set at boot
   activeWeaponArrays: null,    // reference to active ship's weaponArrays; set at boot
 
-  // Saucer separation (Enterprise-E special ability)
-  saucerSepActive:   false,
-  saucerSepTimer:    0,
-  saucerSepCooldown: 0,
+  // Saucer separation (Enterprise-E) — toggle mechanic, stays separated until ordered back
+  // State machine: ready → separated → reconnecting → cooldown → ready
+  saucerSepActive:       false,  // true while separated (including during reconnect)
+  saucerSepReconnecting: false,  // true during 6s docking window
+  saucerSepReconnectTimer: 0,    // ms remaining in docking sequence
+  saucerSepCooldown:     0,      // ms cooldown after reconnect completes
 
   // Tricobalt warhead (Enterprise-E special — 1 per engagement)
   tricobalReady: true,

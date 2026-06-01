@@ -146,9 +146,10 @@ function synchronizeGlobalInterfaceDisplays() {
   const cps = document.getElementById('txt-cloak-power-status');
   if (cps) {
     if (_isEntUI) {
-      if (G.saucerSepActive)       cps.textContent = `Separating: ${Math.ceil(G.saucerSepTimer/1000)}s`;
-      else if (G.saucerSepCooldown > 0) cps.textContent = `Reconnect: ${Math.ceil(G.saucerSepCooldown/1000)}s`;
-      else                          cps.textContent = 'Ready';
+      if (G.saucerSepReconnecting)     cps.textContent = `Docking: ${Math.ceil(G.saucerSepReconnectTimer/1000)}s`;
+      else if (G.saucerSepActive)      cps.textContent = 'Separated — stardrive independent';
+      else if (G.saucerSepCooldown>0)  cps.textContent = `Sep CD: ${Math.ceil(G.saucerSepCooldown/1000)}s`;
+      else                             cps.textContent = 'Ready';
     } else {
       if (G.cloaked)                cps.textContent = `Draining: ${Math.round(G.cloakPowerReserve)}%`;
       else if (G.cloakCooldown > 0) cps.textContent = `Recharge: ${Math.ceil(G.cloakCooldown / 1000)}s`;
@@ -160,7 +161,8 @@ function synchronizeGlobalInterfaceDisplays() {
   const csb = document.getElementById('cloak-status-bar'); const cst = document.getElementById('cloak-status-text'); const cpd = document.getElementById('cloak-power-drain');
   if (csb) {
     if (_isEntUI) {
-      if (G.saucerSepActive) { csb.style.display='flex'; if(cst)cst.textContent='◯ SAUCER SEPARATED — Enemy lock −60%'; csb.style.color='var(--green)'; csb.style.borderColor='var(--green)'; if(cpd)cpd.textContent=`${Math.ceil(G.saucerSepTimer/1000)}s`; }
+      if (G.saucerSepReconnecting) { csb.style.display='flex'; if(cst)cst.textContent='◯ DOCKING — saucer on approach'; csb.style.color='var(--warn)'; csb.style.borderColor='var(--warn)'; if(cpd)cpd.textContent=`${Math.ceil(G.saucerSepReconnectTimer/1000)}s`; }
+      else if (G.saucerSepActive) { csb.style.display='flex'; if(cst)cst.textContent='◯ SEPARATED — Saucer/Dorsal/Ventral offline · Lock −66%'; csb.style.color='var(--green)'; csb.style.borderColor='var(--green)'; if(cpd)cpd.textContent=''; }
       else csb.style.display='none';
     } else {
       if (G.cloakVulnTimer > 0)    { csb.style.display='flex'; if(cst)cst.textContent='⚡ CLOAK TRANSITION — NO SHIELDS'; csb.style.color='var(--red)'; csb.style.borderColor='var(--red)'; if(cpd)cpd.textContent=''; }
