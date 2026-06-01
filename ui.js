@@ -396,8 +396,8 @@ function concludeSimulationRun(victory, msg, escaped) {
     const btn = document.createElement('button');
     btn.className = 'pill-action-btn warn-btn';
     btn.style.cssText = 'width:100%;margin-top:10px;padding:10px;';
-    btn.textContent = 'REBOOT SYSTEMS';
-    btn.onclick = () => location.reload();
+    btn.textContent = '⚡ NEW ENGAGEMENT';
+    btn.onclick = returnToSetup;
     box.appendChild(btn);
   }
 

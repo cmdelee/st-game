@@ -13,6 +13,39 @@ function dismissSplash() {
   }, 700);
 }
 
+function returnToSetup() {
+  // Reset to station-select without reloading the page (splash stays hidden)
+  G.dead = false; G.running = false;
+
+  // Hide end-game panels
+  const scoreDiv = document.getElementById('score-display');
+  if (scoreDiv) scoreDiv.style.display = 'none';
+  const box = document.getElementById('terminal-transcript-box');
+  if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+
+  // Restore overlay to setup state
+  const title = document.getElementById('modal-title');
+  if (title) { title.textContent = 'STATION DELEGATION ARCHITECTURE'; title.style.color = ''; }
+  const desc = document.getElementById('modal-desc');
+  if (desc) { desc.textContent = 'Select your operational assignment. The alternative deck matrix will automatically delegate tasks to computer subroutines.'; }
+  const setup = document.getElementById('setup-controls-anchor');
+  if (setup) setup.style.display = '';
+
+  // Clear any lingering overlays and state
+  const mv = document.querySelector('.main-viewport');
+  if (mv) mv.classList.remove('last-stand-flash');
+  showCloakVulnOverlay(false);
+  const sg = document.getElementById('sensor-ghost-overlay');
+  if (sg) sg.style.display = 'none';
+
+  // Ensure overlay is visible
+  const overlay = document.getElementById('overlay');
+  if (overlay) overlay.style.display = 'flex';
+
+  // Reset difficulty display to current selection
+  setDifficulty(currentDifficulty);
+}
+
 // ============================================================
 // MAIN GAME LOOP
 // ============================================================
