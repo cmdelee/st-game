@@ -710,6 +710,15 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 69. `checkBorgScanExpiry` restored fire interval without reapplying `activeScanningProfile` modifier — fixed
 70. `toggleActiveSensorSystems` applied `0.85×` multiplicatively on every toggle-on, shrinking fire interval each call — now computes from base rate each time
 71. Helm auto-tac summary hardcoded "4 cannons" for Enterprise-E — now uses `primaryWeaponKeys` system count
+72. Campaign mode: `initiateVesselSimulation` randomly overwrote `G.enemyArchetype` even in campaign mode — now skips the random pool pick when `G.campaignMode` is true
+73. Tricobalt warhead double shield check — `applyDamageToEnemy(hullDmg)` was called without a sector override, so hull bleed-through was absorbed by shields a second time on a random sector; fixed by passing `G.helmAttackVector` as `targetSectorOverride`
+74. `updateEngUtilityPanel` repair percentage showed `NaN%` when `team.totalTime === 0` — added guard (same as bug #66 fix in `refreshEngineeringPanelGraphics`)
+75. `_updateSpecialAbilityButtons` hid `eng-cloak-section` for Enterprise-E, conflicting with `updateEngUtilityPanel` which repurposes it for saucer-sep status — section now always kept visible; `updateEngUtilityPanel` manages its content for both ships
+76. `tetryonMod` in `processEnemyAI` checked `G.scanBonus.type === 'tetryon'` which is never set by the new deep-scan system — removed dead variable; sensor-blind effect is correctly handled by `permSensorBlind` (permanent scan bonuses)
+77. `saucerSepMod` applied ×0.34 (−66% enemy lock) but docs and log message say −60% (×0.4) — corrected to 0.40
+78. `executeConcentratedPhaserFire` did not filter saucer-section weapons from the `ready` array, inflating the logged count when saucer was separated — added `_isSaucerWeapon` check
+79. `processBattery` called `handleWarpCoreTrip()` when battery exhausted while warp core was already tripped, re-applying the EPS cascade stress spike and potentially causing a second set of system trips — replaced with a simple log message
+80. `masterSimulationCoreLoop` re-scheduled itself every frame via `requestAnimationFrame` even when `G.running=false` (setup, post-game), burning CPU/battery continuously — loop now exits immediately when not running; `startCombat()` re-enters the loop when combat begins
 
 ---
 

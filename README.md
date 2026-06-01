@@ -131,7 +131,7 @@ Direct weapons fire, manage evasive manoeuvres, operate cloak or saucer sep, and
 | Individual phaser buttons | F/P/S or F/P/A or A/P/S | 9 individually targetable arrays |
 | Fwd Quantum Tube A + B | Fore/Port/Stbd | Dual forward quantum launchers |
 | Aft Quantum / Photon | Aft/Port/Stbd | Aft launcher |
-| ◯ Saucer Separation | — | Enemy lock −60% for 15s, 50s CD |
+| ◯ Saucer Separation | — | Enemy lock −60% for duration, 50s CD after reconnect |
 | ⚡ Max Phaser Output | — | All phasers +60%, 30s CD |
 | ☢ Tricobalt Warhead | — | 300yd, no lock, 40% hull bleed-through, 1 per engagement |
 

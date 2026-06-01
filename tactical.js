@@ -657,7 +657,9 @@ function executeTricobalWarhead() {
   const shieldDmg    = Math.min(shieldSector, dmg * 0.60);
   const hullDmg      = Math.max(0, dmg - shieldBlock);
   G.threat.shields[G.helmAttackVector] = Math.max(0, (G.threat.shields[G.helmAttackVector] || 0) - shieldDmg);
-  applyDamageToEnemy(hullDmg, { parentSystem:'torpedoes', isQuantum:true, isPhoton:false, label:'Tricobalt Warhead' });
+  // Pass the attack vector as sector override so hull bleed-through hits the already-stripped sector
+  // and is not absorbed by a different sector's shields inside applyDamageToEnemy
+  applyDamageToEnemy(hullDmg, { parentSystem:'torpedoes', isQuantum:true, isPhoton:false, label:'Tricobalt Warhead' }, G.helmAttackVector);
   G.score.totalDmgDealt     += dmg;
   G.score.weaponsFired.quantum++;
   G.renderedBeamsVector.push({ type:'torpedo', fromPlayer:true, targetSector:G.helmAttackVector, trackingStartTime:performance.now(), duration:900, col:'#ff6600' });
@@ -677,6 +679,7 @@ function executeConcentratedPhaserFire() {
   const phaserKeys = cfg.primaryWeaponKeys || ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
   const ready = phaserKeys.filter(k => {
     if (!aw[k] || !aw[k].arc.includes(G.helmAttackVector)) return false;
+    if (_isSaucerWeapon(aw[k])) return false;
     const s = G.systems[aw[k].parentSystem];
     return !s.tripped && s.health >= 10 && s.cap >= aw[k].cost;
   });

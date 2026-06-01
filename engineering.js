@@ -62,7 +62,9 @@ function processBattery(dt) {
     if (G.batteryCharge <= 0) {
       G.batteryActive = false;
       postLogEvent("Emergency battery exhausted!", 'crit');
-      if (G.systems.warp_core.tripped) handleWarpCoreTrip();
+      // Do NOT call handleWarpCoreTrip here — it already fired when the core first tripped,
+      // and calling it again would re-apply the EPS cascade stress spike to engines/shields/sensors
+      if (G.systems.warp_core.tripped) postLogEvent("Warp core remains offline — repair required.", 'warn');
     }
   } else if (!G.systems.warp_core.tripped) {
     G.batteryCharge = Math.min(100, G.batteryCharge + G.batteryRechargeRate * sc);
@@ -598,7 +600,7 @@ function updateEngUtilityPanel() {
       if (!team.sysKey) {
         return `<div style="color:#556677;font-size:9px;">👤 ${name} Team — standby</div>`;
       }
-      const p = Math.round((1 - team.remaining / team.totalTime) * 100);
+      const p = team.totalTime > 0 ? Math.round((1 - team.remaining / team.totalTime) * 100) : 0;
       const s = Math.ceil(team.remaining / 1000);
       return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px;">
         <span style="color:var(--b);font-size:9px;min-width:38px;">👤 ${name}</span>

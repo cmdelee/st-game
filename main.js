@@ -180,7 +180,9 @@ function _updateSpecialAbilityButtons() {
   const ablSection  = document.getElementById('eng-ablative-section');
   const cloakSection = document.getElementById('eng-cloak-section');
   if (ablSection)   ablSection.style.display   = isEnt ? 'none' : '';
-  if (cloakSection) cloakSection.style.display = isEnt ? 'none' : '';
+  // cloakSection is repurposed for saucer-sep status on Enterprise-E — always keep visible;
+  // updateEngUtilityPanel handles the content and labels for both ships
+  if (cloakSection) cloakSection.style.display = '';
   // Ablative armour strip in tactical deck
   const ablStrip = document.getElementById('ablative-armour-strip');
   if (ablStrip) ablStrip.style.display = isEnt ? 'none' : '';
@@ -404,7 +406,7 @@ function returnToSetup() {
 // MAIN GAME LOOP
 // ============================================================
 function masterSimulationCoreLoop(ts) {
-  if (!G.running || G.dead) { requestAnimationFrame(masterSimulationCoreLoop); return; }
+  if (!G.running || G.dead) return; // loop re-entered by startCombat() when game begins
   if (G.lastFrameTimestamp === 0) G.lastFrameTimestamp = ts;
   const dt = Math.min(ts - G.lastFrameTimestamp, 100);
   G.lastFrameTimestamp = ts;
@@ -546,15 +548,18 @@ function initiateVesselSimulation(station) {
   G.playerChosenStation = station;
   const diff = DIFFICULTY[currentDifficulty];
 
-  // Enemy pool by difficulty
-  // Normal: lighter threats only — Vor'Cha excluded (1050 hull + cloak is too punishing for newcomers)
-  const normalPool = ['ktinga','romulan_bop','cardassian_scout','galor_class','jem_hadar_fighter'];
-  // Hard: full roster including heavyweights; calibrated for experienced players
-  const hardPool   = ['ktinga','vor_cha','romulan_bop','romulan_warbird','galor_class','jem_hadar_fighter','jem_hadar_battleship'];
-  // Elite: Borg probe ONLY — the adaptation encounter is its own unique challenge tier
-  const elitePool  = ['borg_probe'];
-  const pool = currentDifficulty === 'elite' ? elitePool : currentDifficulty === 'hard' ? hardPool : normalPool;
-  G.enemyArchetype = pool[Math.floor(Math.random() * pool.length)];
+  // Campaign mode: archetype was set by _launchCampaignLevel before this call — preserve it
+  if (!G.campaignMode) {
+    // Enemy pool by difficulty
+    // Normal: lighter threats only — Vor'Cha excluded (1050 hull + cloak is too punishing for newcomers)
+    const normalPool = ['ktinga','romulan_bop','cardassian_scout','galor_class','jem_hadar_fighter'];
+    // Hard: full roster including heavyweights; calibrated for experienced players
+    const hardPool   = ['ktinga','vor_cha','romulan_bop','romulan_warbird','galor_class','jem_hadar_fighter','jem_hadar_battleship'];
+    // Elite: Borg probe ONLY — the adaptation encounter is its own unique challenge tier
+    const elitePool  = ['borg_probe'];
+    const pool = currentDifficulty === 'elite' ? elitePool : currentDifficulty === 'hard' ? hardPool : normalPool;
+    G.enemyArchetype = pool[Math.floor(Math.random() * pool.length)];
+  }
 
   const cfg = ENEMY_CONFIGS[G.enemyArchetype];
 
@@ -923,6 +928,7 @@ function startCombat() {
   G.running = true;
   G.lastFrameTimestamp = performance.now();
   initEncounterPhases();
+  requestAnimationFrame(masterSimulationCoreLoop);
 }
 
 // ============================================================

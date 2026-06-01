@@ -277,18 +277,17 @@ function processEnemyAI(dt) {
   const eSens         = G.enemySystems.sensors;
   const sMod          = eSens ? eSens.health / 100 : 1;
   const evasiveMod    = G.evasiveActive ? getHelmEvasiveModifier() : 1.0;
-  const tetryonMod    = (G.scanBonus && G.scanBonus.type === 'tetryon' && performance.now() < G.scanBonus.expiry) ? G.scanBonus.value : 1.0;
   const helmSpeedCfg  = HELM_SPEED_CONFIG[G.helmSpeed] || HELM_SPEED_CONFIG.half;
   const helmSpeedMod  = G.comeAboutActive ? 1.25 : helmSpeedCfg.enemyLockMult;
   const alphaLockMod  = G.evasiveAlphaActive   ? 0.5 : 1.0;
   const picardLockMod = G.picardManoeuverActive ? 0.0 : 1.0;
   const silentRunMod  = G.silentRunning         ? 0.6 : 1.0;
   const saucerSepMod  = G.saucerSepActive
-    ? (G.saucerSepReconnecting ? 0.75 : 0.34)
+    ? (G.saucerSepReconnecting ? 0.75 : 0.40)
     : 1.0;
   const phaseLockMod  = G.enemyPhaseLockMult || 1.0;
   const permSensorBlind = (G.permanentScanBonuses && G.permanentScanBonuses.sensor_blind) ? 0.60 : 1.0;
-  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * saucerSepMod * phaseLockMod * permSensorBlind * sc);
+  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * saucerSepMod * phaseLockMod * permSensorBlind * sc);
 
   // Jem'Hadar ramming check
   if (cfg.canRam && !G.enemyRammingRun) {
