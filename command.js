@@ -181,6 +181,11 @@ function capEvasive()      { _order('evasive',       executeEvasivePattern,     
 // Cloak / Decloak — single toggle, label updates with state
 // Decloaking has no captain-side cooldown; cloaking uses the 28s CD.
 function capCloakToggle() {
+  if (G.playerShipKey === 'enterprise_e') {
+    // Saucer separation for Enterprise-E
+    _order('cloak', toggleSaucerSeparation, 'worf', "Initiating saucer separation on your order, Captain.");
+    return;
+  }
   if (G.cloaked) {
     // Decloak — no cooldown, execute immediately
     postCrewReport('worf', "Decloaking on your order, Captain.", 'status');

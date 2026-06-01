@@ -85,6 +85,7 @@ function processBattery(dt) {
 // and begins a slow regeneration after a cooldown period.
 // ============================================================
 function processAblativeArmour(dt) {
+  if (!(G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).hasAblativeArmour) return;
   const ab = G.ablative;
   for (let i = 0; i < ABLATIVE_ARMOUR.maxLayers; i++) {
     if (ab.layerHealth[i] <= 0) {
@@ -111,6 +112,8 @@ function processAblativeArmour(dt) {
  * Degrades the outermost intact layer.
  */
 function applyAblativeArmour(rawHullDmg) {
+  // Enterprise-E has no ablative armour — full damage passes through
+  if (!(G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).hasAblativeArmour) return rawHullDmg;
   const ab = G.ablative;
   // Find the outermost intact layer (highest index with health > 0)
   let layerIdx = -1;
@@ -146,9 +149,9 @@ function recalculateShieldRegenRate() {
   if (wc.tripped && !G.batteryActive) { G.shieldRegenRate = 0; return; }
   const sp = G.systems.shields.allocatedPower;
   const sh = G.systems.shields.health / 100;
-  // Defiant regenerative shields: 28MW base → ~3/s, 60MW → ~6.5/s
-  // Uses a slightly more generous base multiplier to match the stronger shield pool
-  G.shieldRegenRate = Math.max(0.5, (sp / 9) * sh);
+  const regenBonus = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).shieldRegenBonus || 1.0;
+  // Defiant: 28MW → ~3.1/s, 60MW → ~6.7/s; Enterprise-E ×1.4 bonus (regenerative shielding)
+  G.shieldRegenRate = Math.max(0.5, (sp / 9) * sh * regenBonus);
   const rl = document.getElementById('lbl-shield-regen');
   if (rl && !G.cloaked) { rl.textContent = `↑+${G.shieldRegenRate.toFixed(1)}/s`; rl.style.color = 'var(--green)'; }
   const rr = document.getElementById('txt-shield-regen-rate');
@@ -543,16 +546,42 @@ function adjustShieldRegenMode(mode) {
 // ENGINEERING UTILITY PANEL
 // ============================================================
 function updateEngUtilityPanel() {
+  const _shipCfg  = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
+  const _isEnt    = G.playerShipKey === 'enterprise_e';
+
+  // Show/hide ablative armour section
+  const ablSection = document.getElementById('eng-ablative-section');
+  if (ablSection) ablSection.style.display = _isEnt ? 'none' : '';
+
+  // Cloak / Saucer separation section
+  const cloakSection = document.getElementById('eng-cloak-section');
+  const cloakTitle   = document.getElementById('lbl-eng-cloak-title');
+  if (cloakTitle) cloakTitle.textContent = _isEnt ? 'SAUCER SEPARATION' : 'CLOAKING DEVICE';
   const cs = document.getElementById('lbl-cloak-eng-status');
-  if (cs) {
-    const dh = G.systems.cloak_dev.health;
-    if (dh < 20) cs.textContent = `DESTROYED (${Math.round(dh)}%)`;
-    else if (G.cloaked) cs.textContent = `ACTIVE — PWR:${Math.round(G.cloakPowerReserve)}%`;
-    else if (G.cloakCooldown > 0) cs.textContent = `Recharging ${Math.ceil(G.cloakCooldown / 1000)}s`;
-    else cs.textContent = `Ready (${Math.round(dh)}%)`;
+  if (_isEnt) {
+    // Show saucer sep status
+    if (cloakSection) cloakSection.style.display = '';  // keep visible, repurposed
+    if (cs) {
+      const dh = G.systems.cloak_dev.health;
+      if (dh < 20) cs.textContent = `OFFLINE (${Math.round(dh)}%)`;
+      else if (G.saucerSepActive) cs.textContent = `SEPARATING — ${Math.ceil(G.saucerSepTimer/1000)}s`;
+      else if (G.saucerSepCooldown > 0) cs.textContent = `Reconnecting ${Math.ceil(G.saucerSepCooldown/1000)}s`;
+      else cs.textContent = `Ready (${Math.round(dh)}%)`;
+    }
+    const bce = document.getElementById('btn-cloak-eng');
+    if (bce) { bce.textContent = G.saucerSepActive ? '◯ Active' : '◯ Separate'; bce.style.background = G.saucerSepActive ? 'rgba(0,204,102,0.3)' : ''; bce.onclick = toggleSaucerSeparation; }
+  } else {
+    if (cloakSection) cloakSection.style.display = '';
+    if (cs) {
+      const dh = G.systems.cloak_dev.health;
+      if (dh < 20) cs.textContent = `DESTROYED (${Math.round(dh)}%)`;
+      else if (G.cloaked) cs.textContent = `ACTIVE — PWR:${Math.round(G.cloakPowerReserve)}%`;
+      else if (G.cloakCooldown > 0) cs.textContent = `Recharging ${Math.ceil(G.cloakCooldown / 1000)}s`;
+      else cs.textContent = `Ready (${Math.round(dh)}%)`;
+    }
+    const bce = document.getElementById('btn-cloak-eng');
+    if (bce) { bce.textContent = G.cloaked ? '◉ Decloak' : '◉ Cloak'; bce.style.background = G.cloaked ? 'rgba(153,102,204,0.4)' : ''; bce.onclick = toggleCloakingDevice; }
   }
-  const bce = document.getElementById('btn-cloak-eng');
-  if (bce) { bce.textContent = G.cloaked ? '◉ Decloak' : '◉ Cloak'; bce.style.background = G.cloaked ? 'rgba(153,102,204,0.4)' : ''; }
   const rl = document.getElementById('txt-shield-regen-rate');
   if (rl) rl.textContent = G.cloaked ? 'OFFLINE' : `+${G.shieldRegenRate.toFixed(1)}/s`;
 
@@ -582,11 +611,13 @@ function updateEngUtilityPanel() {
   // Auto-tactical summary (engineering mode only)
   const as = document.getElementById('lbl-autotac-summary');
   if (as && G.playerChosenStation === 'engineering') {
+    const _isEntEng = G.playerShipKey === 'enterprise_e';
     const healthy = ['cannon_pu','cannon_pl','cannon_su','cannon_sl'].filter(k => !G.systems[k].tripped && G.systems[k].health >= 15).length;
     const torpsOk = !G.systems.torpedoes.tripped && G.systems.torpedoes.health >= 15 && G.player.torpedoes > 0;
     const teamA   = G.repairTeams[0].sysKey ? `A:${G.repairTeams[0].label.split(' ').slice(-1)[0]}` : 'A:idle';
     const teamB   = G.repairTeams[1].sysKey ? `B:${G.repairTeams[1].label.split(' ').slice(-1)[0]}` : 'B:idle';
-    as.textContent = `${healthy}/4 cannons · Torps:${torpsOk ? 'RDY' : 'NO'} · ${teamA} · ${teamB} · ${G.cloaked ? '[CLOAKED]' : 'Firing.'}`;
+    const specStatus = _isEntEng ? (G.saucerSepActive ? '[SEPARATED]' : 'Firing.') : (G.cloaked ? '[CLOAKED]' : 'Firing.');
+    as.textContent = `${healthy}/${_isEntEng ? 5 : 4} arrays · Torps:${torpsOk ? 'RDY' : 'NO'} · ${teamA} · ${teamB} · ${specStatus}`;
   }
 
   // Ablative armour status (engineering view)

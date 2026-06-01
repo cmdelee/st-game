@@ -375,6 +375,85 @@ const CAMPAIGN_ORDER = [
   { level:9, archetype:'borg_probe',           diff:'elite',  label:"LEVEL 9",  title:"Borg Probe",              subtitle:"Borg — Adaptive shielding · Tractor beam [ELITE]" },
 ];
 
+// ── Player ship configurations ────────────────────────────────
+// Each entry defines one playable vessel. weaponArrays overrides ARRAYS_DICTIONARY
+// when that ship is active (null = use global ARRAYS_DICTIONARY unchanged).
+const PLAYER_SHIP_CONFIGS = {
+  defiant: {
+    key:            'defiant',
+    label:          'USS DEFIANT',
+    registry:       'NX-74205',
+    shipClass:      'Defiant-class',
+    era:            '2371+',
+    description:    'Heavily armed escort. Ablative armor, cloaking device, devastating pulse cannon burst salvo.',
+    accentColor:    'var(--o)',
+    hull:           500,
+    torpedoes:      18, maxTorpedoes:18,
+    photonTorpedoes:12, maxPhotonTorpedoes:12,
+    shields:        { fore:320, port:260, starboard:260, aft:200, maxSectorValue:320 },
+    hasAblativeArmour:      true,
+    hasCloakDevice:         true,
+    hasSaucerSep:           false,
+    hasRegenerativeShields: false,
+    shieldRegenBonus:       1.0,
+    defaultPower:   { cannon_pu:8, cannon_pl:8, cannon_su:8, cannon_sl:6, nose_beam:10, torpedoes:10, shields:28, sensors:16, engines:10, cloak_dev:0, warp_core:10 },
+    systemLabels:   {
+      cannon_pu:'Pulse Cannon P/U', cannon_pl:'Pulse Cannon P/L',
+      cannon_su:'Pulse Cannon S/U', cannon_sl:'Pulse Cannon S/L',
+      nose_beam:'Nose Array Beam',  torpedoes:'Quantum Torpedoes',
+      shields:'Deflector Shields',  sensors:'Sensor Arrays',
+      engines:'Impulse Engines',    cloak_dev:'Cloaking Device',  warp_core:'Warp Core',
+    },
+    primaryWeaponKeys: ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'],
+    primaryLabel: 'Pulse Cannons',
+    weaponArrays: null,   // null = use global ARRAYS_DICTIONARY
+  },
+  enterprise_e: {
+    key:            'enterprise_e',
+    label:          'USS ENTERPRISE',
+    registry:       'NCC-1701-E',
+    shipClass:      'Sovereign-class',
+    era:            '2373+',
+    description:    "Starfleet's flagship. Regenerative shielding, heavy Type-XII phaser arrays, saucer separation.",
+    accentColor:    'var(--b)',
+    hull:           750,
+    torpedoes:      24, maxTorpedoes:24,
+    photonTorpedoes:30, maxPhotonTorpedoes:30,
+    shields:        { fore:500, port:400, starboard:400, aft:350, maxSectorValue:500 },
+    hasAblativeArmour:      false,
+    hasCloakDevice:         false,
+    hasSaucerSep:           true,
+    hasRegenerativeShields: true,
+    shieldRegenBonus:       1.4,   // 40% faster regen (regenerative shielding, First Contact)
+    defaultPower:   { cannon_pu:12, cannon_pl:10, cannon_su:8, cannon_sl:6, nose_beam:12, torpedoes:10, shields:30, sensors:16, engines:10, cloak_dev:0, warp_core:10 },
+    systemLabels:   {
+      cannon_pu:'Dorsal Phaser Arrays',  cannon_pl:'Ventral Phaser Arrays',
+      cannon_su:'Aft Phaser Bank A',     cannon_sl:'Aft Phaser Bank B',
+      nose_beam:'Stardrive Arrays',      torpedoes:'Torpedo Systems',
+      shields:'Regenerative Shield Grid', sensors:'Sensor Arrays',
+      engines:'Impulse Engines',          cloak_dev:'Saucer Separation Sys', warp_core:'Warp Core M/ARA',
+    },
+    primaryWeaponKeys: ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'],
+    primaryLabel: 'Phaser Arrays',
+    // Replaces ARRAYS_DICTIONARY when Enterprise-E is active.
+    // Same tag IDs → same capacitor bar HTML works for both ships.
+    weaponArrays: {
+      // Type-XII phaser arrays: broad arcs, strong yield, replaces pulse cannons
+      cannon_port_upper: { yield:42, cost:32, parentSystem:'cannon_pu', tag:'cpu', label:'Dorsal Fwd Array',   arc:['fore','port','starboard'] },
+      cannon_port_lower: { yield:38, cost:28, parentSystem:'cannon_pl', tag:'cpl', label:'Ventral Fwd Array',  arc:['fore','port','starboard'] },
+      cannon_stbd_upper: { yield:35, cost:26, parentSystem:'cannon_su', tag:'csu', label:'Aft Phaser Bank A',  arc:['aft','port','starboard'] },
+      cannon_stbd_lower: { yield:32, cost:24, parentSystem:'cannon_sl', tag:'csl', label:'Aft Phaser Bank B',  arc:['aft','port','starboard'] },
+      // Forward stardrive section arrays: strongest single emitter, fore only
+      emitter_nose:      { yield:90, cost:65, parentSystem:'nose_beam', tag:'emn', label:'Stardrive Arrays',   arc:['fore'] },
+      // Torpedo launchers: 2 fwd quantum tubes, aft tube (quantum + photon capable)
+      torpedo_quantum:     { yield:125, cost:85, parentSystem:'torpedoes', tag:'tff', label:'Fwd Quantum Tube A', arc:['fore','port','starboard'], isQuantum:true },
+      torpedo_photon:      { yield:65,  cost:30, parentSystem:'torpedoes', tag:'tph', label:'Fwd Photon Tube A',  arc:['fore','port','starboard'], isPhoton:true },
+      torpedo_quantum_aft: { yield:125, cost:85, parentSystem:'torpedoes', tag:'tqa', label:'Aft Quantum Tube',   arc:['aft','port','starboard'],  isQuantum:true },
+      torpedo_photon_aft:  { yield:65,  cost:30, parentSystem:'torpedoes', tag:'tpa', label:'Aft Photon Tube',    arc:['aft','port','starboard'],  isPhoton:true },
+    },
+  },
+};
+
 // ── Helm speed profiles ───────────────────────────────────────
 const HELM_SPEED_CONFIG = {
   stop:        { label:'ALL STOP',     enemyLockMult:1.35, yieldMult:1.10 },

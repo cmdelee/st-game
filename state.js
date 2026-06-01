@@ -15,6 +15,19 @@ const G = {
   headingDegrees:180, velocitySpeedRating:65,
   gameSessionId:0,
 
+  // Player ship selection — set by selectPlayerShip() before each game
+  playerShipKey:    'defiant',
+  playerShipConfig: null,      // reference to PLAYER_SHIP_CONFIGS[key], set at boot
+  activeWeaponArrays: null,    // reference to active ship's weaponArrays; set at boot
+
+  // Saucer separation (Enterprise-E special ability)
+  saucerSepActive:   false,
+  saucerSepTimer:    0,
+  saucerSepCooldown: 0,
+
+  // Tricobalt warhead (Enterprise-E special — 1 per engagement)
+  tricobalReady: true,
+
   // Scan
   activeScanProfile:null, scanAnalysisProgress:0, scanBonus:null,
 
@@ -125,7 +138,7 @@ const G = {
   // Player
   player:{
     hull:500, maxHull:500,
-    torpedoes:30, maxTorpedoes:30,
+    torpedoes:18, maxTorpedoes:18,
     photonTorpedoes:12, maxPhotonTorpedoes:12,
     shields:{ fore:320, port:260, starboard:260, aft:200, maxSectorValue:320 }
   },

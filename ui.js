@@ -139,27 +139,41 @@ function synchronizeGlobalInterfaceDisplays() {
   const wu = document.getElementById('txt-warp-used');   if (wu) wu.textContent = total;
   const wm = document.getElementById('txt-warp-max');    if (wm) { wm.textContent = warpOut; wm.style.color = G.systems.warp_core.tripped ? C.red : warpOut < 60 ? C.warn : C.o; }
 
-  // Cloak power bar (right)
-  const cpb = document.getElementById('bar-cloak-power');    if (cpb) cpb.style.width = `${G.cloakPowerReserve}%`;
+  // Cloak / Saucer sep power bar (right)
+  const _isEntUI = G.playerShipKey === 'enterprise_e';
+  const cpb = document.getElementById('bar-cloak-power');
+  if (cpb) cpb.style.width = _isEntUI ? `${G.saucerSepCooldown > 0 ? Math.max(0,(1-G.saucerSepCooldown/50000)*100) : G.saucerSepActive ? 100 : 100}%` : `${G.cloakPowerReserve}%`;
   const cps = document.getElementById('txt-cloak-power-status');
   if (cps) {
-    if (G.cloaked)            cps.textContent = `Draining: ${Math.round(G.cloakPowerReserve)}%`;
-    else if (G.cloakCooldown > 0) cps.textContent = `Recharge: ${Math.ceil(G.cloakCooldown / 1000)}s`;
-    else                      cps.textContent = 'Ready';
+    if (_isEntUI) {
+      if (G.saucerSepActive)       cps.textContent = `Separating: ${Math.ceil(G.saucerSepTimer/1000)}s`;
+      else if (G.saucerSepCooldown > 0) cps.textContent = `Reconnect: ${Math.ceil(G.saucerSepCooldown/1000)}s`;
+      else                          cps.textContent = 'Ready';
+    } else {
+      if (G.cloaked)                cps.textContent = `Draining: ${Math.round(G.cloakPowerReserve)}%`;
+      else if (G.cloakCooldown > 0) cps.textContent = `Recharge: ${Math.ceil(G.cloakCooldown / 1000)}s`;
+      else                          cps.textContent = 'Ready';
+    }
   }
 
-  // Cloak status bar (tactical panel)
+  // Cloak / Saucer sep status bar (tactical panel)
   const csb = document.getElementById('cloak-status-bar'); const cst = document.getElementById('cloak-status-text'); const cpd = document.getElementById('cloak-power-drain');
   if (csb) {
-    if (G.cloakVulnTimer > 0)   { csb.style.display='flex'; if(cst)cst.textContent='⚡ CLOAK TRANSITION — NO SHIELDS'; csb.style.color='var(--red)'; csb.style.borderColor='var(--red)'; if(cpd)cpd.textContent=''; }
-    else if (G.cloaked)          { csb.style.display='flex'; if(cst)cst.textContent='◉ CLOAKED — WEAPONS & SHIELDS OFFLINE'; csb.style.color='var(--p)'; csb.style.borderColor='var(--p)'; if(cpd)cpd.textContent=`PWR:${Math.round(G.cloakPowerReserve)}% (${G.cloakPowerDrainRate}%/s)`; }
-    else if (G.cloakCooldown > 0) { csb.style.display='flex'; if(cst)cst.textContent=`◌ RECHARGING ${Math.ceil(G.cloakCooldown/1000)}s`; csb.style.color='var(--warn)'; csb.style.borderColor='var(--warn)'; if(cpd)cpd.textContent=''; }
-    else                          { csb.style.display='none'; }
+    if (_isEntUI) {
+      if (G.saucerSepActive) { csb.style.display='flex'; if(cst)cst.textContent='◯ SAUCER SEPARATED — Enemy lock −60%'; csb.style.color='var(--green)'; csb.style.borderColor='var(--green)'; if(cpd)cpd.textContent=`${Math.ceil(G.saucerSepTimer/1000)}s`; }
+      else csb.style.display='none';
+    } else {
+      if (G.cloakVulnTimer > 0)    { csb.style.display='flex'; if(cst)cst.textContent='⚡ CLOAK TRANSITION — NO SHIELDS'; csb.style.color='var(--red)'; csb.style.borderColor='var(--red)'; if(cpd)cpd.textContent=''; }
+      else if (G.cloaked)           { csb.style.display='flex'; if(cst)cst.textContent='◉ CLOAKED — WEAPONS & SHIELDS OFFLINE'; csb.style.color='var(--p)'; csb.style.borderColor='var(--p)'; if(cpd)cpd.textContent=`PWR:${Math.round(G.cloakPowerReserve)}% (${G.cloakPowerDrainRate}%/s)`; }
+      else if (G.cloakCooldown > 0) { csb.style.display='flex'; if(cst)cst.textContent=`◌ RECHARGING ${Math.ceil(G.cloakCooldown/1000)}s`; csb.style.color='var(--warn)'; csb.style.borderColor='var(--warn)'; if(cpd)cpd.textContent=''; }
+      else                           { csb.style.display='none'; }
+    }
   }
 
   // Weapon capacitor bars
-  Object.keys(ARRAYS_DICTIONARY).forEach(wk => {
-    const wd  = ARRAYS_DICTIONARY[wk]; const sys = G.systems[wd.parentSystem];
+  const _aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  Object.keys(_aw).forEach(wk => {
+    const wd  = _aw[wk]; const sys = G.systems[wd.parentSystem];
     const cap = sys.tripped ? 0 : sys.cap;
     const b   = document.getElementById(`bar-cap-${wd.tag}`);
     if (b) { b.style.width = `${cap}%`; b.style.color = sys.tripped ? C.red : cap > 50 ? C.b : C.warn; }
@@ -181,7 +195,10 @@ function synchronizeGlobalInterfaceDisplays() {
   // Weapon health strip
   const ws = document.getElementById('weapon-health-strip');
   if (ws) {
-    const wk = [{k:'cannon_pu',l:'P/U'},{k:'cannon_pl',l:'P/L'},{k:'cannon_su',l:'S/U'},{k:'cannon_sl',l:'S/L'},{k:'nose_beam',l:'NSE'},{k:'torpedoes',l:'TRP'},{k:'cloak_dev',l:'CLK'},{k:'warp_core',l:'WRP'}];
+    const _isEnt = G.playerShipKey === 'enterprise_e';
+    const wk = _isEnt
+      ? [{k:'cannon_pu',l:'DRS'},{k:'cannon_pl',l:'VNT'},{k:'cannon_su',l:'AFA'},{k:'cannon_sl',l:'AFB'},{k:'nose_beam',l:'SDR'},{k:'torpedoes',l:'TRP'},{k:'cloak_dev',l:'SSP'},{k:'warp_core',l:'WRP'}]
+      : [{k:'cannon_pu',l:'P/U'},{k:'cannon_pl',l:'P/L'},{k:'cannon_su',l:'S/U'},{k:'cannon_sl',l:'S/L'},{k:'nose_beam',l:'NSE'},{k:'torpedoes',l:'TRP'},{k:'cloak_dev',l:'CLK'},{k:'warp_core',l:'WRP'}];
     ws.innerHTML = wk.map(w => {
       const sys = G.systems[w.k]; const h = Math.round(sys.health);
       const col = sys.tripped ? '#ff3333' : h > 70 ? '#00cc66' : h > 35 ? '#ffaa00' : '#ff3333';
@@ -215,10 +232,12 @@ function synchronizeGlobalInterfaceDisplays() {
 
   // Weapon arc states — grey out weapons that can't bear on current attack vector
   const _vec = G.helmAttackVector;
+  const _aw2 = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  const _isEnt2 = G.playerShipKey === 'enterprise_e';
   const _arcGrey = (id, weaponKeys, label) => {
     const btn = document.getElementById(id); if (!btn) return;
-    const anyInArc = weaponKeys.some(k => ARRAYS_DICTIONARY[k] && ARRAYS_DICTIONARY[k].arc.includes(_vec));
-    const inArcCount = weaponKeys.filter(k => ARRAYS_DICTIONARY[k] && ARRAYS_DICTIONARY[k].arc.includes(_vec)).length;
+    const anyInArc = weaponKeys.some(k => _aw2[k] && _aw2[k].arc.includes(_vec));
+    const inArcCount = weaponKeys.filter(k => _aw2[k] && _aw2[k].arc.includes(_vec)).length;
     if (!anyInArc) {
       btn.style.opacity = '0.35'; btn.style.pointerEvents = 'none';
       btn.title = `Out of arc — ${_vec.toUpperCase()} vector`;
@@ -227,30 +246,38 @@ function synchronizeGlobalInterfaceDisplays() {
       btn.title = '';
     }
     if (id === 'btn-cannons') {
-      btn.textContent = inArcCount > 0 ? `⚡ Pulse Cannons ×${inArcCount}${inArcCount < 4 ? ' IN ARC' : ''}` : '⚡ Cannons — OUT OF ARC';
+      const shipCfg = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
+      const maxN    = shipCfg.primaryWeaponKeys.length;
+      btn.textContent = inArcCount > 0 ? `⚡ ${shipCfg.primaryLabel} ×${inArcCount}${inArcCount < maxN ? ' IN ARC' : ''}` : `⚡ ${shipCfg.primaryLabel} — OUT OF ARC`;
     }
   };
-  _arcGrey('btn-cannons',    ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'], 'cannons');
+  const _primKeys = _isEnt2
+    ? ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose']
+    : ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
+  _arcGrey('btn-cannons',    _primKeys, 'cannons');
   _arcGrey('btn-nose',       ['emitter_nose'],         'nose');
   _arcGrey('btn-quantum',    ['torpedo_quantum'],       'quantum');
   _arcGrey('btn-photon',     ['torpedo_photon'],        'photon');
   _arcGrey('btn-quantum-aft',['torpedo_quantum_aft'],   'quantum-aft');
   _arcGrey('btn-photon-aft', ['torpedo_photon_aft'],    'photon-aft');
   _arcGrey('btn-alpha',      ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose','torpedo_quantum','torpedo_quantum_aft'], 'alpha');
-  const bfArcCount = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower']
-    .filter(k => ARRAYS_DICTIONARY[k].arc.includes(_vec)).length;
+  const bfPrimKeys = _isEnt2
+    ? ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose']
+    : ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
+  const bfArcCount = bfPrimKeys.filter(k => _aw2[k] && _aw2[k].arc.includes(_vec)).length;
   const bfArcBtn = document.getElementById('btn-burst-fire');
   if (bfArcBtn && bfArcCount === 0) { bfArcBtn.style.opacity = '0.35'; bfArcBtn.style.pointerEvents = 'none'; }
   else if (bfArcBtn) { bfArcBtn.style.opacity = ''; bfArcBtn.style.pointerEvents = ''; }
 
-  // Burst-fire button state
+  // Burst / Concentrated fire button state
   const bfBtn = document.getElementById('btn-burst-fire');
   if (bfBtn) {
+    const _burstLabel = _isEnt2 ? 'CONCENTRATED FIRE' : 'BURST SALVO — 4-CANNON BARRAGE';
     if (!G.burstFireReady) {
-      bfBtn.textContent = `⚡⚡ BURST CD ${Math.ceil(G.burstFireCooldown/1000)}s`;
+      bfBtn.textContent = `⚡⚡ ${_isEnt2 ? 'CONC' : 'BURST'} CD ${Math.ceil(G.burstFireCooldown/1000)}s`;
       bfBtn.style.background = 'var(--dim2)'; bfBtn.style.color = '#aabbcc';
     } else {
-      bfBtn.textContent = '⚡⚡ BURST SALVO — 4-CANNON BARRAGE';
+      bfBtn.textContent = `⚡⚡ ${_burstLabel}`;
       bfBtn.style.background = ''; bfBtn.style.color = '';
     }
   }
@@ -362,7 +389,7 @@ function concludeSimulationRun(victory, msg, escaped) {
     const phaseStr = s.enemyPhaseReached ? s.enemyPhaseReached.toUpperCase() : '—';
     const row = (label, val) => `<div style="display:flex;justify-content:space-between;padding:1px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:#6688aa">${label}</span><span style="color:#ddeeff">${val}</span></div>`;
     box.innerHTML = `
-      <div style="font-family:'Antonio';font-size:12px;color:var(--o);font-weight:bold;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid var(--o);padding-bottom:4px;">TACTICAL DEBRIEF — USS DEFIANT NX-74205</div>
+      <div style="font-family:'Antonio';font-size:12px;color:var(--o);font-weight:bold;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid var(--o);padding-bottom:4px;">TACTICAL DEBRIEF — ${(G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).label} ${(G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).registry}</div>
       <div style="font-size:10px;margin-bottom:8px;">
         ${row('Enemy vessel', `${cfg.label || G.enemyArchetype} [${cfg.faction || '—'}]`)}
         ${row('Phase reached', phaseStr)}
@@ -371,8 +398,8 @@ function concludeSimulationRun(victory, msg, escaped) {
       </div>
       <div style="font-family:'Antonio';font-size:10px;color:var(--b);letter-spacing:1px;margin:6px 0 3px;">WEAPONS FIRED</div>
       <div style="font-size:10px;margin-bottom:8px;">
-        ${row('Pulse Cannons', s.weaponsFired.cannons)}
-        ${row('Nose Emitter', s.weaponsFired.nose)}
+        ${row(G.playerShipKey === 'enterprise_e' ? 'Phaser Arrays' : 'Pulse Cannons', s.weaponsFired.cannons)}
+        ${row(G.playerShipKey === 'enterprise_e' ? 'Stardrive Arrays' : 'Nose Emitter', s.weaponsFired.nose)}
         ${row('Quantum Torpedoes', s.weaponsFired.quantum)}
         ${row('Photon Torpedoes', s.weaponsFired.photon)}
         ${row('Total volleys', totalWpn)}

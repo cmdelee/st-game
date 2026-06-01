@@ -114,6 +114,20 @@
       Select your operational assignment. The alternative deck matrix will automatically delegate tasks to computer subroutines.
     </p>
 
+    <!-- ── VESSEL SELECTION ── -->
+    <div id="ship-select-section" style="margin-bottom:10px;">
+      <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:6px;">— SELECT YOUR VESSEL —</div>
+      <div style="display:flex; gap:10px; justify-content:center; margin-bottom:6px;">
+        <button id="ship-btn-defiant" class="pill-action-btn" style="font-size:11px; padding:8px 14px; background:var(--o); color:#000; flex:1;" onclick="selectPlayerShip('defiant')">
+          ⬟ USS DEFIANT NX-74205<br><span style="font-size:9px;">Defiant-class · Ablative armor · Cloak · Pulse cannons</span>
+        </button>
+        <button id="ship-btn-enterprise_e" class="pill-action-btn" style="font-size:11px; padding:8px 14px; background:var(--dim2); color:#aabbcc; flex:1;" onclick="selectPlayerShip('enterprise_e')">
+          ◈ USS ENTERPRISE NCC-1701-E<br><span style="font-size:9px;">Sovereign-class · Regen shields · Type-XII arrays · Saucer Sep</span>
+        </button>
+      </div>
+      <div id="ship-desc" style="font-size:10px; color:#7799dd; text-align:center; min-height:16px;">Heavily armed escort. Ablative armor, cloaking device, devastating pulse cannon burst salvo.</div>
+    </div>
+
     <!-- ── SINGLE ENGAGEMENT ── -->
     <div id="campaign-diff-section">
       <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:8px;">— SINGLE ENGAGEMENT —</div>
@@ -311,9 +325,9 @@
         <button class="pill-action-btn warn-btn" style="font-size:9px; padding:4px; width:100%;" onclick="activateEmergencyBattery()">⚡ ACTIVATE BATTERY</button>
       </div>
 
-      <!-- Cloaking device -->
-      <div style="background:#070d1a; border:1px solid var(--p); padding:7px; border-radius:4px; flex:1; min-width:0;">
-        <div style="font-family:'Antonio'; color:var(--p); font-size:11px; margin-bottom:3px;">CLOAKING DEVICE</div>
+      <!-- Cloaking device / Saucer separation -->
+      <div id="eng-cloak-section" style="background:#070d1a; border:1px solid var(--p); padding:7px; border-radius:4px; flex:1; min-width:0;">
+        <div style="font-family:'Antonio'; color:var(--p); font-size:11px; margin-bottom:3px;" id="lbl-eng-cloak-title">CLOAKING DEVICE</div>
         <div style="font-size:9px; color:#aabbcc; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="lbl-cloak-eng-status">Ready</div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
           <button class="pill-action-btn p-btn" style="font-size:9px; padding:4px;" id="btn-cloak-eng" onclick="toggleCloakingDevice()">◉ Cloak</button>
@@ -340,8 +354,8 @@
         </div>
       </div>
 
-      <!-- Ablative status -->
-      <div style="background:#070d1a; border:1px solid rgba(0,204,102,0.4); padding:7px; border-radius:4px; flex:1; min-width:0;">
+      <!-- Ablative status (Defiant only) -->
+      <div id="eng-ablative-section" style="background:#070d1a; border:1px solid rgba(0,204,102,0.4); padding:7px; border-radius:4px; flex:1; min-width:0;">
         <div style="font-family:'Antonio'; color:var(--green); font-size:11px; margin-bottom:4px;">ABLATIVE ARMOUR</div>
         <div id="lbl-ablative-status" style="font-size:12px; letter-spacing:2px; line-height:1.6;">▊▊▊▊▊</div>
         <div style="font-size:8px; color:#aabbcc; margin-top:3px;">Auto-regenerates between hits</div>
@@ -394,28 +408,12 @@
       <!-- Cloak status bar -->
       <div id="cloak-status-bar"><span id="cloak-status-text"></span><span id="cloak-power-drain" style="font-size:10px; color:#cc99ff;"></span></div>
 
-      <!-- Fire buttons -->
-      <div class="button-matrix-grid">
-        <button class="pill-action-btn" style="grid-column:span 2;" id="btn-cannons" onclick="firePulseCannons()">⚡ All Pulse Cannons ×4</button>
-        <button class="pill-action-btn p-btn"  id="btn-nose"        onclick="fireSelectedArray('emitter_nose')">Nose Beam <span style="font-size:9px;">[FWD]</span></button>
-        <button class="pill-action-btn p-btn"  id="btn-quantum"     onclick="fireSelectedArray('torpedo_quantum')">Quantum Torpedo</button>
-        <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-burst-fire" onclick="executeBurstFireSalvo()">⚡⚡ BURST SALVO — 4-CANNON BARRAGE</button>
-        <button class="pill-action-btn p-btn"  id="btn-photon"      onclick="fireSelectedArray('torpedo_photon')">Photon Torp <span style="font-size:9px;">[No lock]</span></button>
-        <button class="pill-action-btn p-btn"  id="btn-quantum-aft" onclick="fireSelectedArray('torpedo_quantum_aft')">Aft Quantum <span style="font-size:9px;">[AFT]</span></button>
-        <button class="pill-action-btn"        id="btn-photon-aft"  onclick="fireSelectedArray('torpedo_photon_aft')">Aft Photon <span style="font-size:9px;">[AFT/No lock]</span></button>
-        <button class="pill-action-btn warn-btn" id="btn-cloak"     onclick="toggleCloakingDevice()">◉ ENGAGE CLOAK</button>
-        <button class="pill-action-btn"         id="btn-shield-freq" onclick="rotateShieldFrequency()">🛡 ROTATE FREQ</button>
-        <button class="pill-action-btn p-btn"   id="btn-evasive"    onclick="executeEvasivePattern()">◈ EVASIVE PATTERN</button>
-        <button class="pill-action-btn red-btn" style="grid-column:span 1;" id="btn-alpha" onclick="executeAlphaSalvoFire()">ALPHA SALVO — ALL IN ARC</button>
-      </div>
+      <!-- Fire buttons — rebuilt by rebuildWeaponFireMatrix() on ship select -->
+      <div class="button-matrix-grid" id="weapon-fire-matrix"></div>
 
-      <!-- Overload weapon modes -->
+      <!-- Overload weapon modes — rebuilt by rebuildWeaponFireMatrix() -->
       <div class="overload-header">⚠ OVERLOAD MODES — HIGH RISK</div>
-      <div class="button-matrix-grid">
-        <button class="pill-action-btn red-btn" id="btn-overcharge"   onclick="executeCannonOvercharge()">⚡ OVERCHARGE<br><span style="font-size:11px;">Cannon +50% · Breaker risk · CD 30s</span></button>
-        <button class="pill-action-btn red-btn" id="btn-unstable-torp" onclick="executeUnstableTorpedo()">☢ UNSTABLE TORP<br><span style="font-size:11px;">Quantum +70% · Misfire 25% · CD 35s</span></button>
-        <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-power-dump" onclick="executeEmergencyPowerDump()">⚡⚡ EMERGENCY POWER DUMP — Wpn+40% 10s · EPS spike · Shld−30% · CD 50s</button>
-      </div>
+      <div class="button-matrix-grid" id="overload-fire-matrix"></div>
 
       <!-- Enemy subsystem targeting -->
       <div class="subsystem-target-section">
@@ -554,7 +552,7 @@
             <button class="pill-action-btn warn-btn" id="btn-helm-come-about"    onclick="executeComeAbout()">↺ COME ABOUT<br><span style="font-size:11px; color:#ffcc88;">3s rotate · CD 18s</span></button>
             <button class="pill-action-btn p-btn"    id="btn-helm-picard"        onclick="executePicardManoeuver()">∞ PICARD MANOEUVER<br><span style="font-size:11px; color:#aaddff;">Dmg×1.5 · No fire · CD 60s</span></button>
             <button class="pill-action-btn warn-btn" onclick="attemptEmergencyWarp()">⚡ EMERGENCY WARP — Hull ≤35%</button>
-            <button class="pill-action-btn p-btn"    id="btn-helm-cloak" onclick="toggleCloakingDevice()">◉ ENGAGE CLOAK<br><span style="font-size:11px; color:#cc99ff;">Health ≥20% · CD 25s</span></button>
+            <button class="pill-action-btn p-btn"    id="btn-helm-cloak" onclick="activateShipSpecialAbility()">◉ ENGAGE CLOAK<br><span style="font-size:11px; color:#cc99ff;" id="btn-helm-cloak-sub">Health ≥20% · CD 25s</span></button>
           </div>
         </div>
 
@@ -591,7 +589,7 @@
     <div class="control-deck-plate" id="deck-captain">
 
       <div class="section-header">
-        <span>⭐ Captain's Chair — USS Defiant NX-74205</span>
+        <span id="captain-chair-header">⭐ Captain's Chair — USS Defiant NX-74205</span>
         <span class="delegation-badge" style="background:rgba(255,170,0,0.2); color:var(--warn); border:1px solid var(--warn);">ALL STATIONS AUTO</span>
       </div>
 
@@ -664,7 +662,7 @@
           <button class="pill-action-btn red-btn"  id="cap-ord-fire_burst"   onclick="capFireBurst()"><span>Burst</span></button>
           <button class="pill-action-btn red-btn"  id="cap-ord-fire_alpha"   onclick="capFireAlpha()"><span>Alpha</span></button>
           <button class="pill-action-btn"          id="cap-ord-rotate_freq"  onclick="capRotateFreq()"><span>Rotate Freq</span></button>
-          <button class="pill-action-btn warn-btn" id="cap-ord-cloak"        onclick="capCloakToggle()"><span>◉ Cloak</span></button>
+          <button class="pill-action-btn warn-btn" id="cap-ord-cloak"        onclick="capCloakToggle()"><span id="cap-cloak-label">◉ Cloak</span></button>
           <button class="pill-action-btn"          id="cap-ord-tgt_hull"     onclick="capTgtHull()"><span>Tgt Hull</span></button>
           <button class="pill-action-btn"          id="cap-ord-tgt_shields"  onclick="capTgtShields()"><span>Tgt Shields</span></button>
           <button class="pill-action-btn warn-btn" id="cap-ord-tgt_weapons"  onclick="capTgtWeaponsAny()"><span>Tgt Weapons</span></button>
@@ -778,7 +776,7 @@
         <span>Used: <span id="txt-warp-used" style="color:#fff;">0</span>MW</span>
         <span>Max:  <span id="txt-warp-max"  style="color:var(--o);">120</span>MW</span>
       </div>
-      <div style="font-size:9px; color:var(--p); font-weight:bold; margin-top:2px; text-transform:uppercase;">Cloak Power</div>
+      <div style="font-size:9px; color:var(--p); font-weight:bold; margin-top:2px; text-transform:uppercase;" id="lbl-cloak-footer">Cloak Power</div>
       <div class="bar-rail" style="height:6px; margin-bottom:2px;"><div class="bar-fill" id="bar-cloak-power" style="color:var(--p); width:100%;"></div></div>
       <div style="font-size:9px; color:#aabbcc;" id="txt-cloak-power-status">Ready</div>
     </div>
@@ -792,19 +790,19 @@
 <!-- ═══════════════════════════════════════════════════════════
      SCRIPTS — load order: state → engineering → tactical → canvas → ui → main
 ════════════════════════════════════════════════════════════ -->
-<script src="config.js?v=1"></script>
-<script src="state.js?v=9"></script>
-<script src="engineering.js?v=8"></script>
+<script src="config.js?v=2"></script>
+<script src="state.js?v=10"></script>
+<script src="engineering.js?v=9"></script>
 <script src="crew.js?v=1"></script>
 <script src="sensors.js?v=1"></script>
-<script src="tactical.js?v=9"></script>
+<script src="tactical.js?v=10"></script>
 <script src="helm.js?v=8"></script>
-<script src="enemy-ai.js?v=1"></script>
-<script src="command.js?v=1"></script>
+<script src="enemy-ai.js?v=2"></script>
+<script src="command.js?v=2"></script>
 <script src="canvas-three.js?v=8"></script>
-<script src="canvas-2d.js?v=8"></script>
-<script src="ui.js?v=8"></script>
-<script src="main.js?v=8"></script>
+<script src="canvas-2d.js?v=9"></script>
+<script src="ui.js?v=9"></script>
+<script src="main.js?v=9"></script>
 
 </body>
 </html>

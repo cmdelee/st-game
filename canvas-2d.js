@@ -168,6 +168,11 @@ function renderEnemySchematicCanvas() {
 // ============================================================
 function renderHullSchematicCanvas() {
   if (!hullCanvas || !hullCtx) return;
+  if (G.playerShipKey === 'enterprise_e') { _renderEnterpriseESchematic(); return; }
+  _renderDefiantSchematic();
+}
+
+function _renderDefiantSchematic() {
   const bb = hullCanvas.parentElement.getBoundingClientRect();
   const w = bb.width, h = bb.height; if (w <= 0 || h <= 0) return;
   const ctx = hullCtx;
@@ -295,6 +300,157 @@ function renderHullSchematicCanvas() {
     ctx.fillStyle = 'rgba(153,102,204,0.15)'; ctx.fillRect(rx-2, h-16, w-rx, 14);
     ctx.fillStyle = C.p; ctx.font = 'bold 9px Antonio'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillText(`◉ CLOAKED  PWR:${Math.round(G.cloakPowerReserve)}%`, rx, h-9);
+  }
+}
+
+// ============================================================
+// ENTERPRISE-E HULL SCHEMATIC
+// ============================================================
+function _renderEnterpriseESchematic() {
+  const bb = hullCanvas.parentElement.getBoundingClientRect();
+  const w = bb.width, h = bb.height; if (w <= 0 || h <= 0) return;
+  const ctx = hullCtx;
+  ctx.fillStyle = '#000207'; ctx.fillRect(0, 0, w, h);
+
+  const shipCfg = G.playerShipConfig || PLAYER_SHIP_CONFIGS.enterprise_e;
+  ctx.fillStyle = C.b; ctx.font = 'bold 10px Antonio'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('USS ENTERPRISE NCC-1701-E — STRUCTURAL', 8, 8);
+  ctx.fillStyle = '#5566aa'; ctx.font = '9px Roboto Mono';
+  ctx.fillText('Sovereign-class · 685m · Regenerative shielding', 8, 20);
+
+  const cx = w * 0.32, cy = h * 0.50;
+  const hullPct   = G.player.hull / G.player.maxHull;
+  const hullColor = hullPct > 0.65 ? C.green : hullPct > 0.35 ? C.warn : C.red;
+  const sc        = 1.0;   // scale factor
+
+  ctx.strokeStyle = hullColor; ctx.lineWidth = 2;
+  ctx.fillStyle   = `rgba(10,20,60,${0.15 + hullPct * 0.35})`;
+
+  // Saucer section (large ellipse, top half of ship)
+  const sauc_rx = 52 * sc, sauc_ry = 42 * sc;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - 30 * sc, sauc_rx, sauc_ry, 0, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+
+  // Stardrive secondary hull (smaller elongated body)
+  ctx.fillStyle = `rgba(5,15,45,${0.15 + hullPct * 0.35})`;
+  ctx.beginPath();
+  ctx.moveTo(cx - 16 * sc, cy + 8 * sc);
+  ctx.lineTo(cx + 16 * sc, cy + 8 * sc);
+  ctx.lineTo(cx + 14 * sc, cy + 72 * sc);
+  ctx.lineTo(cx,           cy + 82 * sc);
+  ctx.lineTo(cx - 14 * sc, cy + 72 * sc);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // Nacelle pylons
+  ctx.strokeStyle = `rgba(${hullPct > 0.5 ? '68,119,255' : '255,170,0'},0.6)`; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx - 20 * sc, cy + 20 * sc); ctx.lineTo(cx - 60 * sc, cy + 30 * sc); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + 20 * sc, cy + 20 * sc); ctx.lineTo(cx + 60 * sc, cy + 30 * sc); ctx.stroke();
+
+  // Nacelles
+  ctx.strokeStyle = hullColor; ctx.lineWidth = 2;
+  ctx.fillStyle = `rgba(10,30,80,${0.15 + hullPct * 0.3})`;
+  [[-60, 30], [60, 30]].forEach(([nx, ny]) => {
+    ctx.beginPath();
+    ctx.ellipse(cx + nx * sc, cy + ny * sc, 12 * sc, 6 * sc, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    // Bussard collectors (reddish glow on nacelle front)
+    const grad = ctx.createRadialGradient(cx + (nx - (nx > 0 ? 11 : -11)) * sc, cy + ny * sc, 1, cx + (nx - (nx > 0 ? 11 : -11)) * sc, cy + ny * sc, 8);
+    grad.addColorStop(0, 'rgba(255,100,50,0.6)');
+    grad.addColorStop(1, 'rgba(255,100,50,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx + (nx - (nx > 0 ? 11 : -11)) * sc, cy + ny * sc, 8 * sc, 0, Math.PI * 2); ctx.fill();
+  });
+
+  // Saucer separation overlay
+  if (G.saucerSepActive) {
+    const sep = 8 + Math.sin(performance.now() * 0.005) * 4;
+    ctx.strokeStyle = `rgba(0,204,102,${0.5 + Math.sin(performance.now()*0.008)*0.3})`; ctx.lineWidth = 2; ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.ellipse(cx, cy - 30 * sc, sauc_rx + 6, sauc_ry + 6, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(0,204,102,0.15)'; ctx.font = 'bold 10px Antonio'; ctx.textAlign = 'center';
+    ctx.fillText('SAUCER SEPARATED', cx, cy - 30 * sc);
+  }
+
+  // System nodes — mapped to Sovereign layout
+  const sPos = [
+    {k:'cannon_pu',x:-32,y:-38,l:'DRS'},{k:'cannon_pl',x:-32,y:-18,l:'VNT'},
+    {k:'cannon_su',x:32, y:-38,l:'DRS'},{k:'cannon_sl',x:32, y:-18,l:'VNT'},
+    {k:'nose_beam',x:0,  y:55, l:'SDR'},{k:'torpedoes',x:0,  y:-60,l:'TRP'},
+    {k:'engines',  x:0,  y:75, l:'ENG'},{k:'sensors',  x:44, y:-26,l:'SEN'},
+    {k:'shields',  x:-44,y:-26,l:'SHD'},{k:'cloak_dev',x:0,  y:20, l:'SSP'},
+    {k:'warp_core',x:0,  y:40, l:'WRP'}
+  ];
+  sPos.forEach(sp => {
+    const sys = G.systems[sp.k]; if (!sys) return;
+    const h2  = sys.health;
+    const col = sys.tripped ? 'rgba(255,51,51,1)' : h2 > 70 ? 'rgba(68,119,255,0.9)' : h2 > 35 ? 'rgba(255,170,0,0.9)' : 'rgba(255,51,51,1)';
+    const r   = sys.tripped ? 7 : 4;
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx + sp.x, cy + sp.y, r, 0, Math.PI * 2); ctx.fill();
+    if (h2 < 70 || sys.tripped) { ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx + sp.x, cy + sp.y, r + 3, 0, Math.PI * 2); ctx.stroke(); }
+    if (G.repairTeams.some(t => t.sysKey === sp.k)) {
+      ctx.fillStyle = C.warn; ctx.font = '8px Antonio'; ctx.textAlign = 'center'; ctx.fillText('🔧', cx + sp.x, cy + sp.y - 10);
+    }
+  });
+
+  // Shield arcs
+  const shArc = [{k:'fore',s:Math.PI*1.2,e:Math.PI*1.8},{k:'port',s:Math.PI*0.6,e:Math.PI*1.2},{k:'starboard',s:Math.PI*1.8,e:Math.PI*2.4},{k:'aft',s:Math.PI*0.2,e:Math.PI*0.6}];
+  ctx.lineWidth = 2;
+  shArc.forEach(sa => {
+    const val = G.player.shields[sa.k]; const pct = val / G.player.shields.maxSectorValue;
+    ctx.strokeStyle = val > 200 ? C.b : val > 80 ? C.warn : C.red;
+    ctx.globalAlpha = 0.35 + pct * 0.65;
+    ctx.beginPath(); ctx.arc(cx, cy - 30, 62, sa.s, sa.e); ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+
+  // Right-side readout panel
+  const rx = w * 0.60; let ry = 14; const lH = 13;
+  function dRow(lbl, val, col, bg) {
+    if (bg) { ctx.fillStyle = bg; ctx.fillRect(rx-2, ry-1, w-rx-4, lH+2); }
+    ctx.fillStyle = '#6688aa'; ctx.font = '9px Roboto Mono'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(lbl, rx, ry);
+    ctx.fillStyle = col || '#fff'; ctx.font = 'bold 9px Roboto Mono'; ctx.textAlign = 'right'; ctx.fillText(val, w-6, ry);
+    ry += lH;
+  }
+  function dHdr(t) {
+    ctx.fillStyle = C.b; ctx.font = 'bold 9px Antonio'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(t, rx, ry);
+    ry += 3; ctx.strokeStyle = 'rgba(68,119,255,0.25)'; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(rx, ry+8); ctx.lineTo(w-6, ry+8); ctx.stroke();
+    ry += lH;
+  }
+
+  dHdr('ENTERPRISE HULL');
+  dRow('Integrity',  `${Math.ceil(G.player.hull)}/${G.player.maxHull}`, hullColor);
+  dRow('Status',     hullPct > 0.65 ? 'NOMINAL' : hullPct > 0.35 ? 'DAMAGED' : 'CRITICAL', hullColor);
+  dRow('Warp Core',  G.systems.warp_core.tripped ? 'OFFLINE' : `${Math.round(G.systems.warp_core.health)}%`, G.systems.warp_core.tripped ? C.red : C.green);
+  dRow('EPS Output', `${getTotalAllocatedPower()}/${getWarpOutput()}MW`, G.systems.warp_core.tripped ? C.red : C.b);
+
+  ry += 3; dHdr('REGEN SHIELDS');
+  ['fore','port','starboard','aft'].forEach(s => {
+    const sv = Math.ceil(G.player.shields[s]); const c = sv > 200 ? C.b : sv > 80 ? C.warn : C.red;
+    dRow(s.toUpperCase(), `${sv}/${G.player.shields.maxSectorValue}`, c);
+  });
+
+  ry += 3; dHdr('SAUCER SEPARATION');
+  if (G.saucerSepActive) {
+    dRow('Status',    `ACTIVE — ${Math.ceil(G.saucerSepTimer/1000)}s`, C.green, 'rgba(0,204,102,0.1)');
+  } else if (G.saucerSepCooldown > 0) {
+    dRow('Status',    `RECONNECT ${Math.ceil(G.saucerSepCooldown/1000)}s`, C.warn);
+  } else {
+    dRow('Status',    'READY', C.green);
+  }
+  dRow('Lock effect', '−60% for 15s', '#aabbcc');
+
+  ry += 3; dHdr('REGEN RATE');
+  dRow('Shield regen', `+${G.shieldRegenRate.toFixed(1)}/s ×1.4`, C.b);
+  dRow('Torps QM',     `${G.player.torpedoes}/${G.player.maxTorpedoes}`, C.t);
+  dRow('Torps PH',     `${G.player.photonTorpedoes}/${G.player.maxPhotonTorpedoes}`, C.b);
+  dRow('Tricobalt',    G.tricobalReady ? 'ARMED' : 'EXPENDED', G.tricobalReady ? C.green : C.red);
+
+  if (G.batteryActive) {
+    ctx.fillStyle = 'rgba(255,170,0,0.15)'; ctx.fillRect(rx-2, h-20, w-rx, 18);
+    ctx.fillStyle = C.warn; ctx.font = 'bold 9px Antonio'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(`⚡ BATTERY ACTIVE — ${Math.round(G.batteryCharge)}%`, rx, h-11);
   }
 }
 

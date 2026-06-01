@@ -488,8 +488,9 @@ function processEnemyAI(dt) {
   const alphaLockMod  = G.evasiveAlphaActive    ? 0.5 : 1.0;
   const picardLockMod = G.picardManoeuverActive  ? 0.0 : 1.0;
   const silentRunMod  = G.silentRunning          ? 0.6 : 1.0;
+  const saucerSepMod  = G.saucerSepActive        ? 0.4 : 1.0;  // saucer decoy −60% lock
   const phaseLockMod  = G.enemyPhaseLockMult     || 1.0;
-  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * phaseLockMod * sc);
+  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * tetryonMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * saucerSepMod * phaseLockMod * sc);
 
   // Jem'Hadar ramming check
   if (cfg.canRam && !G.enemyRammingRun) {
@@ -826,10 +827,12 @@ function processAutomatedDelegation(dt) {
         if (Math.random() < ce) {
           const warpOnline = !G.systems.warp_core.tripped || G.batteryActive;
           if (warpOnline) {
+            const _aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
             const pk = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
             pk.filter(k => {
-              const s = G.systems[ARRAYS_DICTIONARY[k].parentSystem];
-              return !s.tripped && s.health >= 15 && s.cap >= ARRAYS_DICTIONARY[k].cost;
+              if (!_aw[k]) return false;
+              const s = G.systems[_aw[k].parentSystem];
+              return !s.tripped && s.health >= 15 && s.cap >= _aw[k].cost;
             }).forEach(k => fireSelectedArray(k));
             if (Math.random() < 0.5 * ce)  fireSelectedArray('emitter_nose');
             if (Math.random() < 0.25 * ce && G.player.torpedoes > 3)       fireSelectedArray('torpedo_quantum');

@@ -41,13 +41,14 @@ function executeBurstFireSalvo() {
   if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
   if (G.lockProgress < 20) { postLogEvent("Burst fire requires ≥20% lock.", 'warn'); return; }
 
+  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
   const cannons = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
   const ready   = cannons.filter(k => {
-    if (!ARRAYS_DICTIONARY[k].arc.includes(G.helmAttackVector)) return false;
-    const s = G.systems[ARRAYS_DICTIONARY[k].parentSystem];
-    return !s.tripped && s.health >= 10 && s.cap >= ARRAYS_DICTIONARY[k].cost;
+    if (!aw[k] || !aw[k].arc.includes(G.helmAttackVector)) return false;
+    const s = G.systems[aw[k].parentSystem];
+    return !s.tripped && s.health >= 10 && s.cap >= aw[k].cost;
   });
-  if (ready.length === 0) { postLogEvent("No pulse cannons in arc and ready for burst.", 'warn'); return; }
+  if (ready.length === 0) { postLogEvent("No primary weapons in arc and ready for burst.", 'warn'); return; }
 
   postLogEvent(`BURST SALVO — ${ready.length} cannons in 800ms window!`, 'crit');
   G.burstFireReady    = false;
@@ -117,7 +118,7 @@ function fireSelectedArray(weaponKey) {
   if (G.cloakVulnTimer > 0) { postLogEvent("Cannot fire during cloak transition.", 'warn'); return; }
   if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
 
-  const weapon    = ARRAYS_DICTIONARY[weaponKey]; if (!weapon) return;
+  const weapon    = (G.activeWeaponArrays || ARRAYS_DICTIONARY)[weaponKey]; if (!weapon) return;
   if (weapon.arc && weapon.arc.length > 0 && !weapon.arc.includes(G.helmAttackVector)) {
     postLogEvent(`${weapon.label} — out of firing arc on ${G.helmAttackVector.toUpperCase()} vector.`, 'warn'); return;
   }
@@ -182,7 +183,7 @@ function fireSelectedArray(weaponKey) {
   else if (_isCannon) { if (_r === 'close' || G.attackRunActive) dmg *= 1.20; else if (_r === 'long' && !G.attackRunActive) dmg *= 0.90; }
   else if (_isNose)   { if (_r === 'close') dmg *= 1.10; if (_r === 'long') dmg *= 0.90; }
 
-  if (G._overchargeActive)   dmg *= 1.50;
+  if (G._overchargeActive)   dmg *= (G._maxPhaserActive ? 1.60 : 1.50);
   if (G._unstableTorpActive) dmg *= 1.70;
   if (G.powerDumpActive)     dmg *= 1.40;
 
@@ -284,15 +285,27 @@ function applyDamageToEnemy(dmg, weapon, targetSectorOverride) {
 }
 
 function firePulseCannons() {
+  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
   const inArc = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower']
-    .filter(k => ARRAYS_DICTIONARY[k].arc.includes(G.helmAttackVector));
-  if (inArc.length === 0) { postLogEvent("No pulse cannons bear on current attack vector.", 'warn'); return; }
+    .filter(k => aw[k] && aw[k].arc.includes(G.helmAttackVector));
+  if (inArc.length === 0) { postLogEvent("No primary weapons bear on current attack vector.", 'warn'); return; }
   inArc.forEach(k => fireSelectedArray(k));
 }
+
+// Enterprise-E: fire all in-arc phaser arrays (4 sector arrays + stardrive)
+function fireAllPhaserArrays() {
+  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  const keys = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
+  const inArc = keys.filter(k => aw[k] && aw[k].arc.includes(G.helmAttackVector));
+  if (inArc.length === 0) { postLogEvent("No phaser arrays bear on current attack vector.", 'warn'); return; }
+  inArc.forEach(k => fireSelectedArray(k));
+}
+
 function executeAlphaSalvoFire() {
+  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
   ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower',
    'emitter_nose','torpedo_quantum','torpedo_photon','torpedo_quantum_aft','torpedo_photon_aft']
-    .filter(k => ARRAYS_DICTIONARY[k].arc.includes(G.helmAttackVector))
+    .filter(k => aw[k] && aw[k].arc.includes(G.helmAttackVector))
     .forEach(k => fireSelectedArray(k));
 }
 
@@ -302,8 +315,9 @@ function executeCannonOvercharge() {
   if (!G.overchargeReady) { postLogEvent(`Overcharge capacitors resetting — ${Math.ceil(G.overchargeCooldown/1000)}s.`, 'warn'); return; }
   if (G.cloaked || G.cloakVulnTimer > 0) { postLogEvent("Cannot fire while cloaking.", 'warn'); return; }
   if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
+  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
   const cannonKeys = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
-  const ready = cannonKeys.filter(k => { const sys = G.systems[ARRAYS_DICTIONARY[k].parentSystem]; return sys && !sys.tripped && sys.health >= 10 && sys.cap >= ARRAYS_DICTIONARY[k].cost; });
+  const ready = cannonKeys.filter(k => { if (!aw[k]) return false; const sys = G.systems[aw[k].parentSystem]; return sys && !sys.tripped && sys.health >= 10 && sys.cap >= aw[k].cost; });
   if (ready.length === 0) { postLogEvent("No cannon capacitors charged for overcharge.", 'warn'); return; }
   postLogEvent("CANNON OVERCHARGE — +50% yield, high breaker risk!", 'crit');
   G.overchargeReady   = false;
@@ -311,7 +325,7 @@ function executeCannonOvercharge() {
   ready.forEach((k, i) => {
     setTimeout(() => {
       if (G.dead) return;
-      const weapon = ARRAYS_DICTIONARY[k]; const sys = G.systems[weapon.parentSystem];
+      const weapon = aw[k]; const sys = G.systems[weapon.parentSystem];
       if (!sys || sys.tripped || sys.cap < weapon.cost) return;
       G._overchargeActive = true; try { fireSelectedArray(k); } finally { G._overchargeActive = false; }
       sys.stress = Math.min(100, sys.stress + 55);
@@ -401,6 +415,7 @@ function showCloakVulnOverlay(show) {
 }
 
 function updateCloakButton() {
+  if (G.playerShipKey === 'enterprise_e') { updateSaucerSepButton(); return; }
   const dev = G.systems.cloak_dev;
   ['btn-cloak','btn-cloak-eng'].forEach(id => {
     const btn = document.getElementById(id); if (!btn) return;
@@ -419,4 +434,119 @@ function updateCloakButton() {
     }
   });
   updateEngUtilityPanel();
+}
+
+// ── Enterprise-E: Saucer Separation ──────────────────────────
+// Separates saucer from stardrive. Creates false contact, reducing enemy lock −60% for 15s.
+// Stardrive section continues engagement. Cooldown 50s.
+function toggleSaucerSeparation() {
+  if (!G.running || G.dead) return;
+  if (G.playerShipKey !== 'enterprise_e') return;
+  if (G.saucerSepCooldown > 0) { postLogEvent(`Saucer separation recharging — ${Math.ceil(G.saucerSepCooldown/1000)}s.`, 'warn'); return; }
+  if (G.saucerSepActive)       { postLogEvent("Saucer separation already active.", 'warn'); return; }
+  if (G.systems.engines.health < 20 || G.systems.engines.tripped) { postLogEvent("Engines too damaged for saucer separation.", 'crit'); return; }
+
+  G.saucerSepActive   = true;
+  G.saucerSepTimer    = 15000;
+  G.saucerSepCooldown = 50000;
+  G.systems.engines.stress = Math.min(100, G.systems.engines.stress + 20);
+  postLogEvent("SAUCER SEPARATION — stardrive section engaging independently! Enemy lock −60% for 15s.", 'good');
+  postLogEvent("Saucer section running decoy pattern — helm control restricted to stardrive.", 'info');
+  updateSaucerSepButton();
+}
+
+function updateSaucerSepButton() {
+  const btn = document.getElementById('btn-cloak'); if (!btn) return;
+  if (G.saucerSepActive) {
+    btn.textContent = `◯ SEPARATING ${Math.ceil(G.saucerSepTimer/1000)}s`;
+    btn.style.background = 'var(--green)'; btn.style.color = '#000';
+  } else if (G.saucerSepCooldown > 0) {
+    btn.textContent = `◯ RECONNECTING ${Math.ceil(G.saucerSepCooldown/1000)}s`;
+    btn.style.background = 'var(--dim2)'; btn.style.color = '#aabbcc';
+  } else {
+    btn.textContent = '◯ SAUCER SEPARATION';
+    btn.style.background = ''; btn.style.color = '';
+    btn.className = 'pill-action-btn warn-btn';
+  }
+}
+
+// ── Enterprise-E: Maximum Phaser Output ──────────────────────
+// All phaser arrays +60% yield for the next salvo only.
+function executeMaxPhaserOutput() {
+  if (!G.running || G.dead) return;
+  if (!G.overchargeReady) { postLogEvent(`Phaser capacitors resetting — ${Math.ceil(G.overchargeCooldown/1000)}s.`, 'warn'); return; }
+  if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
+  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  const phaserKeys = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
+  const ready = phaserKeys.filter(k => { if (!aw[k]) return false; const sys = G.systems[aw[k].parentSystem]; return sys && !sys.tripped && sys.health >= 10 && sys.cap >= aw[k].cost && aw[k].arc.includes(G.helmAttackVector); });
+  if (ready.length === 0) { postLogEvent("No phaser arrays in arc and charged.", 'warn'); return; }
+  postLogEvent("MAXIMUM PHASER OUTPUT — all arrays +60% yield, firing sequence!", 'crit');
+  G.overchargeReady    = false;
+  G.overchargeCooldown = 30000;
+  ready.forEach((k, i) => {
+    setTimeout(() => {
+      if (G.dead) return;
+      G._overchargeActive = true; G._maxPhaserActive = true;
+      try { fireSelectedArray(k); } finally { G._overchargeActive = false; G._maxPhaserActive = false; }
+      G.epsHeat = Math.min(100, G.epsHeat + 6);
+    }, i * 180);
+  });
+}
+
+// ── Enterprise-E: Tricobalt Warhead ──────────────────────────
+// 300 yield, no lock required. Bypasses normal torpedo mechanics.
+// One warhead per engagement (G.tricobalReady). Used in First Contact.
+function executeTricobalWarhead() {
+  if (!G.running || G.dead) return;
+  if (!G.tricobalReady) { postLogEvent("Tricobalt warhead — only one per engagement. Already expended.", 'warn'); return; }
+  if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
+  const sys = G.systems.torpedoes;
+  if (!sys || sys.tripped || sys.health < 10) { postLogEvent("Torpedo launcher offline.", 'warn'); return; }
+
+  G.tricobalReady = false;
+  postLogEvent("TRICOBALT WARHEAD AWAY — massive subspace detonation!", 'crit');
+
+  // Tricobalt bypasses shields if enemy cloaked (as in First Contact)
+  let dmg = 250 + Math.random() * 100;
+  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
+  // Tricobalt is a subspatial weapon — partially bypasses shields (40% direct hull damage)
+  const shieldSector = G.threat.shields[G.helmAttackVector] || G.threat.shields.fore;
+  const shieldBlock  = shieldSector * 0.60;   // 40% bleed-through to hull
+  const shieldDmg    = Math.min(shieldSector, dmg * 0.60);
+  const hullDmg      = Math.max(0, dmg - shieldBlock);
+  G.threat.shields[G.helmAttackVector] = Math.max(0, (G.threat.shields[G.helmAttackVector] || 0) - shieldDmg);
+  applyDamageToEnemy(hullDmg, 'torpedoes');
+  G.score.totalDmgDealt     += dmg;
+  G.score.weaponsFired.quantum++;
+  G.renderedBeamsVector.push({ type:'torpedo', fromPlayer:true, targetSector:G.helmAttackVector, trackingStartTime:performance.now(), duration:900, col:'#ff6600' });
+  postLogEvent(`Tricobalt detonation — ${Math.round(dmg)} total yield. ${Math.round(hullDmg)} hull damage. Shields stripped.`, 'good');
+  G.epsHeat = Math.min(100, G.epsHeat + 12);
+}
+
+// ── Enterprise-E: Concentrated Phaser Fire ───────────────────
+// All in-arc phaser arrays fire in rapid 300ms sequence (phaser burst mode).
+function executeConcentratedPhaserFire() {
+  if (!G.running || G.dead) return;
+  if (!G.burstFireReady) { postLogEvent(`Phaser emitters recharging — ${Math.ceil(G.burstFireCooldown/1000)}s.`, 'warn'); return; }
+  if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
+  if (G.lockProgress < 15) { postLogEvent("Concentrated fire requires ≥15% lock.", 'warn'); return; }
+  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  const phaserKeys = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
+  const ready = phaserKeys.filter(k => {
+    if (!aw[k] || !aw[k].arc.includes(G.helmAttackVector)) return false;
+    const s = G.systems[aw[k].parentSystem];
+    return !s.tripped && s.health >= 10 && s.cap >= aw[k].cost;
+  });
+  if (ready.length === 0) { postLogEvent("No phaser arrays in arc and charged.", 'warn'); return; }
+  postLogEvent(`CONCENTRATED FIRE — ${ready.length} arrays in 900ms sequence!`, 'crit');
+  G.burstFireReady    = false;
+  G.burstFireCooldown = 9000;
+  ready.forEach((k, i) => {
+    setTimeout(() => {
+      if (!G.dead) {
+        fireSelectedArray(k);
+        G.renderedBeamsVector.push({ type:'burst_flash', trackingStartTime:performance.now(), duration:200 });
+      }
+    }, i * 180);
+  });
 }

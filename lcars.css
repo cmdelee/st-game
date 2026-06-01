@@ -657,6 +657,21 @@ canvas { width: 100%; height: 100%; display: block; }
 @keyframes pb-fadein   { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
 @keyframes classified-pulse { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
 
+/* ── Ship selection buttons ──────────────────────────────────── */
+#ship-select-section {
+  border: 1px solid var(--dim2);
+  border-radius: 6px;
+  padding: 8px;
+  background: rgba(4,8,20,0.6);
+}
+#ship-btn-defiant, #ship-btn-enterprise_e {
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  line-height: 1.5;
+}
+#ship-btn-enterprise_e:not([style*="var(--dim2)"]) {
+  box-shadow: 0 0 12px rgba(68,119,255,0.35);
+}
+
 #pre-battle-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,2,0.92);

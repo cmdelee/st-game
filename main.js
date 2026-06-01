@@ -1,6 +1,134 @@
 'use strict';
 
 // ============================================================
+// SHIP SELECTION
+// ============================================================
+function selectPlayerShip(key) {
+  const cfg = PLAYER_SHIP_CONFIGS[key];
+  if (!cfg) return;
+  G.playerShipKey    = key;
+  G.playerShipConfig = cfg;
+  G.activeWeaponArrays = cfg.weaponArrays || ARRAYS_DICTIONARY;
+
+  // Update selection button styles
+  Object.keys(PLAYER_SHIP_CONFIGS).forEach(k => {
+    const btn = document.getElementById(`ship-btn-${k}`);
+    if (!btn) return;
+    const c = PLAYER_SHIP_CONFIGS[k];
+    if (k === key) { btn.style.background = c.accentColor; btn.style.color = k === 'defiant' ? '#000' : '#fff'; }
+    else           { btn.style.background = 'var(--dim2)';  btn.style.color = '#aabbcc'; }
+  });
+  const desc = document.getElementById('ship-desc');
+  if (desc) desc.textContent = cfg.description;
+
+  rebuildWeaponFireMatrix();
+}
+
+// Rebuild the tactical deck weapon fire and overload button grids based on active ship.
+function rebuildWeaponFireMatrix() {
+  const isEnt   = G.playerShipKey === 'enterprise_e';
+  const fireMat = document.getElementById('weapon-fire-matrix');
+  const overMat = document.getElementById('overload-fire-matrix');
+  if (!fireMat) return;
+
+  if (isEnt) {
+    fireMat.innerHTML = `
+      <button class="pill-action-btn" style="grid-column:span 2;" id="btn-cannons" onclick="fireAllPhaserArrays()">⚡ All Phaser Arrays ×5</button>
+      <button class="pill-action-btn p-btn" id="btn-nose"        onclick="fireSelectedArray('emitter_nose')">Stardrive Arrays <span style="font-size:9px;">[FWD]</span></button>
+      <button class="pill-action-btn p-btn" id="btn-quantum"     onclick="fireSelectedArray('torpedo_quantum')">Quantum Torpedo</button>
+      <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-burst-fire" onclick="executeConcentratedPhaserFire()">⚡⚡ CONCENTRATED FIRE — ALL IN-ARC PHASERS</button>
+      <button class="pill-action-btn p-btn" id="btn-photon"      onclick="fireSelectedArray('torpedo_photon')">Photon Torp <span style="font-size:9px;">[No lock]</span></button>
+      <button class="pill-action-btn p-btn" id="btn-quantum-aft" onclick="fireSelectedArray('torpedo_quantum_aft')">Aft Quantum <span style="font-size:9px;">[AFT]</span></button>
+      <button class="pill-action-btn"       id="btn-photon-aft"  onclick="fireSelectedArray('torpedo_photon_aft')">Aft Photon <span style="font-size:9px;">[AFT/No lock]</span></button>
+      <button class="pill-action-btn warn-btn" id="btn-cloak"    onclick="toggleSaucerSeparation()">◯ SAUCER SEPARATION</button>
+      <button class="pill-action-btn"         id="btn-shield-freq" onclick="rotateShieldFrequency()">🛡 ROTATE FREQ</button>
+      <button class="pill-action-btn p-btn"   id="btn-evasive"    onclick="executeEvasivePattern()">◈ EVASIVE PATTERN</button>
+      <button class="pill-action-btn red-btn" style="grid-column:span 1;" id="btn-alpha" onclick="executeAlphaSalvoFire()">ALPHA SALVO — ALL IN ARC</button>
+    `;
+    if (overMat) overMat.innerHTML = `
+      <button class="pill-action-btn red-btn" id="btn-overcharge"    onclick="executeMaxPhaserOutput()">⚡ MAX PHASER OUTPUT<br><span style="font-size:11px;">All phasers +60% · 1 salvo · CD 30s</span></button>
+      <button class="pill-action-btn red-btn" id="btn-unstable-torp" onclick="executeTricobalWarhead()">☢ TRICOBALT WARHEAD<br><span style="font-size:11px;">300 yield · No lock · 1 per engagement</span></button>
+      <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-power-dump" onclick="executeEmergencyPowerDump()">⚡⚡ EMERGENCY POWER DUMP — Wpn+40% 10s · EPS spike · Shld−30% · CD 50s</button>
+    `;
+  } else {
+    fireMat.innerHTML = `
+      <button class="pill-action-btn" style="grid-column:span 2;" id="btn-cannons" onclick="firePulseCannons()">⚡ All Pulse Cannons ×4</button>
+      <button class="pill-action-btn p-btn"  id="btn-nose"        onclick="fireSelectedArray('emitter_nose')">Nose Beam <span style="font-size:9px;">[FWD]</span></button>
+      <button class="pill-action-btn p-btn"  id="btn-quantum"     onclick="fireSelectedArray('torpedo_quantum')">Quantum Torpedo</button>
+      <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-burst-fire" onclick="executeBurstFireSalvo()">⚡⚡ BURST SALVO — 4-CANNON BARRAGE</button>
+      <button class="pill-action-btn p-btn"  id="btn-photon"      onclick="fireSelectedArray('torpedo_photon')">Photon Torp <span style="font-size:9px;">[No lock]</span></button>
+      <button class="pill-action-btn p-btn"  id="btn-quantum-aft" onclick="fireSelectedArray('torpedo_quantum_aft')">Aft Quantum <span style="font-size:9px;">[AFT]</span></button>
+      <button class="pill-action-btn"        id="btn-photon-aft"  onclick="fireSelectedArray('torpedo_photon_aft')">Aft Photon <span style="font-size:9px;">[AFT/No lock]</span></button>
+      <button class="pill-action-btn warn-btn" id="btn-cloak"     onclick="toggleCloakingDevice()">◉ ENGAGE CLOAK</button>
+      <button class="pill-action-btn"         id="btn-shield-freq" onclick="rotateShieldFrequency()">🛡 ROTATE FREQ</button>
+      <button class="pill-action-btn p-btn"   id="btn-evasive"    onclick="executeEvasivePattern()">◈ EVASIVE PATTERN</button>
+      <button class="pill-action-btn red-btn" style="grid-column:span 1;" id="btn-alpha" onclick="executeAlphaSalvoFire()">ALPHA SALVO — ALL IN ARC</button>
+    `;
+    if (overMat) overMat.innerHTML = `
+      <button class="pill-action-btn red-btn" id="btn-overcharge"    onclick="executeCannonOvercharge()">⚡ OVERCHARGE<br><span style="font-size:11px;">Cannon +50% · Breaker risk · CD 30s</span></button>
+      <button class="pill-action-btn red-btn" id="btn-unstable-torp" onclick="executeUnstableTorpedo()">☢ UNSTABLE TORP<br><span style="font-size:11px;">Quantum +70% · Misfire 25% · CD 35s</span></button>
+      <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-power-dump" onclick="executeEmergencyPowerDump()">⚡⚡ EMERGENCY POWER DUMP — Wpn+40% 10s · EPS spike · Shld−30% · CD 50s</button>
+    `;
+  }
+
+  // Update capacitor bar labels to match active weapon dictionary
+  _updateCapacitorBarLabels();
+  // Update helm cloak/saucer sep button
+  _updateSpecialAbilityButtons();
+}
+
+// Update the capacitor bar labels in the tactical deck to match active weapon names.
+function _updateCapacitorBarLabels() {
+  const arrays = G.activeWeaponArrays;
+  if (!arrays) return;
+  const tagToKey = { cpu:'cannon_port_upper', cpl:'cannon_port_lower', csu:'cannon_stbd_upper', csl:'cannon_stbd_lower', emn:'emitter_nose', tff:'torpedo_quantum', tph:'torpedo_photon', tqa:'torpedo_quantum_aft', tpa:'torpedo_photon_aft' };
+  Object.entries(tagToKey).forEach(([tag, key]) => {
+    const weapon = arrays[key]; if (!weapon) return;
+    const bar = document.getElementById(`bar-cap-${tag}`); if (!bar) return;
+    const row = bar.closest('.bar-row');
+    if (row) { const lbl = row.querySelector('.bar-label'); if (lbl) lbl.textContent = weapon.label; }
+  });
+}
+
+// Update ship-specific buttons across decks (helm cloak/saucer sep, captain label).
+function _updateSpecialAbilityButtons() {
+  const isEnt = G.playerShipKey === 'enterprise_e';
+  // Helm deck
+  const helmCloak = document.getElementById('btn-helm-cloak');
+  const helmSub   = document.getElementById('btn-helm-cloak-sub');
+  if (helmCloak) {
+    if (isEnt) { helmCloak.innerHTML = '◯ SAUCER SEP<br><span style="font-size:11px; color:#cc99ff;" id="btn-helm-cloak-sub">Engines ≥20% · CD 50s</span>'; helmCloak.onclick = toggleSaucerSeparation; }
+    else       { helmCloak.innerHTML = '◉ ENGAGE CLOAK<br><span style="font-size:11px; color:#cc99ff;" id="btn-helm-cloak-sub">Health ≥20% · CD 25s</span>'; helmCloak.onclick = toggleCloakingDevice; }
+  }
+  // Captain deck cloak label
+  const capCloak = document.getElementById('cap-cloak-label');
+  if (capCloak) capCloak.textContent = isEnt ? '◯ Saucer Sep' : '◉ Cloak';
+  // Captain chair header
+  const capHeader = document.getElementById('captain-chair-header');
+  if (capHeader && G.playerShipConfig) capHeader.textContent = `⭐ Captain's Chair — ${G.playerShipConfig.label} ${G.playerShipConfig.registry}`;
+  // Engineering utility panel ablative and cloak sections
+  const ablSection  = document.getElementById('eng-ablative-section');
+  const cloakSection = document.getElementById('eng-cloak-section');
+  if (ablSection)   ablSection.style.display   = isEnt ? 'none' : '';
+  if (cloakSection) cloakSection.style.display = isEnt ? 'none' : '';
+  // Ablative armour strip in tactical deck
+  const ablStrip = document.getElementById('ablative-armour-strip');
+  if (ablStrip) ablStrip.style.display = isEnt ? 'none' : '';
+  // Cloak status bar
+  const cloakBar = document.getElementById('cloak-status-bar');
+  if (cloakBar) cloakBar.style.display = isEnt ? 'none' : '';
+  // Right panel cloak power footer label
+  const cloakFooterLbl = document.getElementById('lbl-cloak-footer');
+  if (cloakFooterLbl) cloakFooterLbl.textContent = isEnt ? 'Saucer Sep Power' : 'Cloak Power';
+}
+
+// Shared entry point for cloak/saucer-sep from helm panel button.
+function activateShipSpecialAbility() {
+  if (G.playerShipKey === 'enterprise_e') toggleSaucerSeparation();
+  else toggleCloakingDevice();
+}
+
+// ============================================================
 // SPLASH SCREEN
 // ============================================================
 function dismissSplash() {
@@ -19,6 +147,7 @@ function dismissSplash() {
 function startCampaign(station) {
   G.campaignMode         = true;
   G.campaignStation      = station;
+  G.campaignShipKey      = G.playerShipKey;   // persist ship across all 9 levels
   G.campaignLevel        = 0;
   G.campaignScore        = 0;
   G.campaignLevelResults = [];
@@ -30,16 +159,20 @@ function _launchCampaignLevel() {
   // Save campaign state before initiateVesselSimulation resets G fields
   const savedMode    = G.campaignMode;
   const savedStation = G.campaignStation;
+  const savedShipKey = G.campaignShipKey || G.playerShipKey;
   const savedLevel   = G.campaignLevel;
   const savedScore   = G.campaignScore;
   const savedResults = [...(G.campaignLevelResults || [])];
 
+  // Ensure ship selection is correct before init
+  selectPlayerShip(savedShipKey);
   setDifficulty(entry.diff);
   initiateVesselSimulation(savedStation);
 
   // Restore campaign state (initiateVesselSimulation resets score/dead/etc)
   G.campaignMode         = savedMode;
   G.campaignStation      = savedStation;
+  G.campaignShipKey      = savedShipKey;
   G.campaignLevel        = savedLevel;
   G.campaignScore        = savedScore;
   G.campaignLevelResults = savedResults;
@@ -191,6 +324,8 @@ function returnToSetup() {
 
   const overlay = document.getElementById('overlay'); if (overlay) overlay.style.display = 'flex';
   setDifficulty(currentDifficulty);
+  // Re-apply ship selection button states
+  selectPlayerShip(G.playerShipKey || 'defiant');
 }
 
 // ============================================================
@@ -206,6 +341,20 @@ function masterSimulationCoreLoop(ts) {
   // Shield hit flash timers — must decrement or flash persists forever
   if (G.shieldHitFlash.player.timer > 0) G.shieldHitFlash.player.timer = Math.max(0, G.shieldHitFlash.player.timer - dt);
   if (G.shieldHitFlash.enemy.timer  > 0) G.shieldHitFlash.enemy.timer  = Math.max(0, G.shieldHitFlash.enemy.timer  - dt);
+
+  // Saucer separation timers (Enterprise-E)
+  if (G.saucerSepActive) {
+    G.saucerSepTimer = Math.max(0, G.saucerSepTimer - dt);
+    if (G.saucerSepTimer === 0) {
+      G.saucerSepActive = false;
+      postLogEvent("Saucer section reconnected — hull sections redocked.", 'good');
+      if (typeof updateSaucerSepButton === 'function') updateSaucerSepButton();
+    }
+  }
+  if (G.saucerSepCooldown > 0) {
+    G.saucerSepCooldown = Math.max(0, G.saucerSepCooldown - dt);
+    if (typeof updateSaucerSepButton === 'function') updateSaucerSepButton();
+  }
 
   // Cloak cooldown timers
   if (G.cloakVulnTimer > 0) G.cloakVulnTimer = Math.max(0, G.cloakVulnTimer - dt);
@@ -345,14 +494,15 @@ function initiateVesselSimulation(station) {
   G.threat.recoveryCoefficient = cfg.recoveryCoefficient;
   G.threat.fireInterval = Math.round(cfg.fireInterval * diff.enemyFireMult);
   G.threat.lockRate     = cfg.lockRate * diff.enemyLockMult;
-  G.player.hull         = Math.round(500 * diff.playerHullMult);
+  const shipCfg = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
+  G.player.hull         = Math.round(shipCfg.hull * diff.playerHullMult);
   G.player.maxHull      = G.player.hull;
-  // Items 1+2: reset shields and torpedoes
-  G.player.torpedoes      = 18;
-  G.player.maxTorpedoes   = 18;
-  G.player.photonTorpedoes    = 12;
-  G.player.maxPhotonTorpedoes = 12;
-  G.player.shields        = { fore:320, port:260, starboard:260, aft:200, maxSectorValue:320 };
+  // Reset shields and torpedoes from ship config
+  G.player.torpedoes          = shipCfg.torpedoes;
+  G.player.maxTorpedoes       = shipCfg.torpedoes;
+  G.player.photonTorpedoes    = shipCfg.photonTorpedoes;
+  G.player.maxPhotonTorpedoes = shipCfg.photonTorpedoes;
+  G.player.shields = Object.assign({}, shipCfg.shields);
 
   // Reset ablative armour — 6 layers
   G.ablative = { layers:6, layerHealth:[100,100,100,100,100,100], regenTimers:[0,0,0,0,0,0], regenProgress:[0,0,0,0,0,0] };
@@ -478,9 +628,15 @@ function initiateVesselSimulation(station) {
     G.systems[k].tripped = false;
     G.systems[k].cap = 100;
   });
-  // Restore default EPS allocations
-  const defaultPower = { cannon_pu:8, cannon_pl:8, cannon_su:8, cannon_sl:6, nose_beam:10, torpedoes:10, shields:28, sensors:16, engines:10, cloak_dev:0, warp_core:10 };
-  Object.keys(defaultPower).forEach(k => { if (G.systems[k]) G.systems[k].allocatedPower = defaultPower[k]; });
+  // Apply ship-specific system labels and default EPS allocations
+  const _shipCfg = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
+  Object.entries(_shipCfg.systemLabels).forEach(([k, label]) => { if (G.systems[k]) G.systems[k].label = label; });
+  Object.entries(_shipCfg.defaultPower).forEach(([k, pwr])   => { if (G.systems[k]) G.systems[k].allocatedPower = pwr; });
+  // Reset saucer separation and tricobalt
+  G.saucerSepActive   = false;
+  G.saucerSepTimer    = 0;
+  G.saucerSepCooldown = 0;
+  G.tricobalReady     = true;
 
   G.dead               = false;   // latent fix: ensures G.dead cleared if play-again ever added
   G.running            = false;   // will be set true after overlay hidden
@@ -526,7 +682,9 @@ function initiateVesselSimulation(station) {
   rebuildEnemyMesh();
 
   // Boot log
+  const _sc = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
   postLogEvent(`[${currentDifficulty.toUpperCase()}] ${cfg.label} (${cfg.faction}) — engaging.`, 'warn');
+  postLogEvent(`Vessel: ${_sc.label} ${_sc.registry} (${_sc.shipClass}).`, 'good');
   if (cfg.hasCloakDevice)    postLogEvent("WARNING: Enemy has cloaking capability.", 'crit');
   if (cfg.polaronWeapons)    postLogEvent("WARNING: Polaron weapons detected — bypass 30% of shields.", 'crit');
   if (cfg.adaptiveShields)   postLogEvent("WARNING: Borg adaptive shielding — switch weapons frequently.", 'crit');
@@ -535,13 +693,17 @@ function initiateVesselSimulation(station) {
   if (cfg.plasmaReloadTime)  postLogEvent(`WARNING: Romulan plasma torpedoes — catastrophic damage, ${cfg.plasmaReloadTime/1000}s reload.`, 'warn');
   if (cfg.canRam)            postLogEvent("WARNING: Jem'Hadar may attempt ramming at low hull — monitor enemy status!", 'crit');
   if (diff.targetsSystems)   postLogEvent(`[${currentDifficulty.toUpperCase()}] Enemy AI targeting player subsystems.`, 'crit');
-  postLogEvent("Ablative armour online — 6 layers protecting pressure hull.", 'good');
-  postLogEvent("Quantum torpedoes ×18 and photon torpedoes ×12 loaded.", 'info');
-  postLogEvent("Burst salvo, shield frequency rotation, and evasive pattern available.", 'info');
+  if (_sc.hasAblativeArmour)      postLogEvent("Ablative armour online — 6 layers protecting pressure hull.", 'good');
+  if (_sc.hasRegenerativeShields) postLogEvent("Regenerative shielding online — shields recover 40% faster.", 'good');
+  if (_sc.hasSaucerSep)           postLogEvent("Saucer separation system ready. Lock rate −60% for 15s — 50s recharge.", 'good');
+  postLogEvent(`Quantum torpedoes ×${_sc.torpedoes} and photon torpedoes ×${_sc.photonTorpedoes} loaded.`, 'info');
+  postLogEvent(`${_sc.hasCloakDevice ? 'Burst salvo, cloak, shield frequency rotation' : _sc.hasSaucerSep ? 'Concentrated phaser fire, saucer separation, shield frequency' : 'Burst salvo, shield frequency rotation'} and evasive pattern available.`, 'info');
   if (station === 'helm')    postLogEvent("Helm: half impulse — fore attack vector — long engagement range. Auto-tactical and auto-engineering active.", 'info');
   if (station === 'captain') postLogEvent("Captain's Chair: all stations operating under computer delegation. Issue orders via command interface.", 'info');
 
   toggleActiveDeck(station);
+  rebuildWeaponFireMatrix();     // ship-specific weapon buttons + capacitor labels
+  _updateSpecialAbilityButtons(); // helm/captain cloak↔saucer-sep labels
   buildEnemySubsystemTargetGrid();
   updateCrewStatusDisplay();
   updateWarpAvailability();
@@ -691,6 +853,8 @@ function runMasterBootSequence() {
     STARS.push({ x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight, d: Math.random() * 1.5 + 0.5, o: Math.random() });
   }
 
+  // Initialize ship selection (Defiant default)
+  selectPlayerShip('defiant');
   setDifficulty('normal');
   rebuildEngineeringMatrixInterface();
   recalculateShieldRegenRate();
