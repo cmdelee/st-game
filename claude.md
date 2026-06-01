@@ -176,20 +176,32 @@ G.score = { totalDmgDealt, volleysFired, hullBreaches, systemsDestroyed,
 
 ## Player weapons — ARRAYS_DICTIONARY
 
+Arcs are **enforced** — `fireSelectedArray` blocks a weapon if `G.helmAttackVector` is not in `weapon.arc`. Fire buttons dim and become unclickable when out of arc. The "All Pulse Cannons" button label dynamically shows how many cannons currently bear.
+
 | Key | Label | Yield | Cost | Arc | System |
 |---|---|---|---|---|---|
-| `cannon_port_upper` | Port Upper Pulse Cannon | 18 | 20 | fore, port | cannon_pu |
-| `cannon_port_lower` | Port Lower Pulse Cannon | 18 | 20 | fore, port, aft | cannon_pl |
-| `cannon_stbd_upper` | Stbd Upper Pulse Cannon | 18 | 20 | fore, starboard | cannon_su |
-| `cannon_stbd_lower` | Stbd Lower Pulse Cannon | 18 | 20 | fore, starboard, aft | cannon_sl |
-| `emitter_nose` | Heavy Nose Array Emitter | **55** | 50 | fore only | nose_beam |
-| `torpedo_quantum` | Forward Quantum Tube | 90 | 85 | fore, port, stbd | torpedoes |
-| `torpedo_photon` | Photon Torpedo Tube | 60 | 30 | fore, port, stbd | torpedoes |
+| `cannon_port_upper` | Port Upper Pulse Cannon | **22** | 20 | fore | cannon_pu |
+| `cannon_port_lower` | Port Lower Pulse Cannon | **22** | 20 | fore, port | cannon_pl |
+| `cannon_stbd_upper` | Stbd Upper Pulse Cannon | **22** | 20 | fore | cannon_su |
+| `cannon_stbd_lower` | Stbd Lower Pulse Cannon | **22** | 20 | fore, starboard | cannon_sl |
+| `emitter_nose` | Heavy Nose Array Emitter | **65** | 50 | fore only | nose_beam |
+| `torpedo_quantum` | Fwd Quantum Tube | **125** | 85 | fore, port, starboard | torpedoes |
+| `torpedo_photon` | Fwd Photon Tube | 60 | 30 | fore, port, starboard | torpedoes |
+| `torpedo_quantum_aft` | Aft Quantum Tube | **125** | 85 | aft, port, starboard | torpedoes |
+| `torpedo_photon_aft` | Aft Photon Tube | 60 | 30 | aft, port, starboard | torpedoes |
+
+**Arc coverage by attack vector:**
+- FORE: all 4 cannons + nose + fwd quantum + fwd photon (maximum firepower)
+- PORT: port-lower cannon + fwd quantum + fwd photon + aft quantum + aft photon
+- STARBOARD: stbd-lower cannon + fwd quantum + fwd photon + aft quantum + aft photon
+- AFT: aft quantum + aft photon only (all cannons and nose silent)
+
+Aft tubes share the same `torpedoes` parent system (same magazine, same power, same health). The `isQuantum`/`isPhoton` flags on the weapon entry drive all magazine/damage logic in `fireSelectedArray` — key names are not used for branching.
 
 **Quantum torpedo damage is binary:**
 - ≥60% lock → 85–115% of yield (clean hit)
 - <60% lock → 45–65% of yield (glancing)
-- Blind-fire at cloaked enemy → 40% yield
+- Blind-fire at cloaked enemy → 40% yield (works from both tubes)
 
 **Photon torpedo:** reliable flat damage, no lock scaling, no lock required to fire.
 
@@ -328,7 +340,7 @@ Engine glow intensity and Defiant drift amplitude in the 3D view both scale with
 
 ### Borg per-weapon adaptation
 - `G.enemyAdaptiveResist[weaponKey]` tracks 0–0.65 resistance per weapon
-- Builds +0.04 per hit (17 hits to cap); damage multiplied by `(1 - resist)`
+- Builds **+0.024 per hit (28 hits to cap)** — reduced from 0.04 because the Defiant's weapons were specifically engineered to cycle frequency against Borg adaptation (*The Search*); damage multiplied by `(1 - resist)`
 - Escalating damage: +10% per level, capped at 2 levels (+20% max)
 - Enemy schematic shows per-weapon resistance %
 - Milestone dialogue at 1/3/5 fully-adapted weapons
@@ -394,12 +406,77 @@ Engine glow intensity and Defiant drift amplitude in the 3D view both scale with
 | Helm | Nog | Evasive: 40% reduction | Evasive: 20% reduction |
 | Medical | Bashir | Casualty threshold ×0.7 | Casualty threshold ×0.4 |
 
+### Enemy hull milestone events (`checkEnemyHullMilestones` in enemy-ai.js)
+Fires once per threshold (75/50/25/10% hull) tracked in `G.enemyHullMilestones{}` (reset on new game). Each threshold fires:
+- Faction-specific `postLogEvent` (Klingon war cry, Romulan tactical comment, Cardassian radio dialogue, Jem'Hadar Founders oath, Borg assimilation quote)
+- Captain's Chair `postCrewReport` with tactical advisory
+- Faction-specific automatic reaction:
+  - 10% Klingon → `_triggerKlingonDeathSalvo()` — 3 rapid volleys in 1.1s
+  - 25% Romulan → `triggerEnemyCloak()` — forced emergency cloak
+  - 25% Dominion → `G.enemyPhaseFireMult` locked to 0.60 maximum
+
+### Jem'Hadar fury scaling
+Applied in `masterSimulationCoreLoop` fire cycle. Dominion faction only:
+```js
+_jemFury = Math.max(0.50, 1.0 - (1.0 - hullPct) * 0.55)
+```
+At full health: ×1.0 (normal). At 50% hull: ×0.78 (+28% faster fire). At 10% hull: ×0.50 (fire interval halved). "Victory is life — they get more dangerous as they die."
+
+### Romulan instant plasma strike on decloak
+In `triggerEnemyDecloak`: if faction is Romulan, phase is 'strike', and `G.plasmaTorpedoReady`, calls `executeThreatCounterVolley()` 800ms after decloak. Creates the terrifying DS9 decloak→immediate plasma torpedo pattern.
+
+### Enemy weapon degradation at low hull
+In `processEnemyAI`: below 35% enemy hull, 0.4% chance per frame-second of randomly degrading a live enemy weapon system by 5–17%. Represents internal battle damage spreading. Can destroy weapon systems without player targeting them. Logged as `INTEL:` when health reaches 0.
+
+### Defiant power balance (canon justification)
+| Weapon | Yield | Rationale |
+|---|---|---|
+| Pulse cannons | **22** each | *"Overpowered and overgunned for its size"* — Sisko, *The Search* |
+| Nose emitter | **65** | Heavy Type-XII array; decisive precision strike |
+| Quantum torpedo | **125** | Specifically designed to exceed Borg shielding; K'Tinga photon torps avg 125 — Defiant quantum must exceed that |
+| Photon torpedo | 60 | Reliable, unlimited-use secondary; intentionally weaker |
+| Burst fire CD | **9s** | Defiant's rapid burst sequences in DS9 were frequent and characterised its style |
+| Borg adaptation | **+0.024/hit** | Weapons cycle frequency engineered against Borg; 28 hits to cap vs 17 previously |
+
 ### Sector-weighted internal damage
 On shield breach, random system drawn from sector pool:
 - Fore → cannon_pu, cannon_su, nose_beam, torpedoes, sensors
 - Port → cannon_pu, cannon_pl, shields, sensors
 - Starboard → cannon_su, cannon_sl, shields, sensors
 - Aft → engines, warp_core, cloak_dev, cannon_pl, cannon_sl
+
+### Warp core cascade failure (`handleWarpCoreTrip`)
+On every warp core trip, an EPS backwash stress spike is applied to adjacent systems **before** the power scale-down:
+- Engines: +35 stress
+- Shields: +22 stress
+- Sensors: +15 stress
+
+If any target system's stress reaches 100 and it isn't already tripped, it trips immediately (`sys.tripped = true`), logs `EPS SURGE`, calls `checkSystemDegradationThresholds`, and fires a Captain's chair crew report. This makes triple-system cascade failures possible when an already-stressed ship loses its core.
+
+### Last stand (`checkLastStandCondition` in command.js)
+Called every frame from `masterSimulationCoreLoop`. Triggers once when `G.player.hull / G.player.maxHull ≤ 0.20` and `!G.lastStandActive`:
+- Sets `G.lastStandActive = true`
+- Adds `last-stand-flash` CSS class to `.main-viewport` (pulsing red border animation, 1.2s cycle)
+- Fires station-agnostic `postLogEvent` alerts from Worf/O'Brien/Nog
+- Captain's chair gets staggered `postCrewReport` calls (800ms / 1600ms delays for dramatic timing)
+- **Mechanical:** calls `setHelmSpeed('full')` if not already at full impulse
+- **Mechanical:** boosts shield `allocatedPower` by 5MW if warp output has headroom; calls `recalculateShieldRegenRate()`
+- Stands down (removes class, logs recovery) when hull climbs back above 25%
+
+State: `G.lastStandActive` / `G.lastStandReported` (reset on new game in `initiateVesselSimulation`)
+
+### Post-battle debrief (`concludeSimulationRun` in ui.js)
+The `terminal-transcript-box` now renders a full tactical debrief before the battle log. Data drawn from `G.score` extended fields:
+
+```js
+G.score.weaponsFired    // { cannons, nose, quantum, photon } — tracked per shot in fireSelectedArray
+G.score.sectorBreaches  // { fore, port, starboard, aft } — incremented on each hull breach
+G.score.peakHullHit     // largest single residual hull hit (post-ablative)
+G.score.systemsTripped  // array of system keys that tripped during the game
+G.score.enemyPhaseReached // last phase name set in _applyPhase()
+```
+
+Debrief sections: enemy vessel + faction, phase reached, time in combat, hull at end; weapons fired by type + total yield; breaches per sector + peak hit; systems tripped list; crew status with casualty counts; last 15 battle log entries.
 
 ---
 
@@ -437,6 +514,12 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 17. Helm range not restored after attack run — `G.playerRangeBracket` stayed at 'close' permanently
 18. Dead "Quantum Torpedo" button — `fireSelectedArray('torpedo_fore')` → `'torpedo_quantum'`
 19. Helm panel rendered twice per frame — `synchronizeGlobalInterfaceDisplays` now skips `updateHelmPanel` when a helm timer is already driving it
+20. Enemy attack-vector snap ignoring weapon arc — `arc.includes(G.helmAttackVector)` guard added before the 65% snap in `executeThreatCounterVolley` (both normal and torpedo-charge paths)
+21. Enemy torpedoes targeting out-of-arc sectors — torpedo charge now reduces candidate pool to `firingArc` sectors before picking weakest
+22. Duplicate "Quantum Torpedo" button in HTML — extra `fireSelectedArray('torpedo_quantum')` button removed
+23. `fireSelectedArray` branching on `weaponKey` string — refactored to use `weapon.isQuantum`/`weapon.isPhoton` flags so aft tube variants work without separate code paths
+24. 8 enemy weapon arcs were canon-inaccurate — aft-only `['aft']` arcs corrected to `['aft','port','starboard']`; forward torpedo arcs widened to `['fore','port','starboard']`; Borg tractor corrected to omnidirectional
+25. Defiant under-powered vs canon — pulse cannons 18→22, nose emitter 55→65, quantum torpedo 90→125, burst fire CD 12s→9s; Borg adaptation rate reduced 40% (weapons engineered to cycle frequency)
 
 ---
 
@@ -444,16 +527,20 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 
 ### Tactical panel
 
+Weapon buttons dim (`opacity:0.35; pointer-events:none`) when the weapon's arc doesn't include `G.helmAttackVector`. The cannon button relabels dynamically: "⚡ Pulse Cannons ×N IN ARC".
+
 | Button | Function | Constraint |
 |---|---|---|
-| ⚡ All Pulse Cannons ×4 | `firePulseCannons()` | Cap charged |
-| Nose Beam [FWD] | `fireSelectedArray('emitter_nose')` | Fore arc, cap charged |
-| Quantum Torpedo | `fireSelectedArray('torpedo_quantum')` | ≥5% lock, torpedoes > 0 |
-| Photon Torpedo | `fireSelectedArray('torpedo_photon')` | No lock required |
-| ⚡⚡ BURST SALVO | `executeBurstFireSalvo()` | ≥20% lock, 12s CD |
-| ALPHA SALVO | `executeAlphaSalvoFire()` | All weapons |
+| ⚡ Pulse Cannons ×N | `firePulseCannons()` | In-arc cannons only; cap charged |
+| Nose Beam | `fireSelectedArray('emitter_nose')` | Fore arc only; cap charged |
+| Fwd Quantum Torpedo | `fireSelectedArray('torpedo_quantum')` | Fore/port/stbd arc; ≥5% lock; torps > 0 |
+| Fwd Photon Torpedo | `fireSelectedArray('torpedo_photon')` | Fore/port/stbd arc; no lock required |
+| Aft Quantum Torpedo | `fireSelectedArray('torpedo_quantum_aft')` | Aft/port/stbd arc; ≥5% lock; torps > 0 |
+| Aft Photon Torpedo | `fireSelectedArray('torpedo_photon_aft')` | Aft/port/stbd arc; no lock required |
+| ⚡⚡ BURST SALVO | `executeBurstFireSalvo()` | In-arc cannons only; ≥20% lock; 12s CD |
+| ALPHA SALVO | `executeAlphaSalvoFire()` | All in-arc weapons (cannons + nose + all torp tubes) |
 | ⚡ OVERCHARGE | `executeCannonOvercharge()` | 30s CD |
-| ☢ UNSTABLE TORP | `executeUnstableTorpedo()` | 35s CD |
+| ☢ UNSTABLE TORP | `executeUnstableTorpedo()` | Fires `torpedo_quantum` (fwd tube explicitly); 35s CD |
 | ⚡⚡ POWER DUMP | `executeEmergencyPowerDump()` | 50s CD |
 | ◉ ENGAGE CLOAK | `toggleCloakingDevice()` | Health ≥20%, no active cooldown |
 | 🛡 ROTATE FREQ | `rotateShieldFrequency()` | 30s CD |
