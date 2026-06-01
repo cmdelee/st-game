@@ -244,7 +244,8 @@ function startCampaign(station) {
 
 function _launchCampaignLevel() {
   const entry = CAMPAIGN_ORDER[G.campaignLevel];
-  // Save campaign state before initiateVesselSimulation resets G fields
+
+  // Save campaign state — initiateVesselSimulation will reset many G fields
   const savedMode    = G.campaignMode;
   const savedStation = G.campaignStation;
   const savedShipKey = G.campaignShipKey || G.playerShipKey;
@@ -252,9 +253,13 @@ function _launchCampaignLevel() {
   const savedScore   = G.campaignScore;
   const savedResults = [...(G.campaignLevelResults || [])];
 
-  // Ensure ship selection is correct before init
+  // Set the correct archetype and difficulty BEFORE init so the pre-battle
+  // briefing is built for the right enemy and stats are correct from the start
+  G.enemyArchetype = entry.archetype;
   selectPlayerShip(savedShipKey);
   setDifficulty(entry.diff);
+
+  // Init vessel — uses G.enemyArchetype correctly; ends by showing pre-battle briefing
   initiateVesselSimulation(savedStation);
 
   // Restore campaign state (initiateVesselSimulation resets score/dead/etc)
@@ -265,21 +270,9 @@ function _launchCampaignLevel() {
   G.campaignScore        = savedScore;
   G.campaignLevelResults = savedResults;
 
-  // Force the specific archetype and scaled stats for this level
-  G.enemyArchetype = entry.archetype;
-  const cfg  = ENEMY_CONFIGS[entry.archetype];
-  const diff = DIFFICULTY[entry.diff];
-  G.enemySystems = {};
-  Object.keys(cfg.systems).forEach(k => { G.enemySystems[k] = Object.assign({}, cfg.systems[k]); });
-  G.threat.hull              = Math.round(cfg.hull * diff.enemyHullMult);
-  G.threat.maxHull           = G.threat.hull;
-  G.threat.shields           = Object.assign({}, cfg.shields);
-  G.threat.recoveryCoefficient = cfg.recoveryCoefficient;
-  G.threat.fireInterval      = Math.round(cfg.fireInterval * diff.enemyFireMult);
-  G.threat.lockRate          = cfg.lockRate * diff.enemyLockMult;
+  // G.running and initEncounterPhases() are handled by startCombat() when the
+  // player engages from the pre-battle briefing — do not force them here
 
-  G.running = true; // initiateVesselSimulation leaves G.running = false
-  initEncounterPhases();
   _updateCampaignHUD();
 }
 
@@ -309,18 +302,19 @@ function concludeCampaignLevel(victory, escaped) {
 
   G.dead = true; G.running = false;
   const overlay = document.getElementById('overlay'); overlay.style.display = 'flex';
-  const setup   = document.getElementById('setup-controls-anchor'); if (setup) setup.style.display = 'none';
-  const diffSec = document.getElementById('campaign-diff-section'); if (diffSec) diffSec.style.display = 'none';
-  const scoreDiv = document.getElementById('score-display'); if (scoreDiv) scoreDiv.style.display = 'none';
-  const box = document.getElementById('terminal-transcript-box'); if (box) box.style.display = 'none';
+  const setup     = document.getElementById('setup-controls-anchor');  if (setup)     setup.style.display     = 'none';
+  const diffSec   = document.getElementById('campaign-diff-section');  if (diffSec)   diffSec.style.display   = 'none';
+  const runSec    = document.getElementById('campaign-run-section');   if (runSec)    runSec.style.display    = 'none';
+  const scoreDiv  = document.getElementById('score-display');          if (scoreDiv)  scoreDiv.style.display  = 'none';
+  const box       = document.getElementById('terminal-transcript-box'); if (box) box.style.display = 'none';
 
   const isLast = G.campaignLevel >= CAMPAIGN_ORDER.length - 1;
   const isLoss = !victory && !escaped;
+  const _sLabel = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).label;
 
   const title = document.getElementById('modal-title');
   const desc  = document.getElementById('modal-desc');
   if (title) {
-  const _sLabel = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).label;
     if (isLoss)       { title.textContent = `${entry.label} — ${_sLabel.toUpperCase()} DESTROYED`; title.style.color = 'var(--red)'; }
     else if (isLast)  { title.textContent = 'CAMPAIGN COMPLETE — SECTOR SECURED'; title.style.color = '#00ffaa'; }
     else if (escaped) { title.textContent = `${entry.label} — DISENGAGED`; title.style.color = 'var(--warn)'; }
@@ -387,7 +381,13 @@ function _restartCampaign() {
 }
 
 function returnToSetup() {
-  // Reset campaign state
+  // Kill any active pre-battle briefing timer
+  G.preBattleActive = false;
+  G.gameSessionId   = (G.gameSessionId || 0) + 1;
+  const pbOverlay = document.getElementById('pre-battle-overlay');
+  if (pbOverlay) pbOverlay.style.display = 'none';
+
+  // Reset campaign + game state
   G.campaignMode = false; G.campaignLevel = 0; G.campaignScore = 0; G.campaignLevelResults = [];
   G.dead = false; G.running = false;
 
@@ -398,13 +398,14 @@ function returnToSetup() {
   const actDiv   = document.getElementById('campaign-action-btns');   if (actDiv)   actDiv.style.display   = 'none';
   const hud      = document.getElementById('campaign-hud');           if (hud)      hud.style.display      = 'none';
 
-  // Restore overlay to setup state
+  // Restore overlay to full setup state
   const title = document.getElementById('modal-title');
   if (title) { title.textContent = 'STATION DELEGATION ARCHITECTURE'; title.style.color = ''; }
   const desc = document.getElementById('modal-desc');
   if (desc) { desc.textContent = 'Select your operational assignment. The alternative deck matrix will automatically delegate tasks to computer subroutines.'; }
   const setup    = document.getElementById('setup-controls-anchor');  if (setup)    setup.style.display    = '';
   const diffSec  = document.getElementById('campaign-diff-section');  if (diffSec)  diffSec.style.display  = '';
+  const runSec   = document.getElementById('campaign-run-section');   if (runSec)   runSec.style.display   = '';
 
   // Clear lingering overlays
   const mv = document.querySelector('.main-viewport'); if (mv) mv.classList.remove('last-stand-flash');
