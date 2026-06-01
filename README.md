@@ -63,7 +63,7 @@ Starfleet's flagship from the TNG films. Larger, tougher, and bristling with pha
   - **Campaign Run** — fight all 9 enemies in order from easiest to hardest; score accumulates, ship restores between fights; Borg Probe is the final boss
 - **Authentic LCARS Interface**: Full LCARS styling with canon ships from Klingons, Romulans, Cardassians, Dominion, and Borg
 - **9 Enemy Vessels**: Each with faction-specific AI, weapons, combat phase arcs, and hull milestone events
-- **3D Spatial Battle View**: Three.js WebGL — Defiant and Sovereign-class meshes, ships close range, weapon beams, torpedo tracks, engine glow
+- **3D Spatial Battle View**: Three.js WebGL — Defiant and Sovereign-class meshes, faction-coloured 3D beam tubes, torpedo impacts with shockwave rings, nacelle exhaust particles (scale with helm speed), burst-salvo shockwave, saucer separation flies independently, Jem'Hadar ramming trajectory indicator
 - **Advanced Combat**:
   - Real-time four-sector shield management with sector reinforcement and equalisation
   - Cloaking device (Defiant) / Saucer Separation (Enterprise-E) with distinct mechanics
@@ -282,26 +282,32 @@ Pick your ship and station once, then fight all 9 enemies in order. Ship fully r
 
 ## Architecture
 
-No build step. 13 plain JS files loaded in order:
+No build step. 15 plain JS files loaded in order:
 
 ```
-config.js       — constants: DIFFICULTY, ENEMY_CONFIGS, ARRAYS_DICTIONARY,
-                  PLAYER_SHIP_CONFIGS (both ships + weapon arrays + crew)
-state.js        — G state object; G.playerShipKey/Config/activeWeaponArrays
-engineering.js  — power, repairs, EPS, ablative armour (Defiant), shield regen
-crew.js         — casualties, efficiency modifiers, emergency warp
-sensors.js      — scan profiles, subsystem targeting
-tactical.js     — player weapons, cloaking/saucer sep, burst/overload/Enterprise modes
-helm.js         — speed, vector, range, all helm manoeuvres
-enemy-ai.js     — enemy AI, fire, cloaking AI, auto-delegation
-command.js      — Captain's Chair: crew reports (ship-aware), order cooldowns, crew AI
-canvas-three.js — Three.js 3D view; Defiant + Sovereign-class meshes
-canvas-2d.js    — 2D schematics: Defiant hull / Enterprise hull / enemy / power
-ui.js           — deck switching, global UI sync, scoring, end-game
-main.js         — game loop, sim init, ship selection (selectPlayerShip,
-                  rebuildWeaponFireMatrix, _rebuildCapBarGrid), campaign
-lcars.css       — LCARS styling
-index.html      — splash, ship selection UI, shell + script tags
+config.js            — constants: DIFFICULTY, ENEMY_CONFIGS, ARRAYS_DICTIONARY,
+                       PLAYER_SHIP_CONFIGS (both ships + weapon arrays + crew + defaultPower)
+state.js             — G state object; G.playerShipKey/Config/activeWeaponArrays
+engineering.js       — power, repairs, EPS, ablative armour (Defiant), shield regen
+crew.js              — casualties, efficiency modifiers, emergency warp
+sensors.js           — scan profiles, subsystem targeting
+tactical.js          — player weapons, cloaking/saucer sep, saucer auto-fire,
+                       burst/overload/Enterprise modes
+helm.js              — speed, vector, range, all helm manoeuvres
+encounter-phases.js  — faction encounter phase arcs, hull milestone events (75/50/25/10%),
+                       Klingon death salvo
+enemy-ai.js          — enemy cloaking AI, sensor ghosts, mechanics timers, Jem'Hadar
+                       ramming, AI loop, enemy fire
+auto-delegation.js   — computer management of uncrewed stations (auto-engineering,
+                       auto-tactical, captain-mode autonomous crew behaviours)
+command.js           — Captain's Chair: crew reports (ship-aware), order cooldowns, crew AI
+canvas-three.js      — Three.js 3D view; Defiant + Sovereign-class meshes; 3D beam tubes,
+                       burst shockwave, torpedo impacts, exhaust particles, saucer sep mesh
+canvas-2d.js         — 2D schematics: Defiant hull / Enterprise hull / enemy / power
+ui.js                — deck switching, global UI sync, scoring, end-game
+main.js              — game loop, sim init, ship selection, campaign
+lcars.css            — LCARS styling
+index.html           — splash, ship selection UI, shell + script tags
 ```
 
 ### Ship config architecture

@@ -6,11 +6,17 @@
 // Depends on: state.js (G, C, ENEMY_CONFIGS, HELM_SPEED_CONFIG)
 // ============================================================
 
+// Faction colour palettes — engine glow (deep) vs weapon beams (bright)
+const _FACTION_GLOW_COL  = { Klingon:0xff2200, Romulan:0x00cc44, Cardassian:0xffaa00, Dominion:0x8822ff, Borg:0x00cc66 };
+const _FACTION_BEAM_COL  = { Klingon:0xff4422, Romulan:0x44ff44, Cardassian:0xffaa00, Dominion:0xaa44ff, Borg:0x00ff88 };
+// Nacelle end offsets per ship (local space, relative to group origin)
+const _NAC_OFFSET = { defiant:{ x:-5.2, y:-0.5 }, enterprise_e:{ x:-8.4, y:-2.4 } };
+
 let THREE_scene, THREE_camera, THREE_renderer, THREE_clock;
 let mesh_defiant, mesh_enemy, mesh_enemyGroup;
 let shield_player, shield_enemy;
 let grid_helper;
-let beam_lines = [];          // now holds THREE.Mesh tube objects
+let beam_lines = [];          // holds THREE.Mesh tube objects
 let torp_meshes = [];
 let burst_effects = [];       // expanding shockwave rings from burst salvo
 let impact_effects = [];      // expanding spheres at torpedo impact
@@ -518,8 +524,7 @@ function rebuildEnemyMesh() {
   mesh_enemy = buildEnemyGeometry(G.enemyArchetype);
   mesh_enemyGroup.add(mesh_enemy);
   const cfg = ENEMY_CONFIGS[G.enemyArchetype];
-  const glow = { Klingon:0xff2200, Romulan:0x00cc44, Cardassian:0xffaa00, Dominion:0x8822ff, Borg:0x00cc66 };
-  engine_glow_enemy.color.setHex(glow[cfg.faction] || 0xff2200);
+  engine_glow_enemy.color.setHex(_FACTION_GLOW_COL[cfg.faction] || 0xff2200);
 }
 
 function _cleanupSaucerSep() {
@@ -572,7 +577,8 @@ function renderSpatialViewCanvas() {
   // Engine glow — intensity tied to helm speed setting
   const _helmGlow = { stop:0.2, maneuvering:0.7, half:1.5, full:3.2 }[G.helmSpeed] ?? 1.5;
   engine_glow_player.intensity = G.cloaked ? 0.1 : _helmGlow + Math.sin(now*3)*0.4*(G.systems.engines.health/100);
-  engine_glow_player.position.set(mesh_defiant.position.x - 5, mesh_defiant.position.y - 0.3, mesh_defiant.position.z);
+  const _nac = _NAC_OFFSET[G.playerShipKey] || _NAC_OFFSET.defiant;
+  engine_glow_player.position.set(mesh_defiant.position.x + _nac.x, mesh_defiant.position.y + _nac.y, mesh_defiant.position.z);
   engine_glow_enemy.intensity  = G.enemyCloaked ? 0.1 : 1.8+Math.sin(now*2.8)*0.9;
 
   // ── Engine exhaust particles from nacelles ───────────────────
@@ -764,7 +770,7 @@ function renderSpatialViewCanvas() {
       ? mesh_defiant.position.clone().add(new THREE.Vector3(4,0,0))
       : mesh_enemyGroup.position.clone().add(new THREE.Vector3(-4,0,0));
     const col = isEnemy
-      ? ({Klingon:0xff4422, Romulan:0x44ff44, Cardassian:0xffaa00, Dominion:0xaa44ff, Borg:0x00ff88}[ENEMY_CONFIGS[G.enemyArchetype]?.faction] || 0xff4422)
+      ? (_FACTION_BEAM_COL[ENEMY_CONFIGS[G.enemyArchetype]?.faction] || 0xff4422)
       : (bCols[b.type] || 0xffffff);
     const dur = b.duration / 1000;
 
@@ -814,6 +820,7 @@ function renderSpatialViewCanvas() {
     const mat   = new THREE.MeshPhongMaterial({ color:col, emissive:col, emissiveIntensity:2, transparent:true, opacity:0.9 });
     const mesh  = new THREE.Mesh(geo, mat);
     mesh.position.copy(fromV); mesh._target = toV.clone(); mesh._origin = fromV.clone(); mesh._progress = 0;
+    mesh._fromEnemy = t.fromEnemy;
     THREE_scene.add(mesh); t._three_mesh = mesh; torp_meshes.push(mesh);
   });
 

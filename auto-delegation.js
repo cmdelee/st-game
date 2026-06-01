@@ -20,8 +20,8 @@ function processAutomatedDelegation(dt) {
       if (sys.tripped && Math.random() < 0.06 * ce * (dt / 1000)) {
         if (key === 'warp_core' && sys.health < 25) return;
         sys.tripped = false; sys.stress = 0;
-        const def = { cannon_pu:8, cannon_pl:8, cannon_su:8, cannon_sl:6, nose_beam:10, torpedoes:10, shields:28, sensors:16, engines:10, cloak_dev:0, warp_core:10 };
-        sys.allocatedPower = Object.prototype.hasOwnProperty.call(def, key) ? def[key] : 10;
+        const def = (G.playerShipConfig && G.playerShipConfig.defaultPower) || {};
+        sys.allocatedPower = def[key] ?? 10;
         postLogEvent(`Computer: relay restored [${sys.label}]`, 'info');
         refreshEngineeringPanelGraphics();
       }

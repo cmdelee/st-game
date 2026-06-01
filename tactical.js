@@ -520,9 +520,8 @@ function fireSaucerAutomatic() {
   const weapon = aw[key];
   const sys    = G.systems[weapon.parentSystem];
 
-  // Saucer fires on impulse power — 40% base yield, partial lock equivalent (~65%)
+  // Saucer fires on its own impulse power — independent of stardrive helm speed
   let dmg = weapon.yield * 0.40 * (sys.health / 100) * 0.65;
-  dmg *= (HELM_SPEED_CONFIG[G.helmSpeed]?.yieldMult ?? 1.0);
 
   // Apply to enemy shields at the bearing the saucer is currently engaging
   // Saucer picks the weakest visible shield sector to maximise pressure
@@ -537,7 +536,7 @@ function fireSaucerAutomatic() {
   postLogEvent(`Saucer section — ${weapon.label} [auto] → ${target.toUpperCase()} −${Math.round(dmg)}MW.`, 'info');
 
   // Occasional crew report
-  if (Math.random() < 0.35) {
+  if (Math.random() < 0.35 && typeof postCrewReport === 'function') {
     postCrewReport('nog', `Saucer section firing, Captain — ${weapon.label.toLowerCase()} on secondary power.`, 'status');
   }
 
