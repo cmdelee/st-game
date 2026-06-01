@@ -398,7 +398,9 @@ function concludeSimulationRun(victory, msg, escaped) {
   if (G.campaignMode) { concludeCampaignLevel(victory, escaped); return; }
   G.dead = true; G.running = false;
   const overlay = document.getElementById('overlay'); overlay.style.display = 'flex';
-  const setup = document.getElementById('setup-controls-anchor'); if (setup) setup.style.display = 'none';
+  // Hide ALL setup / selection UI — only the battle report and one button should show
+  ['setup-controls-anchor','campaign-diff-section','campaign-run-section','ship-select-section']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
   const title = document.getElementById('modal-title');
   if (title) {
     let titleText, titleColor;
@@ -475,6 +477,10 @@ function concludeSimulationRun(victory, msg, escaped) {
       <div style="font-size:10px;margin-bottom:8px;">${crewRows}</div>
       <div style="font-family:'Antonio';font-size:10px;color:var(--o);letter-spacing:1px;margin:8px 0 3px;border-top:1px solid rgba(255,170,0,0.3);padding-top:6px;">BATTLE LOG (last 15):</div>
     `;
+    // Expand transcript box to show more of the log
+    box.style.height = 'auto';
+    box.style.maxHeight = '280px';
+
     G.historicalLogTracks.slice(-15).forEach(e => {
       const d = document.createElement('div');
       d.style.cssText = 'font-size:10px;';
@@ -482,12 +488,20 @@ function concludeSimulationRun(victory, msg, escaped) {
       d.textContent = `[${e.ts}] ${e.msg}`;
       box.appendChild(d);
     });
-    const btn = document.createElement('button');
-    btn.className = 'pill-action-btn warn-btn';
-    btn.style.cssText = 'width:100%;margin-top:10px;padding:10px;';
-    btn.textContent = '⚡ NEW ENGAGEMENT';
-    btn.onclick = returnToSetup;
-    box.appendChild(btn);
+  }
+
+  // NEW ENGAGEMENT button — prominent, outside the transcript scroll area
+  const actionsDiv = document.getElementById('end-game-actions');
+  if (actionsDiv) {
+    actionsDiv.style.display = 'block';
+    actionsDiv.innerHTML = `
+      <button class="pill-action-btn"
+        style="width:100%;margin-top:12px;padding:14px;font-size:15px;font-family:'Antonio',sans-serif;
+               letter-spacing:2px;background:var(--o);color:#000;border-radius:8px;"
+        onclick="returnToSetup()">
+        ⚡ NEW ENGAGEMENT
+      </button>
+    `;
   }
 
   showCloakVulnOverlay(false);

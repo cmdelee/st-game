@@ -285,11 +285,8 @@ function concludeCampaignLevel(victory, escaped) {
 
   G.dead = true; G.running = false;
   const overlay = document.getElementById('overlay'); overlay.style.display = 'flex';
-  const setup     = document.getElementById('setup-controls-anchor');  if (setup)     setup.style.display     = 'none';
-  const diffSec   = document.getElementById('campaign-diff-section');  if (diffSec)   diffSec.style.display   = 'none';
-  const runSec    = document.getElementById('campaign-run-section');   if (runSec)    runSec.style.display    = 'none';
-  const scoreDiv  = document.getElementById('score-display');          if (scoreDiv)  scoreDiv.style.display  = 'none';
-  const box       = document.getElementById('terminal-transcript-box'); if (box) box.style.display = 'none';
+  ['setup-controls-anchor','campaign-diff-section','campaign-run-section','ship-select-section','score-display','terminal-transcript-box','end-game-actions']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
   const isLast = G.campaignLevel >= CAMPAIGN_ORDER.length - 1;
   const isLoss = !victory && !escaped;
@@ -375,20 +372,22 @@ function returnToSetup() {
   G.dead = false; G.running = false;
 
   // Hide all end-game / campaign panels
-  const scoreDiv = document.getElementById('score-display');          if (scoreDiv) scoreDiv.style.display = 'none';
-  const box      = document.getElementById('terminal-transcript-box'); if (box) { box.style.display = 'none'; box.innerHTML = ''; }
-  const campDiv  = document.getElementById('campaign-level-summary'); if (campDiv)  campDiv.style.display  = 'none';
-  const actDiv   = document.getElementById('campaign-action-btns');   if (actDiv)   actDiv.style.display   = 'none';
-  const hud      = document.getElementById('campaign-hud');           if (hud)      hud.style.display      = 'none';
+  const scoreDiv  = document.getElementById('score-display');           if (scoreDiv)  scoreDiv.style.display  = 'none';
+  const box       = document.getElementById('terminal-transcript-box'); if (box)  { box.style.display = 'none'; box.innerHTML = ''; box.style.height = ''; box.style.maxHeight = ''; }
+  const actionsEl = document.getElementById('end-game-actions');        if (actionsEl) actionsEl.style.display = 'none';
+  const campDiv   = document.getElementById('campaign-level-summary');  if (campDiv)   campDiv.style.display   = 'none';
+  const actDiv    = document.getElementById('campaign-action-btns');    if (actDiv)    actDiv.style.display    = 'none';
+  const hud       = document.getElementById('campaign-hud');            if (hud)       hud.style.display       = 'none';
 
-  // Restore overlay to full setup state
+  // Restore overlay to full setup state — show all selection sections
   const title = document.getElementById('modal-title');
   if (title) { title.textContent = 'STATION DELEGATION ARCHITECTURE'; title.style.color = ''; }
   const desc = document.getElementById('modal-desc');
   if (desc) { desc.textContent = 'Select your operational assignment. The alternative deck matrix will automatically delegate tasks to computer subroutines.'; }
-  const setup    = document.getElementById('setup-controls-anchor');  if (setup)    setup.style.display    = '';
-  const diffSec  = document.getElementById('campaign-diff-section');  if (diffSec)  diffSec.style.display  = '';
-  const runSec   = document.getElementById('campaign-run-section');   if (runSec)   runSec.style.display   = '';
+  const shipSec  = document.getElementById('ship-select-section');    if (shipSec)   shipSec.style.display    = '';
+  const setup    = document.getElementById('setup-controls-anchor');  if (setup)     setup.style.display      = '';
+  const diffSec  = document.getElementById('campaign-diff-section');  if (diffSec)   diffSec.style.display    = '';
+  const runSec   = document.getElementById('campaign-run-section');   if (runSec)    runSec.style.display     = '';
 
   // Clear lingering overlays
   const mv = document.querySelector('.main-viewport'); if (mv) mv.classList.remove('last-stand-flash');
