@@ -62,7 +62,8 @@ function attemptEmergencyWarp() {
   G.player.torpedoes -= cost;
   G.score.warpedOut = true;
   postLogEvent(`EMERGENCY WARP — ${cost} torpedoes as field initiators. Disengaging.`, 'good');
-  concludeSimulationRun(false, "USS Defiant escaped via emergency warp. Enemy vessel still active.", true);
+  const _shipLbl = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).label;
+  concludeSimulationRun(false, `${_shipLbl} escaped via emergency warp. Enemy vessel still active.`, true);
 }
 
 function updateWarpAvailability() {

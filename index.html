@@ -396,6 +396,12 @@
           <div class="bar-row"><span class="bar-label">Fwd Photon Tube</span> <div class="bar-rail"><div class="bar-fill" id="bar-cap-tph" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-tph">100%</span></div>
           <div class="bar-row"><span class="bar-label">Aft Quantum Tube</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-tqa" style="color:var(--t);"></div></div><span class="bar-val" id="txt-cap-tqa">100%</span></div>
           <div class="bar-row"><span class="bar-label">Aft Photon Tube</span> <div class="bar-rail"><div class="bar-fill" id="bar-cap-tpa" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-tpa">100%</span></div>
+          <!-- Enterprise-E only bars (hidden for Defiant) -->
+          <div class="bar-row" id="capbar-scp" style="display:none;"><span class="bar-label">Saucer Port Array</span>     <div class="bar-rail"><div class="bar-fill" id="bar-cap-scp" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-scp">100%</span></div>
+          <div class="bar-row" id="capbar-scs" style="display:none;"><span class="bar-label">Saucer Stbd Array</span>     <div class="bar-rail"><div class="bar-fill" id="bar-cap-scs" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-scs">100%</span></div>
+          <div class="bar-row" id="capbar-phs" style="display:none;"><span class="bar-label">Secondary Hull Arrays</span> <div class="bar-rail"><div class="bar-fill" id="bar-cap-phs" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-phs">100%</span></div>
+          <div class="bar-row" id="capbar-pae" style="display:none;"><span class="bar-label">Aft Stardrive Emitter</span> <div class="bar-rail"><div class="bar-fill" id="bar-cap-pae" style="color:var(--p);"></div></div><span class="bar-val" id="txt-cap-pae">100%</span></div>
+          <div class="bar-row" id="capbar-tfb" style="display:none;"><span class="bar-label">Fwd Quantum Tube B</span>   <div class="bar-rail"><div class="bar-fill" id="bar-cap-tfb" style="color:var(--t);"></div></div><span class="bar-val" id="txt-cap-tfb">100%</span></div>
         </div>
       </div>
 
@@ -790,19 +796,19 @@
 <!-- ═══════════════════════════════════════════════════════════
      SCRIPTS — load order: state → engineering → tactical → canvas → ui → main
 ════════════════════════════════════════════════════════════ -->
-<script src="config.js?v=2"></script>
+<script src="config.js?v=3"></script>
 <script src="state.js?v=10"></script>
 <script src="engineering.js?v=9"></script>
-<script src="crew.js?v=1"></script>
+<script src="crew.js?v=2"></script>
 <script src="sensors.js?v=1"></script>
-<script src="tactical.js?v=10"></script>
+<script src="tactical.js?v=11"></script>
 <script src="helm.js?v=8"></script>
-<script src="enemy-ai.js?v=2"></script>
+<script src="enemy-ai.js?v=3"></script>
 <script src="command.js?v=2"></script>
-<script src="canvas-three.js?v=8"></script>
+<script src="canvas-three.js?v=9"></script>
 <script src="canvas-2d.js?v=9"></script>
-<script src="ui.js?v=9"></script>
-<script src="main.js?v=9"></script>
+<script src="ui.js?v=10"></script>
+<script src="main.js?v=10"></script>
 
 </body>
 </html>

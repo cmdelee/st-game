@@ -32,18 +32,28 @@ function rebuildWeaponFireMatrix() {
   if (!fireMat) return;
 
   if (isEnt) {
+    // Enterprise-E: full 9-array + 5-launcher tactical panel
     fireMat.innerHTML = `
-      <button class="pill-action-btn" style="grid-column:span 2;" id="btn-cannons" onclick="fireAllPhaserArrays()">⚡ All Phaser Arrays ×5</button>
-      <button class="pill-action-btn p-btn" id="btn-nose"        onclick="fireSelectedArray('emitter_nose')">Stardrive Arrays <span style="font-size:9px;">[FWD]</span></button>
-      <button class="pill-action-btn p-btn" id="btn-quantum"     onclick="fireSelectedArray('torpedo_quantum')">Quantum Torpedo</button>
-      <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-burst-fire" onclick="executeConcentratedPhaserFire()">⚡⚡ CONCENTRATED FIRE — ALL IN-ARC PHASERS</button>
-      <button class="pill-action-btn p-btn" id="btn-photon"      onclick="fireSelectedArray('torpedo_photon')">Photon Torp <span style="font-size:9px;">[No lock]</span></button>
+      <button class="pill-action-btn" style="grid-column:span 2;" id="btn-cannons" onclick="fireAllPhaserArrays()">⚡ All Phaser Arrays ×9</button>
+      <button class="pill-action-btn p-btn" id="btn-nose"    onclick="fireSelectedArray('emitter_nose')">Primary Emitter <span style="font-size:9px;">[FWD 90]</span></button>
+      <button class="pill-action-btn p-btn"                  onclick="fireSelectedArray('phaser_aft_emitter')">Aft Emitter <span style="font-size:9px;">[AFT 55]</span></button>
+      <button class="pill-action-btn"                        onclick="fireSelectedArray('cannon_port_upper')">Saucer Dorsal Fwd <span style="font-size:9px;">[F/P/S]</span></button>
+      <button class="pill-action-btn"                        onclick="fireSelectedArray('phaser_saucer_port')">Saucer Port Array <span style="font-size:9px;">[F/P/A]</span></button>
+      <button class="pill-action-btn"                        onclick="fireSelectedArray('cannon_port_lower')">Saucer Ventral Fwd <span style="font-size:9px;">[F/P/S]</span></button>
+      <button class="pill-action-btn"                        onclick="fireSelectedArray('phaser_saucer_stbd')">Saucer Stbd Array <span style="font-size:9px;">[F/S/A]</span></button>
+      <button class="pill-action-btn"                        onclick="fireSelectedArray('cannon_stbd_upper')">Stardrive Fwd <span style="font-size:9px;">[F/P/S]</span></button>
+      <button class="pill-action-btn"                        onclick="fireSelectedArray('phaser_secondary')">Secondary Hull <span style="font-size:9px;">[F/P/S]</span></button>
+      <button class="pill-action-btn"                        onclick="fireSelectedArray('cannon_stbd_lower')">Saucer Aft Arrays <span style="font-size:9px;">[A/P/S]</span></button>
+      <button class="pill-action-btn red-btn" style="grid-column:span 1;" id="btn-burst-fire" onclick="executeConcentratedPhaserFire()">⚡⚡ CONCENTRATED FIRE</button>
+      <button class="pill-action-btn p-btn" id="btn-quantum"     onclick="fireSelectedArray('torpedo_quantum')">Fwd Quantum A</button>
+      <button class="pill-action-btn p-btn"                      onclick="fireSelectedArray('torpedo_quantum_b')">Fwd Quantum B</button>
+      <button class="pill-action-btn p-btn" id="btn-photon"      onclick="fireSelectedArray('torpedo_photon')">Fwd Photon <span style="font-size:9px;">[No lock]</span></button>
       <button class="pill-action-btn p-btn" id="btn-quantum-aft" onclick="fireSelectedArray('torpedo_quantum_aft')">Aft Quantum <span style="font-size:9px;">[AFT]</span></button>
       <button class="pill-action-btn"       id="btn-photon-aft"  onclick="fireSelectedArray('torpedo_photon_aft')">Aft Photon <span style="font-size:9px;">[AFT/No lock]</span></button>
-      <button class="pill-action-btn warn-btn" id="btn-cloak"    onclick="toggleSaucerSeparation()">◯ SAUCER SEPARATION</button>
+      <button class="pill-action-btn warn-btn" id="btn-cloak"    onclick="toggleSaucerSeparation()">◯ SAUCER SEP</button>
       <button class="pill-action-btn"         id="btn-shield-freq" onclick="rotateShieldFrequency()">🛡 ROTATE FREQ</button>
-      <button class="pill-action-btn p-btn"   id="btn-evasive"    onclick="executeEvasivePattern()">◈ EVASIVE PATTERN</button>
-      <button class="pill-action-btn red-btn" style="grid-column:span 1;" id="btn-alpha" onclick="executeAlphaSalvoFire()">ALPHA SALVO — ALL IN ARC</button>
+      <button class="pill-action-btn p-btn"   id="btn-evasive"    onclick="executeEvasivePattern()">◈ EVASIVE</button>
+      <button class="pill-action-btn red-btn" id="btn-alpha"      onclick="executeAlphaSalvoFire()">ALPHA SALVO</button>
     `;
     if (overMat) overMat.innerHTML = `
       <button class="pill-action-btn red-btn" id="btn-overcharge"    onclick="executeMaxPhaserOutput()">⚡ MAX PHASER OUTPUT<br><span style="font-size:11px;">All phasers +60% · 1 salvo · CD 30s</span></button>
@@ -120,6 +130,11 @@ function _updateSpecialAbilityButtons() {
   // Right panel cloak power footer label
   const cloakFooterLbl = document.getElementById('lbl-cloak-footer');
   if (cloakFooterLbl) cloakFooterLbl.textContent = isEnt ? 'Saucer Sep Power' : 'Cloak Power';
+  // Enterprise-E extra capacitor bars — show/hide
+  ['capbar-scp','capbar-scs','capbar-phs','capbar-pae','capbar-tfb'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isEnt ? '' : 'none';
+  });
 }
 
 // Shared entry point for cloak/saucer-sep from helm panel button.
@@ -232,12 +247,13 @@ function concludeCampaignLevel(victory, escaped) {
   const title = document.getElementById('modal-title');
   const desc  = document.getElementById('modal-desc');
   if (title) {
-    if (isLoss)       { title.textContent = `${entry.label} — DEFIANT DESTROYED`; title.style.color = 'var(--red)'; }
+  const _sLabel = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).label;
+    if (isLoss)       { title.textContent = `${entry.label} — ${_sLabel.toUpperCase()} DESTROYED`; title.style.color = 'var(--red)'; }
     else if (isLast)  { title.textContent = 'CAMPAIGN COMPLETE — SECTOR SECURED'; title.style.color = '#00ffaa'; }
     else if (escaped) { title.textContent = `${entry.label} — DISENGAGED`; title.style.color = 'var(--warn)'; }
     else              { title.textContent = `${entry.label} — ${entry.title.toUpperCase()} DESTROYED`; title.style.color = 'var(--green)'; }
   }
-  if (desc) desc.textContent = isLast ? 'The Borg threat has been neutralised. USS Defiant mission complete.' : isLoss ? 'Campaign ended. The Defiant has been destroyed.' : `Enemy vessel destroyed. Preparing for next engagement.`;
+  if (desc) desc.textContent = isLast ? `The Borg threat has been neutralised. ${_sLabel} mission complete.` : isLoss ? `Campaign ended. ${_sLabel} has been destroyed.` : `Enemy vessel destroyed. Preparing for next engagement.`;
 
   // Show campaign level summary
   const campDiv = document.getElementById('campaign-level-summary');
@@ -680,6 +696,7 @@ function initiateVesselSimulation(station) {
   const aiLbl = document.getElementById('lbl-ai-archetype'); if (aiLbl) aiLbl.textContent = cfg.label;
   // Rebuild Three.js enemy mesh for new archetype
   rebuildEnemyMesh();
+  rebuildPlayerMesh();    // swap Defiant ↔ Sovereign-class mesh
 
   // Boot log
   const _sc = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;

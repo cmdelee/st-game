@@ -394,6 +394,109 @@ function initThreeScene() {
   THREE_ready = true;
 }
 
+// ── Sovereign-class (Enterprise-E) geometry ───────────────────
+function buildSovereignGeometry() {
+  const group   = new THREE.Group();
+  const hullMat = new THREE.MeshPhongMaterial({ color:0x1a2a50, emissive:0x060e20, specular:0x5577cc, shininess:90 });
+  const darkMat = new THREE.MeshPhongMaterial({ color:0x0e1a36, emissive:0x040810, specular:0x334488, shininess:40 });
+  const nacMat  = new THREE.MeshPhongMaterial({ color:0x0e1932, emissive:0x060a1c, specular:0x3355aa, shininess:50 });
+  const glowMat = new THREE.MeshPhongMaterial({ color:0x4488ff, emissive:0x2255cc, emissiveIntensity:3 });
+  const emitMat = new THREE.MeshPhongMaterial({ color:0xcc8800, emissive:0x994400, emissiveIntensity:1.8 });
+
+  // ── Saucer section — wide, relatively flat disc ──
+  const saucer = new THREE.Mesh(new THREE.CylinderGeometry(7.5, 8.0, 1.0, 24), hullMat);
+  saucer.rotation.z = Math.PI/2; saucer.position.set(2, 0.5, 0);
+  group.add(saucer);
+
+  // Saucer forward lip (raised rim)
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(7.8, 0.25, 8, 24), darkMat);
+  rim.rotation.y = Math.PI/2; rim.position.set(2, 0.5, 0);
+  group.add(rim);
+
+  // Bridge module (top of saucer, forward)
+  const bridge = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), hullMat);
+  bridge.scale.set(1.2, 0.7, 0.9); bridge.position.set(6.5, 1.2, 0);
+  group.add(bridge);
+
+  // ── Stardrive / secondary hull ──
+  const stardrive = new THREE.Mesh(new THREE.BoxGeometry(12, 1.8, 3.2), darkMat);
+  stardrive.position.set(-3, -1.5, 0);
+  group.add(stardrive);
+
+  // Stardrive forward taper (nose cone)
+  const sdNose = new THREE.Mesh(new THREE.CylinderGeometry(0, 1.6, 4, 6), hullMat);
+  sdNose.rotation.z = -Math.PI/2; sdNose.position.set(3.5, -1.5, 0);
+  sdNose.scale.set(1, 0.55, 1);
+  group.add(sdNose);
+
+  // ── Neck connecting saucer to stardrive ──
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 1.6), darkMat);
+  neck.position.set(1.5, -0.4, 0);
+  group.add(neck);
+
+  // ── Warp nacelle pylons — swept back and down ──
+  [3.8, -3.8].forEach(z => {
+    // Pylon
+    const pylon = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.5, 0.9), darkMat);
+    pylon.rotation.z = -0.15; pylon.position.set(-2.5, -2.2, z * 0.95);
+    group.add(pylon);
+
+    // Nacelle body — longer than Defiant (Sovereign is larger)
+    const nacGeo = new THREE.CylinderGeometry(0.45, 0.6, 8.5, 12);
+    const nac = new THREE.Mesh(nacGeo, nacMat);
+    nac.rotation.z = Math.PI/2; nac.position.set(-4.5, -2.4, z);
+    group.add(nac);
+
+    // Bussard collector (front)
+    const buss = new THREE.Mesh(new THREE.SphereGeometry(0.52, 8, 6),
+      new THREE.MeshPhongMaterial({ color:0xff5500, emissive:0xcc2200, emissiveIntensity:2.2 }));
+    buss.position.set(-0.15, -2.4, z); group.add(buss);
+
+    // Warp field grille
+    const grille = new THREE.Mesh(new THREE.BoxGeometry(6.0, 0.2, 0.7), glowMat);
+    grille.position.set(-4.5, -2.4, z); group.add(grille);
+
+    // Nacelle end glow
+    const endGlow = new THREE.Mesh(new THREE.SphereGeometry(0.48, 8, 6), glowMat);
+    endGlow.position.set(-8.4, -2.4, z); group.add(endGlow);
+  });
+
+  // ── Phaser array strips ──
+  // Saucer dorsal strip
+  const phasD = new THREE.Mesh(new THREE.TorusGeometry(7.2, 0.12, 4, 20, Math.PI*1.2),
+    emitMat);
+  phasD.rotation.y = Math.PI/2; phasD.position.set(2, 1.1, 0);
+  group.add(phasD);
+
+  // Saucer ventral strip
+  const phasV = new THREE.Mesh(new THREE.TorusGeometry(6.8, 0.12, 4, 18, Math.PI),
+    emitMat);
+  phasV.rotation.y = Math.PI/2; phasV.position.set(2, -0.1, 0);
+  group.add(phasV);
+
+  // Torpedo launcher housing (forward stardrive)
+  const tLaunch = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.8, 0.9), hullMat);
+  tLaunch.position.set(2.5, -1.1, 0); group.add(tLaunch);
+
+  return group;
+}
+
+// Rebuild the player ship mesh when ship selection changes.
+function rebuildPlayerMesh() {
+  if (!THREE_ready) return;
+  if (mesh_defiant) { THREE_scene.remove(mesh_defiant); }
+  if (G.playerShipKey === 'enterprise_e') {
+    mesh_defiant = buildSovereignGeometry();
+    engine_glow_player.color.setHex(0x4477ff);
+  } else {
+    mesh_defiant = buildDefiantGeometry();
+    engine_glow_player.color.setHex(0x4477ff);
+  }
+  mesh_defiant.position.set(-28, 0, 0);
+  THREE_scene.add(mesh_defiant);
+  shield_player.position.copy(mesh_defiant.position);
+}
+
 function resizeThreeRenderer() {
   const mount = document.getElementById('spatial-3d-mount');
   if (!mount || !THREE_renderer || !THREE_camera) return;

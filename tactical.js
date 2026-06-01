@@ -292,10 +292,11 @@ function firePulseCannons() {
   inArc.forEach(k => fireSelectedArray(k));
 }
 
-// Enterprise-E: fire all in-arc phaser arrays (4 sector arrays + stardrive)
+// Enterprise-E: fire all in-arc phaser arrays (up to 9 arrays across all groups)
 function fireAllPhaserArrays() {
-  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
-  const keys = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
+  const aw   = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  const cfg  = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
+  const keys = cfg.primaryWeaponKeys || ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
   const inArc = keys.filter(k => aw[k] && aw[k].arc.includes(G.helmAttackVector));
   if (inArc.length === 0) { postLogEvent("No phaser arrays bear on current attack vector.", 'warn'); return; }
   inArc.forEach(k => fireSelectedArray(k));
@@ -476,8 +477,9 @@ function executeMaxPhaserOutput() {
   if (!G.running || G.dead) return;
   if (!G.overchargeReady) { postLogEvent(`Phaser capacitors resetting — ${Math.ceil(G.overchargeCooldown/1000)}s.`, 'warn'); return; }
   if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
-  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
-  const phaserKeys = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
+  const aw  = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  const cfg2 = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
+  const phaserKeys = cfg2.primaryWeaponKeys || ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
   const ready = phaserKeys.filter(k => { if (!aw[k]) return false; const sys = G.systems[aw[k].parentSystem]; return sys && !sys.tripped && sys.health >= 10 && sys.cap >= aw[k].cost && aw[k].arc.includes(G.helmAttackVector); });
   if (ready.length === 0) { postLogEvent("No phaser arrays in arc and charged.", 'warn'); return; }
   postLogEvent("MAXIMUM PHASER OUTPUT — all arrays +60% yield, firing sequence!", 'crit');
@@ -530,15 +532,16 @@ function executeConcentratedPhaserFire() {
   if (!G.burstFireReady) { postLogEvent(`Phaser emitters recharging — ${Math.ceil(G.burstFireCooldown/1000)}s.`, 'warn'); return; }
   if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
   if (G.lockProgress < 15) { postLogEvent("Concentrated fire requires ≥15% lock.", 'warn'); return; }
-  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
-  const phaserKeys = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
+  const aw  = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  const cfg = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
+  const phaserKeys = cfg.primaryWeaponKeys || ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
   const ready = phaserKeys.filter(k => {
     if (!aw[k] || !aw[k].arc.includes(G.helmAttackVector)) return false;
     const s = G.systems[aw[k].parentSystem];
     return !s.tripped && s.health >= 10 && s.cap >= aw[k].cost;
   });
   if (ready.length === 0) { postLogEvent("No phaser arrays in arc and charged.", 'warn'); return; }
-  postLogEvent(`CONCENTRATED FIRE — ${ready.length} arrays in 900ms sequence!`, 'crit');
+  postLogEvent(`CONCENTRATED FIRE — ${ready.length} arrays in ${Math.round(ready.length * 180)}ms sequence!`, 'crit');
   G.burstFireReady    = false;
   G.burstFireCooldown = 9000;
   ready.forEach((k, i) => {

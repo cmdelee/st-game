@@ -425,29 +425,55 @@ const PLAYER_SHIP_CONFIGS = {
     hasSaucerSep:           true,
     hasRegenerativeShields: true,
     shieldRegenBonus:       1.4,   // 40% faster regen (regenerative shielding, First Contact)
-    defaultPower:   { cannon_pu:12, cannon_pl:10, cannon_su:8, cannon_sl:6, nose_beam:12, torpedoes:10, shields:30, sensors:16, engines:10, cloak_dev:0, warp_core:10 },
+    defaultPower:   { cannon_pu:12, cannon_pl:10, cannon_su:10, cannon_sl:10, nose_beam:14, torpedoes:10, shields:30, sensors:14, engines:10, cloak_dev:0, warp_core:10 },
     systemLabels:   {
-      cannon_pu:'Dorsal Phaser Arrays',  cannon_pl:'Ventral Phaser Arrays',
-      cannon_su:'Aft Phaser Bank A',     cannon_sl:'Aft Phaser Bank B',
-      nose_beam:'Stardrive Arrays',      torpedoes:'Torpedo Systems',
+      cannon_pu:'Saucer Dorsal Sys',     cannon_pl:'Saucer Ventral Sys',
+      cannon_su:'Stardrive Fwd Sys',     cannon_sl:'Saucer Rim/Aft Sys',
+      nose_beam:'Primary Emitter Sys',   torpedoes:'Torpedo Systems',
       shields:'Regenerative Shield Grid', sensors:'Sensor Arrays',
       engines:'Impulse Engines',          cloak_dev:'Saucer Separation Sys', warp_core:'Warp Core M/ARA',
     },
-    primaryWeaponKeys: ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'],
+    // All 9 phaser array entry keys (used for "⚡ All Phaser Arrays ×N" arc counter)
+    primaryWeaponKeys: ['cannon_port_upper','phaser_saucer_port','cannon_port_lower','phaser_saucer_stbd','cannon_stbd_upper','phaser_secondary','cannon_stbd_lower','phaser_aft_emitter','emitter_nose'],
     primaryLabel: 'Phaser Arrays',
-    // Replaces ARRAYS_DICTIONARY when Enterprise-E is active.
-    // Same tag IDs → same capacitor bar HTML works for both ships.
+    // ── Enterprise-E full Sovereign-class weapon complement ──────────────────────
+    // 9 Type-XII phaser array entries + 5 torpedo launcher entries = 14 total.
+    // Tags scp/scs/phs/pae/tfb are new Enterprise-E-only capacitor bars.
+    // Phaser arrays share the 5 existing system keys; no engineering matrix changes.
     weaponArrays: {
-      // Type-XII phaser arrays: broad arcs, strong yield, replaces pulse cannons
-      cannon_port_upper: { yield:42, cost:32, parentSystem:'cannon_pu', tag:'cpu', label:'Dorsal Fwd Array',   arc:['fore','port','starboard'] },
-      cannon_port_lower: { yield:38, cost:28, parentSystem:'cannon_pl', tag:'cpl', label:'Ventral Fwd Array',  arc:['fore','port','starboard'] },
-      cannon_stbd_upper: { yield:35, cost:26, parentSystem:'cannon_su', tag:'csu', label:'Aft Phaser Bank A',  arc:['aft','port','starboard'] },
-      cannon_stbd_lower: { yield:32, cost:24, parentSystem:'cannon_sl', tag:'csl', label:'Aft Phaser Bank B',  arc:['aft','port','starboard'] },
-      // Forward stardrive section arrays: strongest single emitter, fore only
-      emitter_nose:      { yield:90, cost:65, parentSystem:'nose_beam', tag:'emn', label:'Stardrive Arrays',   arc:['fore'] },
-      // Torpedo launchers: 2 fwd quantum tubes, aft tube (quantum + photon capable)
+      // ── Saucer section: dorsal arrays (top of saucer) ──
+      // Dorsal forward: best fore coverage, some broadside
+      cannon_port_upper: { yield:42, cost:32, parentSystem:'cannon_pu', tag:'cpu', label:'Saucer Dorsal Fwd',   arc:['fore','port','starboard'] },
+      // Saucer port rim: sweeps fore through aft on port side
+      phaser_saucer_port:{ yield:36, cost:28, parentSystem:'cannon_pu', tag:'scp', label:'Saucer Port Array',   arc:['fore','port','aft'] },
+
+      // ── Saucer section: ventral arrays (underside) ──
+      cannon_port_lower: { yield:38, cost:28, parentSystem:'cannon_pl', tag:'cpl', label:'Saucer Ventral Fwd',  arc:['fore','port','starboard'] },
+      // Saucer starboard rim: symmetric to port rim
+      phaser_saucer_stbd:{ yield:36, cost:28, parentSystem:'cannon_pl', tag:'scs', label:'Saucer Stbd Array',   arc:['fore','starboard','aft'] },
+
+      // ── Stardrive section: forward arrays ──
+      // Upper-forward stardrive: covers full forward hemisphere
+      cannon_stbd_upper: { yield:40, cost:30, parentSystem:'cannon_su', tag:'csu', label:'Stardrive Fwd Arrays', arc:['fore','port','starboard'] },
+      // Secondary hull broadside arrays (largest lateral coverage)
+      phaser_secondary:  { yield:42, cost:32, parentSystem:'cannon_su', tag:'phs', label:'Secondary Hull Arrays', arc:['fore','port','starboard'] },
+
+      // ── Saucer aft and rim arrays ──
+      // Aft saucer rim: sweeps aft quadrant broadly
+      cannon_stbd_lower: { yield:35, cost:26, parentSystem:'cannon_sl', tag:'csl', label:'Saucer Aft Arrays',   arc:['aft','port','starboard'] },
+
+      // ── Primary and aft stardrive emitters ──
+      // Primary emitter: heaviest single array, fore-only precision strike
+      emitter_nose:      { yield:90, cost:65, parentSystem:'nose_beam', tag:'emn', label:'Primary Stardrive Emitter', arc:['fore'] },
+      // Aft stardrive emitter: powerful aft defence / pursuit weapon
+      phaser_aft_emitter:{ yield:55, cost:42, parentSystem:'nose_beam', tag:'pae', label:'Aft Stardrive Emitter', arc:['aft','port','starboard'] },
+
+      // ── Torpedo launchers ──
+      // 2 forward quantum tubes (above + below saucer-stardrive junction)
       torpedo_quantum:     { yield:125, cost:85, parentSystem:'torpedoes', tag:'tff', label:'Fwd Quantum Tube A', arc:['fore','port','starboard'], isQuantum:true },
-      torpedo_photon:      { yield:65,  cost:30, parentSystem:'torpedoes', tag:'tph', label:'Fwd Photon Tube A',  arc:['fore','port','starboard'], isPhoton:true },
+      torpedo_quantum_b:   { yield:125, cost:85, parentSystem:'torpedoes', tag:'tfb', label:'Fwd Quantum Tube B', arc:['fore','port','starboard'], isQuantum:true },
+      torpedo_photon:      { yield:65,  cost:30, parentSystem:'torpedoes', tag:'tph', label:'Fwd Photon Tube',    arc:['fore','port','starboard'], isPhoton:true },
+      // Aft torpedo launcher (quantum + photon capable — Insurrection, Nemesis)
       torpedo_quantum_aft: { yield:125, cost:85, parentSystem:'torpedoes', tag:'tqa', label:'Aft Quantum Tube',   arc:['aft','port','starboard'],  isQuantum:true },
       torpedo_photon_aft:  { yield:65,  cost:30, parentSystem:'torpedoes', tag:'tpa', label:'Aft Photon Tube',    arc:['aft','port','starboard'],  isPhoton:true },
     },

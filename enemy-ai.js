@@ -427,7 +427,8 @@ function executeRammingImpact() {
   const residual = applyAblativeArmour(ramDmg);
   G.player.hull  = Math.max(0, G.player.hull - residual);
   G.threat.hull  = 0;
-  postLogEvent(`COLLISION! ${cfg.label} rammed USS Defiant. Ablative absorbed ${Math.round(ramDmg - residual)}. Hull −${Math.round(residual)}.`, 'crit');
+  const _pLabel = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).label;
+  postLogEvent(`COLLISION! ${cfg.label} rammed ${_pLabel}. Armour absorbed ${Math.round(ramDmg - residual)}. Hull −${Math.round(residual)}.`, 'crit');
   inflictCrewCasualty(); inflictCrewCasualty();
   if (G.player.hull <= 0) {
     concludeSimulationRun(false, "Vessel destroyed in Jem'Hadar ramming attack.", false);

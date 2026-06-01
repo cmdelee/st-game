@@ -197,7 +197,7 @@ function synchronizeGlobalInterfaceDisplays() {
   if (ws) {
     const _isEnt = G.playerShipKey === 'enterprise_e';
     const wk = _isEnt
-      ? [{k:'cannon_pu',l:'DRS'},{k:'cannon_pl',l:'VNT'},{k:'cannon_su',l:'AFA'},{k:'cannon_sl',l:'AFB'},{k:'nose_beam',l:'SDR'},{k:'torpedoes',l:'TRP'},{k:'cloak_dev',l:'SSP'},{k:'warp_core',l:'WRP'}]
+      ? [{k:'cannon_pu',l:'SDO'},{k:'cannon_pl',l:'SVN'},{k:'cannon_su',l:'SFW'},{k:'cannon_sl',l:'RIM'},{k:'nose_beam',l:'EMT'},{k:'torpedoes',l:'TRP'},{k:'cloak_dev',l:'SSP'},{k:'warp_core',l:'WRP'}]
       : [{k:'cannon_pu',l:'P/U'},{k:'cannon_pl',l:'P/L'},{k:'cannon_su',l:'S/U'},{k:'cannon_sl',l:'S/L'},{k:'nose_beam',l:'NSE'},{k:'torpedoes',l:'TRP'},{k:'cloak_dev',l:'CLK'},{k:'warp_core',l:'WRP'}];
     ws.innerHTML = wk.map(w => {
       const sys = G.systems[w.k]; const h = Math.round(sys.health);
@@ -219,7 +219,10 @@ function synchronizeGlobalInterfaceDisplays() {
     sh.innerHTML = aks.map(key => {
       const sys = G.systems[key]; const h = Math.round(sys.health);
       const col = sys.tripped ? C.red : h > 70 ? C.green : h > 35 ? C.warn : C.red;
-      const ab  = { cannon_pu:'P/U', cannon_pl:'P/L', cannon_su:'S/U', cannon_sl:'S/L', nose_beam:'NSE', torpedoes:'TRP', cloak_dev:'CLK', warp_core:'WRP', shields:'SHD', sensors:'SEN', engines:'ENG' }[key];
+      const _abbrev = G.playerShipKey === 'enterprise_e'
+        ? { cannon_pu:'SDO', cannon_pl:'SVN', cannon_su:'SFW', cannon_sl:'RIM', nose_beam:'EMT', torpedoes:'TRP', cloak_dev:'SSP', warp_core:'WRP', shields:'SHD', sensors:'SEN', engines:'ENG' }
+        : { cannon_pu:'P/U', cannon_pl:'P/L', cannon_su:'S/U', cannon_sl:'S/L', nose_beam:'NSE', torpedoes:'TRP', cloak_dev:'CLK', warp_core:'WRP', shields:'SHD', sensors:'SEN', engines:'ENG' };
+      const ab  = _abbrev[key];
       const rep = G.repairTeams.some(t => t.sysKey === key);
       return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:1px;">
         <span style="width:22px;font-size:9px;color:#6688aa;font-family:'Roboto Mono';">${ab}</span>
