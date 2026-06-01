@@ -81,14 +81,80 @@ function rebuildWeaponFireMatrix() {
     `;
   }
 
+  // Rebuild capacitor bar grid layout for active ship
+  _rebuildCapBarGrid();
   // Update capacitor bar labels to match active weapon dictionary
   _updateCapacitorBarLabels();
   // Update helm cloak/saucer sep button
   _updateSpecialAbilityButtons();
 }
 
+// Rebuild the capacitor bar grid section for the active ship.
+// Defiant: original 2-column layout, 9 bars.
+// Enterprise-E: compact 3-column layout, 6 system-level bars
+//   (one per weapon system — multiple arrays sharing a system have identical cap%).
+function _rebuildCapBarGrid() {
+  const grid = document.getElementById('cap-bar-grid');
+  if (!grid) return;
+  const isEnt = G.playerShipKey === 'enterprise_e';
+
+  if (isEnt) {
+    const bar = (id, label, col) =>
+      `<div class="bar-row"><span class="bar-label" style="width:82px;font-size:9px;">${label}</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-${id}" style="color:${col};"></div></div><span class="bar-val" id="txt-cap-${id}">100%</span></div>`;
+    grid.style.gridTemplateColumns = '1fr 1fr 1fr';
+    grid.innerHTML = `
+      <div>
+        ${bar('cpu','Saucer Dorsal','var(--b)')}
+        ${bar('cpl','Saucer Ventral','var(--b)')}
+      </div>
+      <div>
+        ${bar('csu','Stardrive Fwd','var(--b)')}
+        ${bar('csl','Saucer Rim/Aft','var(--b)')}
+      </div>
+      <div>
+        ${bar('emn','Emitter Banks','var(--p)')}
+        ${bar('tff','Torpedo Systems','var(--t)')}
+      </div>
+      <div style="display:none">
+        <span id="bar-cap-scp"></span><span id="txt-cap-scp"></span>
+        <span id="bar-cap-scs"></span><span id="txt-cap-scs"></span>
+        <span id="bar-cap-phs"></span><span id="txt-cap-phs"></span>
+        <span id="bar-cap-pae"></span><span id="txt-cap-pae"></span>
+        <span id="bar-cap-tfb"></span><span id="txt-cap-tfb"></span>
+        <span id="bar-cap-tph"></span><span id="txt-cap-tph"></span>
+        <span id="bar-cap-tqa"></span><span id="txt-cap-tqa"></span>
+        <span id="bar-cap-tpa"></span><span id="txt-cap-tpa"></span>
+      </div>`;
+  } else {
+    grid.style.gridTemplateColumns = '';
+    grid.innerHTML = `
+      <div>
+        <div class="bar-row"><span class="bar-label">Pulse Cannon P/U</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-cpu" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-cpu">100%</span></div>
+        <div class="bar-row"><span class="bar-label">Pulse Cannon P/L</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-cpl" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-cpl">100%</span></div>
+        <div class="bar-row"><span class="bar-label">Pulse Cannon S/U</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-csu" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-csu">100%</span></div>
+      </div>
+      <div>
+        <div class="bar-row"><span class="bar-label">Pulse Cannon S/L</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-csl" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-csl">100%</span></div>
+        <div class="bar-row"><span class="bar-label">Nose Beam Array</span> <div class="bar-rail"><div class="bar-fill" id="bar-cap-emn" style="color:var(--p);"></div></div><span class="bar-val" id="txt-cap-emn">100%</span></div>
+        <div class="bar-row"><span class="bar-label">Fwd Quantum Tube</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-tff" style="color:var(--t);"></div></div><span class="bar-val" id="txt-cap-tff">100%</span></div>
+        <div class="bar-row"><span class="bar-label">Fwd Photon Tube</span> <div class="bar-rail"><div class="bar-fill" id="bar-cap-tph" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-tph">100%</span></div>
+        <div class="bar-row"><span class="bar-label">Aft Quantum Tube</span><div class="bar-rail"><div class="bar-fill" id="bar-cap-tqa" style="color:var(--t);"></div></div><span class="bar-val" id="txt-cap-tqa">100%</span></div>
+        <div class="bar-row"><span class="bar-label">Aft Photon Tube</span> <div class="bar-rail"><div class="bar-fill" id="bar-cap-tpa" style="color:var(--b);"></div></div><span class="bar-val" id="txt-cap-tpa">100%</span></div>
+      </div>
+      <div style="display:none">
+        <span id="bar-cap-scp"></span><span id="txt-cap-scp"></span>
+        <span id="bar-cap-scs"></span><span id="txt-cap-scs"></span>
+        <span id="bar-cap-phs"></span><span id="txt-cap-phs"></span>
+        <span id="bar-cap-pae"></span><span id="txt-cap-pae"></span>
+        <span id="bar-cap-tfb"></span><span id="txt-cap-tfb"></span>
+      </div>`;
+  }
+}
+
 // Update the capacitor bar labels in the tactical deck to match active weapon names.
+// Skipped for Enterprise-E — the compact system-grid uses fixed system labels.
 function _updateCapacitorBarLabels() {
+  if (G.playerShipKey === 'enterprise_e') return;   // compact grid has correct labels already
   const arrays = G.activeWeaponArrays;
   if (!arrays) return;
   const tagToKey = { cpu:'cannon_port_upper', cpl:'cannon_port_lower', csu:'cannon_stbd_upper', csl:'cannon_stbd_lower', emn:'emitter_nose', tff:'torpedo_quantum', tph:'torpedo_photon', tqa:'torpedo_quantum_aft', tpa:'torpedo_photon_aft' };
@@ -141,11 +207,7 @@ function _updateSpecialAbilityButtons() {
   // Right panel cloak power footer label
   const cloakFooterLbl = document.getElementById('lbl-cloak-footer');
   if (cloakFooterLbl) cloakFooterLbl.textContent = isEnt ? 'Saucer Sep Power' : 'Cloak Power';
-  // Enterprise-E extra capacitor bars — show/hide
-  ['capbar-scp','capbar-scs','capbar-phs','capbar-pae','capbar-tfb'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = isEnt ? '' : 'none';
-  });
+  // Cap bar grid is fully rebuilt by _rebuildCapBarGrid() — no individual bar show/hide needed here
 }
 
 // Shared entry point for cloak/saucer-sep from helm panel button.
