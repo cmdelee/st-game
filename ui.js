@@ -3,6 +3,61 @@
 // ============================================================
 // DECK SWITCHING
 // ============================================================
+// ============================================================
+// MOBILE PANEL MANAGEMENT
+// ============================================================
+function toggleMobilePanel(side) {
+  const left  = document.getElementById('left-anchor-panel');
+  const right = document.getElementById('right-telemetry-tower');
+  const back  = document.getElementById('panel-backdrop');
+  if (!left || !right || !back) return;
+
+  const leftOpen  = left.classList.contains('panel-open');
+  const rightOpen = right.classList.contains('panel-open');
+
+  // Close both first
+  left.classList.remove('panel-open');
+  right.classList.remove('panel-open');
+  back.classList.remove('active');
+
+  // Then open the requested side (unless it was already open)
+  if (side === 'left'  && !leftOpen)  { left.classList.add('panel-open');  back.classList.add('active'); }
+  if (side === 'right' && !rightOpen) { right.classList.add('panel-open'); back.classList.add('active'); }
+}
+
+function closeMobilePanels() {
+  document.getElementById('left-anchor-panel')?.classList.remove('panel-open');
+  document.getElementById('right-telemetry-tower')?.classList.remove('panel-open');
+  document.getElementById('panel-backdrop')?.classList.remove('active');
+}
+
+function mobileSwitchDeck(key) {
+  closeMobilePanels();
+  toggleActiveDeck(key);
+  // Update mobile nav active state
+  document.querySelectorAll('.mob-nav-btn[id^="mob-btn-"]').forEach(b => b.classList.remove('active'));
+  const mb = document.getElementById(`mob-btn-${key}`); if (mb) mb.classList.add('active');
+}
+
+function _updateMobileStatusBar() {
+  if (!G.running) return;
+  const lockEl   = document.getElementById('mob-lock');
+  const enemyEl  = document.getElementById('mob-enemy-hull');
+  const hullEl   = document.getElementById('mob-hull');
+  const foreEl   = document.getElementById('mob-fore-shld');
+  const phaseEl  = document.getElementById('mob-phase');
+  if (lockEl)  lockEl.textContent  = Math.round(G.lockProgress) + '%';
+  if (enemyEl) enemyEl.textContent = Math.round((G.threat.hull / G.threat.maxHull) * 100) + '%';
+  if (hullEl)  hullEl.textContent  = Math.round((G.player.hull / G.player.maxHull) * 100) + '%';
+  if (foreEl)  foreEl.textContent  = Math.round(G.player.shields.fore);
+  if (phaseEl) phaseEl.textContent = (G.enemyPhase || '—').toUpperCase().slice(0, 8);
+  // Hull colour feedback
+  if (hullEl) hullEl.style.color = G.player.hull/G.player.maxHull < 0.35 ? 'var(--red)' : G.player.hull/G.player.maxHull < 0.60 ? 'var(--warn)' : 'var(--green)';
+}
+
+// ============================================================
+// DECK SWITCHING
+// ============================================================
 function toggleActiveDeck(key) {
   G.activePanel = key; G.playerChosenStation = key;
   document.querySelectorAll('.nav-pill-btn').forEach(b => b.classList.remove('active'));
@@ -34,6 +89,7 @@ function toggleActiveDeck(key) {
 // GLOBAL UI SYNC — called every frame
 // ============================================================
 function synchronizeGlobalInterfaceDisplays() {
+  _updateMobileStatusBar();
   const warpOut = getWarpOutput();
   const total   = getTotalAllocatedPower();
 

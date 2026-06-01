@@ -205,13 +205,26 @@
 <!-- Campaign HUD strip — shown only during active campaign levels -->
 <div id="campaign-hud" style="display:none;background:rgba(255,100,0,0.12);border-bottom:1px solid rgba(255,100,0,0.4);padding:4px 16px;font-family:'Antonio';font-size:12px;letter-spacing:1px;align-items:center;gap:0;"></div>
 
+<!-- Panel backdrop (mobile — tap to close slide panels) -->
+<div class="panel-backdrop" id="panel-backdrop" onclick="closeMobilePanels()"></div>
+
+<!-- Mobile compact status bar (hidden on desktop) -->
+<div id="mobile-status-bar">
+  <div class="mob-stat"><span class="mob-stat-lbl">OUR LOCK</span><span class="mob-stat-val" id="mob-lock">0%</span></div>
+  <div class="mob-stat"><span class="mob-stat-lbl">ENEMY</span><span class="mob-stat-val" id="mob-enemy-hull">100%</span></div>
+  <div class="mob-stat"><span class="mob-stat-lbl">HULL</span><span class="mob-stat-val" id="mob-hull">100%</span></div>
+  <div class="mob-stat"><span class="mob-stat-lbl">FORE SHLD</span><span class="mob-stat-val" id="mob-fore-shld">—</span></div>
+  <div class="mob-stat"><span class="mob-stat-lbl">PHASE</span><span class="mob-stat-val" id="mob-phase" style="font-size:8px;">—</span></div>
+</div>
+
 <!-- ═══════════════════════════════════════════════════════════
      MAIN VIEWPORT
 ════════════════════════════════════════════════════════════ -->
 <div class="main-viewport">
 
   <!-- ── LEFT ANCHOR PANEL ── -->
-  <div class="left-anchor-panel">
+  <div class="left-anchor-panel" id="left-anchor-panel">
+  <button class="mobile-panel-close" onclick="closeMobilePanels()">✕ CLOSE PANEL</button>
     <div class="lcars-elbow"><span class="lcars-elbow-text">SYS-CON</span></div>
     <div class="nav-pill-btn active" id="tab-tactical"    onclick="toggleActiveDeck('tactical')">Tactical Systems</div>
     <div class="nav-pill-btn"        id="tab-engineering" onclick="toggleActiveDeck('engineering')">Engineering</div>
@@ -718,7 +731,8 @@
   </div><!-- /center-operations-deck -->
 
   <!-- ── RIGHT TELEMETRY TOWER ── -->
-  <div class="right-telemetry-tower">
+  <div class="right-telemetry-tower" id="right-telemetry-tower">
+  <button class="mobile-panel-close" onclick="closeMobilePanels()">✕ CLOSE</button>
     <div class="crew-status-card">
       <div class="crew-avatar">📡</div>
       <div>
@@ -776,6 +790,28 @@
   </div><!-- /right-telemetry-tower -->
 
 </div><!-- /main-viewport -->
+
+<!-- Mobile bottom nav bar (hidden on desktop, shown ≤768px) -->
+<div id="mobile-nav-bar">
+  <button class="mob-nav-btn active" id="mob-btn-tactical"    onclick="mobileSwitchDeck('tactical')">
+    <span class="mob-nav-btn-icon">⚡</span><span class="mob-nav-btn-lbl">TACTICAL</span>
+  </button>
+  <button class="mob-nav-btn" id="mob-btn-engineering"        onclick="mobileSwitchDeck('engineering')">
+    <span class="mob-nav-btn-icon">⚙</span><span class="mob-nav-btn-lbl">ENGINEERNG</span>
+  </button>
+  <button class="mob-nav-btn" id="mob-btn-helm"               onclick="mobileSwitchDeck('helm')">
+    <span class="mob-nav-btn-icon">🚀</span><span class="mob-nav-btn-lbl">HELM</span>
+  </button>
+  <button class="mob-nav-btn" id="mob-btn-captain"            onclick="mobileSwitchDeck('captain')">
+    <span class="mob-nav-btn-icon">⭐</span><span class="mob-nav-btn-lbl">COMMAND</span>
+  </button>
+  <button class="mob-nav-btn" id="mob-btn-info"               onclick="toggleMobilePanel('left')">
+    <span class="mob-nav-btn-icon">📡</span><span class="mob-nav-btn-lbl">ENEMY</span>
+  </button>
+  <button class="mob-nav-btn" id="mob-btn-ship"               onclick="toggleMobilePanel('right')">
+    <span class="mob-nav-btn-icon">🛡</span><span class="mob-nav-btn-lbl">SHIP</span>
+  </button>
+</div>
 
 <!-- Three.js for 3D spatial view -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

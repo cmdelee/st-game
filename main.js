@@ -925,6 +925,18 @@ function startCombat() {
 }
 
 // ============================================================
+// VIEWPORT RESIZE — handles window resize + orientation change
+// ============================================================
+function _onViewportResize() {
+  handleHighDpiCanvasResizing();
+  resizeThreeRenderer();
+  // On mobile, close any open slide panels so they reposition correctly
+  if (window.innerWidth > 768) {
+    closeMobilePanels();
+  }
+}
+
+// ============================================================
 // BOOT SEQUENCE
 // ============================================================
 function runMasterBootSequence() {
@@ -936,7 +948,8 @@ function runMasterBootSequence() {
   enemyCanvas   = document.getElementById('canvas-enemy-schematic');enemyCtx   = enemyCanvas   ? enemyCanvas.getContext('2d')   : null;
   powerCanvas   = document.getElementById('canvas-power-dist');     powerCtx   = powerCanvas   ? powerCanvas.getContext('2d')   : null;
 
-  window.addEventListener('resize', handleHighDpiCanvasResizing);
+  window.addEventListener('resize', _onViewportResize);
+  window.addEventListener('orientationchange', () => { setTimeout(_onViewportResize, 200); });
 
   // Populate star field
   for (let i = 0; i < 90; i++) {
