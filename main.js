@@ -245,10 +245,15 @@ function initiateVesselSimulation(station) {
                            weaponsFired:{ cannons:0, nose:0, quantum:0, photon:0 },
                            sectorBreaches:{ fore:0, port:0, starboard:0, aft:0 },
                            peakHullHit:0, systemsTripped:[], enemyPhaseReached:'' };
-  G.lastStandActive    = false;
-  G.lastStandReported  = false;
-  G.enemyHullMilestones = {};
-  G.crewReports        = [];
+  G.lastStandActive         = false;
+  G.lastStandReported       = false;
+  G.enemyHullMilestones     = {};
+  G.crewReports             = [];
+  G._captainLowHullReported = false;
+  G.cloakEngagedAt          = 0;
+  G.enemyCloakEngagedAt     = 0;
+  G.frozenShields           = { fore:0, port:0, starboard:0, aft:0 };
+  G.enemyFrozenShields      = { fore:0, port:0, starboard:0, aft:0 };
   G.repairQueue        = [];
   G.enemyRepairQueue   = [];  // clear stale entries from previous game
   G.repairTeams        = [
