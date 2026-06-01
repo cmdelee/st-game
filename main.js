@@ -244,6 +244,7 @@ function initiateVesselSimulation(station) {
   G.lastStandActive    = false;
   G.lastStandReported  = false;
   G.enemyHullMilestones = {};
+  G.crewReports        = [];
   G.repairQueue        = [];
   G.enemyRepairQueue   = [];  // clear stale entries from previous game
   G.repairTeams        = [

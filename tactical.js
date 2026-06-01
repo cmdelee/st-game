@@ -182,10 +182,6 @@ function fireSelectedArray(weaponKey) {
   else if (_isCannon) { if (_r === 'close' || G.attackRunActive) dmg *= 1.20; else if (_r === 'long' && !G.attackRunActive) dmg *= 0.90; }
   else if (_isNose)   { if (_r === 'close') dmg *= 1.10; if (_r === 'long') dmg *= 0.90; }
 
-  // Quantum torpedo warhead bonus vs polaron-shielded ships (DS9 Dominion War — quantum
-  // warheads specifically engineered to penetrate polaron-based shielding technology)
-  if (weapon.isQuantum && cfg.polaronWeapons) dmg *= 1.20;
-
   if (G._overchargeActive)   dmg *= 1.50;
   if (G._unstableTorpActive) dmg *= 1.70;
   if (G.powerDumpActive)     dmg *= 1.40;
@@ -196,6 +192,10 @@ function fireSelectedArray(weaponKey) {
   }
 
   const cfg = ENEMY_CONFIGS[G.enemyArchetype];
+
+  // Quantum torpedo warhead bonus vs polaron-shielded ships (DS9 Dominion War — quantum
+  // warheads specifically engineered to penetrate polaron-based shielding technology)
+  if (weapon.isQuantum && cfg.polaronWeapons) dmg *= 1.20;
   if (cfg.adaptiveShields) {
     const adaptKey = weapon.isPhoton ? 'photon' : weapon.parentSystem;
     const resist   = G.enemyAdaptiveResist[adaptKey] || 0;
