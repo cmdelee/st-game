@@ -2,12 +2,13 @@
 
 ## Project overview
 
-Single-page Star Trek tactical combat simulator. The player selects a vessel (**USS Defiant NX-74205** or **USS Enterprise NCC-1701-E**) and a command station (**Tactical**, **Engineering**, **Helm**, or **Captain's Chair**); the unchosen stations are delegated to the computer. All game logic lives across **13 JS files** served from the same directory — no build step, no bundler.
+Single-page Star Trek tactical combat simulator. The player selects a vessel (**USS Defiant NX-74205** or **USS Enterprise NCC-1701-E**) and a command station (**Tactical**, **Engineering**, **Helm**, or **Captain's Chair**); the unchosen stations are delegated to the computer. All game logic lives across **15 JS files** served from the same directory — no build step, no bundler.
 
 **File load order (matters — each file depends on the previous):**
 ```
 config.js → state.js → engineering.js → crew.js → sensors.js → tactical.js →
-helm.js → enemy-ai.js → command.js → canvas-three.js → canvas-2d.js → ui.js → main.js
+helm.js → encounter-phases.js → enemy-ai.js → auto-delegation.js →
+command.js → canvas-three.js → canvas-2d.js → ui.js → main.js
 lcars.css (stylesheet)
 index.html (HTML shell + script tags)
 ```
@@ -23,11 +24,13 @@ index.html (HTML shell + script tags)
 | `engineering.js` | Warp core trip, emergency battery, ablative armour processing, shield regen rate calculation, repair queue (2 independent teams), engineering matrix UI, power allocation (`tuneBusAllocation`), power presets (`applyPowerPreset`), EPS conduit conduction + thermal buildup, system degradation thresholds, shield manipulation |
 | `crew.js` | Crew casualties (`inflictCrewCasualty`), efficiency modifiers (`getCrewEfficiency`, `getMedicalEfficiency`, `getHelmEvasiveModifier`), `updateCrewStatusDisplay`, `attemptEmergencyWarp`, `updateWarpAvailability`, `postTacticalAdvisory` |
 | `sensors.js` | Scan profiles (`activateScanProfile`, `commitScanProfile`), active sensor toggle, enemy subsystem target grid (`buildEnemySubsystemTargetGrid`, `setEnemyTarget`) |
-| `tactical.js` | Player weapons: burst-fire/concentrated phaser fire, shield freq rotation, evasive, `fireSelectedArray`, `applyDamageToEnemy`, overload modes; Defiant: `firePulseCannons`, `toggleCloakingDevice`; Enterprise-E: `fireAllPhaserArrays`, `toggleSaucerSeparation`, `executeConcentratedPhaserFire`, `executeMaxPhaserOutput`, `executeTricobalWarhead` |
+| `tactical.js` | Player weapons: burst-fire/concentrated phaser fire, shield freq rotation, evasive, `fireSelectedArray`, `applyDamageToEnemy`, overload modes; Defiant: `firePulseCannons`, `toggleCloakingDevice`; Enterprise-E: `fireAllPhaserArrays`, `toggleSaucerSeparation`, `fireSaucerAutomatic`, `executeConcentratedPhaserFire`, `executeMaxPhaserOutput`, `executeTricobalWarhead` |
 | `helm.js` | Helm timer processing (`processHelmTimers`), speed control (`setHelmSpeed`), attack vector (`setHelmAttackVector`), engagement range (`setPlayerRangeBracket`), attack run, come about, Picard Manoeuvre, Attack Pattern Omega, Evasive Pattern Alpha, helm panel UI (`updateHelmPanel`) |
-| `enemy-ai.js` | Enemy cloaking AI (`processEnemyCloakDecision`, `triggerEnemyCloak/Decloak`), sensor ghosts, all mechanics timers (`processNewMechanicsTimers` — delegates to `processHelmTimers`), Jem'Hadar ramming, enemy AI loop (`processEnemyAI`), enemy fire (`executeThreatCounterVolley`), full auto-delegation (`processAutomatedDelegation`) |
+| `encounter-phases.js` | Faction encounter phase arcs (`initEncounterPhases`, `processEncounterPhase`, `_applyPhase`); hull milestone events at 75/50/25/10% (`checkEnemyHullMilestones`, `_MILESTONE_DATA`); Klingon death salvo (`_triggerKlingonDeathSalvo`); `_getFactionKey` helper |
+| `enemy-ai.js` | Enemy cloaking AI (`processEnemyCloakDecision`, `triggerEnemyCloak/Decloak`), sensor ghosts (`processEnemySensorGhosts`), all mechanics timers (`processNewMechanicsTimers` — delegates to `processHelmTimers`), Jem'Hadar ramming (`initiateRammingRun`, `executeRammingImpact`), enemy AI loop (`processEnemyAI`), enemy fire (`executeThreatCounterVolley`) |
+| `auto-delegation.js` | Computer management of uncrewed stations (`processAutomatedDelegation`): auto-engineering relay resets + repair dispatch, auto-tactical fire cycle, captain-mode Worf/O'Brien/Nog autonomous behaviours |
 | `command.js` | Captain's Chair: `postCrewReport`, `_renderCrewComms` (uses `_crewLabel`/`_crewColour` getters — ship-aware); `_CAP_CD` cooldowns; 40+ order functions; manoeuvre ticker; ship-specific periodic reports (`_WORF_REPORTS`, `_OBRIEN_REPORTS`/`_LAFORGE_REPORTS`, `_NOG_REPORTS`/`_DATA_REPORTS`); `initCaptainStation()` |
-| `canvas-three.js` | Three.js 3D spatial battle view; `buildDefiantGeometry()` + `buildSovereignGeometry()` + `rebuildPlayerMesh()` — swaps player mesh on ship select |
+| `canvas-three.js` | Three.js 3D spatial battle view; `buildDefiantGeometry()` + `buildSovereignGeometry()` + `rebuildPlayerMesh()` — swaps player mesh on ship select; `buildSaucerSepGeometry()` — independent saucer section; 3D beam tubes, burst shockwave rings, torpedo impact spheres, nacelle exhaust particles, ramming trajectory indicator; `_FACTION_GLOW_COL` / `_FACTION_BEAM_COL` colour maps |
 | `canvas-2d.js` | Enemy schematic; hull schematic (`_renderDefiantSchematic` / `_renderEnterpriseESchematic` — branches on `G.playerShipKey`); power distribution canvas |
 | `ui.js` | Deck switching (`toggleActiveDeck` — handles tactical/engineering/helm/captain), global UI sync (`synchronizeGlobalInterfaceDisplays`), scoring with hull integrity bonus (`calculateFinalScore`), end-game (`concludeSimulationRun`) |
 | `main.js` | Game loop; simulation init (`initiateVesselSimulation`); boot; ship selection (`selectPlayerShip`, `rebuildWeaponFireMatrix`, `_rebuildCapBarGrid`, `_updateSpecialAbilityButtons`); campaign mode; `returnToSetup()` |
@@ -680,6 +683,18 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 44. Campaign end text "DEFIANT DESTROYED" was hardcoded — now uses active ship name
 45. `_OBRIEN_REPORTS` ablative armour status line shown for Enterprise-E — now gated by `hasAblativeArmour`; replaced with regenerative shield status line
 46. Crew comms feed speaker names were hardcoded constants — replaced with `_crewLabel()`/`_crewColour()` getters that read from `G.playerShipConfig.crewLabels/crewColours`
+47. `canvas-three.js` `THREE.Line` beams were always 1px regardless of `linewidth` — replaced with `CylinderGeometry` tube meshes (glow radius 0.22 + core 0.08) for real 3D weapon beams
+48. Burst salvo had no 3D visual — `burst_flash` events now spawn two expanding torus shockwave rings with particles
+49. Saucer separation had no 3D representation — added independent `buildSaucerSepGeometry()` mesh flying a wide parametric arc through the combat zone with its own `PointLight`
+50. Torpedo impacts were silent — impact now spawns an expanding wireframe sphere + white flash + 22-particle burst at impact position
+51. Engine glow was a static point light — nacelle exhaust particles now stream continuously, scaled by helm speed, from correct ship-specific nacelle positions
+52. Jem'Hadar ramming run had no 3D trajectory indicator — pulsing red `THREE.Line` with particle bursts along approach vector added
+53. `enemy-ai.js` split into `encounter-phases.js` (phase arcs + hull milestones), `enemy-ai.js` (cloaking + AI + fire), and `auto-delegation.js` (computer station management)
+54. `auto-delegation.js` relay-reset used a hardcoded Defiant default power object — replaced with `G.playerShipConfig.defaultPower` so Enterprise-E systems restore correct allocations
+55. `fireSaucerAutomatic` applied helm `yieldMult` to saucer damage — removed; saucer fires on its own impulse power independent of stardrive helm speed
+56. Torpedo mesh `_fromEnemy` flag not copied from `inFlightTorpedoes` entry — camera shake was incorrectly triggering on all torpedo impacts including enemy ones
+57. Engine glow `PointLight` position used hardcoded `-5` X offset for both ships — now uses ship-specific nacelle end positions (`-5.2`/`-0.5` Defiant, `-8.4`/`-2.4` Enterprise-E)
+58. Two separate faction→colour maps in `canvas-three.js` with inconsistent hex values — consolidated into top-level `_FACTION_GLOW_COL` (deep, for point lights) and `_FACTION_BEAM_COL` (bright, for weapon beams)
 
 ---
 
