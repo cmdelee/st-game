@@ -95,10 +95,10 @@ function _commitDeepScan() {
     postLogEvent("DEEP SCAN: Fire control disrupted — enemy fire rate −23%.", 'good');
   }
 
-  G.deepScanCooldown = 60000;  // 60s before rescan
+  G.deepScanCooldown = isBorg ? 10000 : 60000;  // Borg: 10s (adapt fast); others: 60s
 
   postLogEvent(`DEEP SCAN COMPLETE — ${results.length} frequency lock${results.length>1?'s':''} established.`, 'good');
-  if (isBorg) postLogEvent("WARNING: Borg frequencies adapt over time — rescan as they escalate.", 'warn');
+  if (isBorg) postLogEvent("WARNING: Borg frequencies adapt — rescan every time they escalate (10s cooldown).", 'warn');
 
   _updateDeepScanButton();
   _renderScanResults();
@@ -113,10 +113,11 @@ function checkBorgScanExpiry() {
   if (!anyEntry || anyEntry.borgScanLevel < 0) return;
   if (currentLevel > anyEntry.borgScanLevel) {
     G.permanentScanBonuses = {};
-    // Also restore fire interval
+    G.deepScanCooldown     = 0;   // Borg adapted — allow immediate rescan
+    // Restore fire interval (weapon_disrupt bonus no longer applies)
     const diff = DIFFICULTY[currentDifficulty];
     G.threat.fireInterval = Math.round(ENEMY_CONFIGS[G.enemyArchetype].fireInterval * diff.enemyFireMult);
-    postLogEvent("BORG: Frequency adaptation complete — scan data expired. Rescan required.", 'crit');
+    postLogEvent("BORG: Frequency adaptation complete — scan data expired. Rescan now!", 'crit');
     _updateDeepScanButton();
     _renderScanResults();
   }
