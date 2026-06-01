@@ -43,14 +43,15 @@ function executeBurstFireSalvo() {
 
   const cannons = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
   const ready   = cannons.filter(k => {
+    if (!ARRAYS_DICTIONARY[k].arc.includes(G.helmAttackVector)) return false;
     const s = G.systems[ARRAYS_DICTIONARY[k].parentSystem];
     return !s.tripped && s.health >= 10 && s.cap >= ARRAYS_DICTIONARY[k].cost;
   });
-  if (ready.length === 0) { postLogEvent("No pulse cannons available for burst.", 'warn'); return; }
+  if (ready.length === 0) { postLogEvent("No pulse cannons in arc and ready for burst.", 'warn'); return; }
 
   postLogEvent(`BURST SALVO — ${ready.length} cannons in 800ms window!`, 'crit');
   G.burstFireReady    = false;
-  G.burstFireCooldown = 12000;
+  G.burstFireCooldown = 9000;
   ready.forEach((k, i) => {
     setTimeout(() => {
       if (!G.dead) {
@@ -117,20 +118,23 @@ function fireSelectedArray(weaponKey) {
   if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
 
   const weapon    = ARRAYS_DICTIONARY[weaponKey]; if (!weapon) return;
+  if (weapon.arc && weapon.arc.length > 0 && !weapon.arc.includes(G.helmAttackVector)) {
+    postLogEvent(`${weapon.label} — out of firing arc on ${G.helmAttackVector.toUpperCase()} vector.`, 'warn'); return;
+  }
   const parentSys = G.systems[weapon.parentSystem];
   if (!parentSys || parentSys.health < 10 || parentSys.tripped) { postLogEvent(`${weapon.label} offline.`, 'warn'); return; }
   if (parentSys.cap < weapon.cost) { postLogEvent(`${weapon.label} capacitor low (${Math.round(parentSys.cap)}%).`, 'warn'); return; }
 
   // Block energy weapons vs fully cloaked enemy; torpedoes fire blind
   if (G.enemyCloaked && G.enemyCloakVulnTimer <= 0) {
-    if (weaponKey === 'torpedo_quantum' || weaponKey === 'torpedo_photon') {
-      const isPhoton = weaponKey === 'torpedo_photon';
-      const mag = isPhoton ? G.player.photonTorpedoes : G.player.torpedoes;
-      if (mag <= 0) { postLogEvent(`${isPhoton ? 'Photon' : 'Quantum'} torpedo magazine empty.`, 'warn'); return; }
-      if (isPhoton) G.player.photonTorpedoes--; else G.player.torpedoes--;
+    if (weapon.isQuantum || weapon.isPhoton) {
+      const mag = weapon.isPhoton ? G.player.photonTorpedoes : G.player.torpedoes;
+      const tube = weapon.isPhoton ? 'Photon' : 'Quantum';
+      if (mag <= 0) { postLogEvent(`${tube} torpedo magazine empty.`, 'warn'); return; }
+      if (weapon.isPhoton) G.player.photonTorpedoes--; else G.player.torpedoes--;
       parentSys.cap -= weapon.cost;
       G.inFlightTorpedoes.push({ dmg: weapon.yield * 0.4, timeToImpact: 3500, fromEnemy: false });
-      postLogEvent(`${isPhoton ? 'Photon' : 'Quantum'} torpedo blind-fired at last known position.`, 'warn');
+      postLogEvent(`${tube} torpedo blind-fired from ${weapon.arc.includes('aft') ? 'aft' : 'forward'} tube.`, 'warn');
     } else {
       postLogEvent("Enemy cloaked — energy weapons cannot track target.", 'warn');
     }
@@ -140,10 +144,10 @@ function fireSelectedArray(weaponKey) {
   const needsLock = !weapon.isPhoton;
   if (needsLock && G.lockProgress < 5 && G.enemyCloakVulnTimer <= 0) { postLogEvent("No targeting lock — acquire lock before firing.", 'warn'); return; }
 
-  if (weaponKey === 'torpedo_quantum') {
+  if (weapon.isQuantum) {
     if (G.player.torpedoes <= 0) { postLogEvent("Quantum torpedo magazine empty.", 'warn'); return; }
     G.player.torpedoes--;
-  } else if (weaponKey === 'torpedo_photon') {
+  } else if (weapon.isPhoton) {
     if (G.player.photonTorpedoes <= 0) { postLogEvent("Photon torpedo magazine empty.", 'warn'); return; }
     G.player.photonTorpedoes--;
   }
@@ -157,10 +161,10 @@ function fireSelectedArray(weaponKey) {
   const lockMod      = (0.5 + (G.lockProgress / 100) * 0.5) * sensorMod * crewMod;
 
   let dmg;
-  if (weaponKey === 'torpedo_quantum') {
-    if (G.lockProgress >= 60) { dmg = weapon.yield * (0.85 + Math.random() * 0.30) * (parentSys.health / 100) * crewMod; postLogEvent("Quantum torpedo — clean intercept solution.", 'good'); }
-    else                       { dmg = weapon.yield * (0.45 + Math.random() * 0.20) * (parentSys.health / 100) * crewMod; postLogEvent("Quantum torpedo — partial lock, glancing impact.", 'warn'); }
-  } else if (weaponKey === 'torpedo_photon') {
+  if (weapon.isQuantum) {
+    if (G.lockProgress >= 60) { dmg = weapon.yield * (0.85 + Math.random() * 0.30) * (parentSys.health / 100) * crewMod; postLogEvent(`Quantum torpedo [${weapon.arc.includes('aft') ? 'AFT' : 'FWD'}] — clean intercept solution.`, 'good'); }
+    else                       { dmg = weapon.yield * (0.45 + Math.random() * 0.20) * (parentSys.health / 100) * crewMod; postLogEvent(`Quantum torpedo [${weapon.arc.includes('aft') ? 'AFT' : 'FWD'}] — partial lock, glancing impact.`, 'warn'); }
+  } else if (weapon.isPhoton) {
     dmg = weapon.yield * (parentSys.health / 100) * crewMod;
   } else {
     dmg = weapon.yield * (parentSys.health / 100) * lockMod;
@@ -171,7 +175,7 @@ function fireSelectedArray(weaponKey) {
   if (G.attackPatternOmegaActive) dmg *= 1.40;
 
   const _r = G.playerRangeBracket;
-  const _isTorp   = weaponKey === 'torpedo_quantum' || weaponKey === 'torpedo_photon';
+  const _isTorp   = weapon.isQuantum || weapon.isPhoton;
   const _isCannon = weapon.parentSystem && weapon.parentSystem.startsWith('cannon');
   const _isNose   = weapon.parentSystem === 'nose_beam';
   if (_isTorp)        { if (_r === 'long') dmg *= 1.15; if (_r === 'close') dmg *= 0.90; }
@@ -192,13 +196,19 @@ function fireSelectedArray(weaponKey) {
     const adaptKey = weapon.isPhoton ? 'photon' : weapon.parentSystem;
     const resist   = G.enemyAdaptiveResist[adaptKey] || 0;
     dmg *= (1 - resist);
-    G.enemyAdaptiveResist[adaptKey] = Math.min(0.65, resist + 0.04);
+    // Defiant's weapons were specifically engineered to cycle frequency against Borg adaptation
+    // (DS9 "The Search" — designed to exceed Borg shielding). Adaptation builds 40% slower.
+    G.enemyAdaptiveResist[adaptKey] = Math.min(0.65, resist + 0.024);
     if (resist > 0.1 && resist < 0.65) postLogEvent(`Borg adapting to ${weapon.label} — ${Math.round(resist*100)}% resistance.`, 'warn');
-    if (resist >= 0.65) postLogEvent(`Borg fully adapted to ${weapon.label} — switch weapons!`, 'crit');
+    if (resist >= 0.65) postLogEvent(`Borg fully adapted to ${weapon.label} — modulate to new frequency!`, 'crit');
   }
 
   G.score.volleysFired++;
   G.score.totalDmgDealt += dmg;
+  if (weapon.isQuantum)                     G.score.weaponsFired.quantum++;
+  else if (weapon.isPhoton)                 G.score.weaponsFired.photon++;
+  else if (weapon.parentSystem === 'nose_beam') G.score.weaponsFired.nose++;
+  else                                      G.score.weaponsFired.cannons++;
 
   const bonusMult = G.enemyCloakVulnTimer > 0 ? 1.4 : 1.0;
   applyDamageToEnemy(dmg * bonusMult, weapon);
@@ -268,8 +278,18 @@ function applyDamageToEnemy(dmg, weapon, targetSectorOverride) {
   if (G.threat.hull <= 0) concludeSimulationRun(true, "Enemy vessel destroyed.", false);
 }
 
-function firePulseCannons()      { ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'].forEach(k => fireSelectedArray(k)); }
-function executeAlphaSalvoFire() { ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose','torpedo_quantum'].forEach(k => fireSelectedArray(k)); }
+function firePulseCannons() {
+  const inArc = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower']
+    .filter(k => ARRAYS_DICTIONARY[k].arc.includes(G.helmAttackVector));
+  if (inArc.length === 0) { postLogEvent("No pulse cannons bear on current attack vector.", 'warn'); return; }
+  inArc.forEach(k => fireSelectedArray(k));
+}
+function executeAlphaSalvoFire() {
+  ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower',
+   'emitter_nose','torpedo_quantum','torpedo_photon','torpedo_quantum_aft','torpedo_photon_aft']
+    .filter(k => ARRAYS_DICTIONARY[k].arc.includes(G.helmAttackVector))
+    .forEach(k => fireSelectedArray(k));
+}
 
 // ── Overload modes ────────────────────────────────────────────
 function executeCannonOvercharge() {

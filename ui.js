@@ -213,6 +213,36 @@ function synchronizeGlobalInterfaceDisplays() {
     }).join('');
   }
 
+  // Weapon arc states — grey out weapons that can't bear on current attack vector
+  const _vec = G.helmAttackVector;
+  const _arcGrey = (id, weaponKeys, label) => {
+    const btn = document.getElementById(id); if (!btn) return;
+    const anyInArc = weaponKeys.some(k => ARRAYS_DICTIONARY[k] && ARRAYS_DICTIONARY[k].arc.includes(_vec));
+    const inArcCount = weaponKeys.filter(k => ARRAYS_DICTIONARY[k] && ARRAYS_DICTIONARY[k].arc.includes(_vec)).length;
+    if (!anyInArc) {
+      btn.style.opacity = '0.35'; btn.style.pointerEvents = 'none';
+      btn.title = `Out of arc — ${_vec.toUpperCase()} vector`;
+    } else {
+      btn.style.opacity = ''; btn.style.pointerEvents = '';
+      btn.title = '';
+    }
+    if (id === 'btn-cannons') {
+      btn.textContent = inArcCount > 0 ? `⚡ Pulse Cannons ×${inArcCount}${inArcCount < 4 ? ' IN ARC' : ''}` : '⚡ Cannons — OUT OF ARC';
+    }
+  };
+  _arcGrey('btn-cannons',    ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'], 'cannons');
+  _arcGrey('btn-nose',       ['emitter_nose'],         'nose');
+  _arcGrey('btn-quantum',    ['torpedo_quantum'],       'quantum');
+  _arcGrey('btn-photon',     ['torpedo_photon'],        'photon');
+  _arcGrey('btn-quantum-aft',['torpedo_quantum_aft'],   'quantum-aft');
+  _arcGrey('btn-photon-aft', ['torpedo_photon_aft'],    'photon-aft');
+  _arcGrey('btn-alpha',      ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose','torpedo_quantum','torpedo_quantum_aft'], 'alpha');
+  const bfArcCount = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower']
+    .filter(k => ARRAYS_DICTIONARY[k].arc.includes(_vec)).length;
+  const bfArcBtn = document.getElementById('btn-burst-fire');
+  if (bfArcBtn && bfArcCount === 0) { bfArcBtn.style.opacity = '0.35'; bfArcBtn.style.pointerEvents = 'none'; }
+  else if (bfArcBtn) { bfArcBtn.style.opacity = ''; bfArcBtn.style.pointerEvents = ''; }
+
   // Burst-fire button state
   const bfBtn = document.getElementById('btn-burst-fire');
   if (bfBtn) {
@@ -310,9 +340,55 @@ function concludeSimulationRun(victory, msg, escaped) {
   const box = document.getElementById('terminal-transcript-box');
   if (box) {
     box.style.display = 'block';
-    box.innerHTML = '<div style="color:var(--o);font-weight:bold;margin-bottom:4px;font-family:\'Antonio\'">BATTLE LOG (last 20):</div>';
-    G.historicalLogTracks.slice(-20).forEach(e => {
+    const s  = G.score;
+    const cfg = ENEMY_CONFIGS[G.enemyArchetype] || {};
+    const hullPct  = Math.round((G.player.hull / G.player.maxHull) * 100);
+    const totalWpn = s.weaponsFired.cannons + s.weaponsFired.nose + s.weaponsFired.quantum + s.weaponsFired.photon;
+    const crewRows = Object.values(CREW_STATIONS).map(c => {
+      const icon = c.status === 'nominal' ? '●' : c.status === 'wounded' ? '⚠' : '✕';
+      const col  = c.status === 'nominal' ? '#00cc66' : c.status === 'wounded' ? '#ffaa00' : '#ff4444';
+      const cas  = c.casualties > 0 ? ` (${c.casualties} casualt${c.casualties > 1 ? 'ies' : 'y'})` : '';
+      return `<span style="color:${col}">${icon} ${c.name} — ${c.status}${cas}</span>`;
+    }).join('&nbsp;&nbsp;');
+    const sectorBreachStr = ['fore','port','starboard','aft'].map(sec => {
+      const n = s.sectorBreaches[sec] || 0;
+      const col = n === 0 ? '#00cc66' : n < 3 ? '#ffaa00' : '#ff4444';
+      return `<span style="color:${col}">${sec.toUpperCase()}: ${n}</span>`;
+    }).join('&nbsp;&nbsp;');
+    const trippedStr = s.systemsTripped.length > 0
+      ? s.systemsTripped.map(k => G.systems[k] ? G.systems[k].label : k).join(', ')
+      : '<span style="color:#00cc66">None</span>';
+    const phaseStr = s.enemyPhaseReached ? s.enemyPhaseReached.toUpperCase() : '—';
+    const row = (label, val) => `<div style="display:flex;justify-content:space-between;padding:1px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:#6688aa">${label}</span><span style="color:#ddeeff">${val}</span></div>`;
+    box.innerHTML = `
+      <div style="font-family:'Antonio';font-size:12px;color:var(--o);font-weight:bold;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid var(--o);padding-bottom:4px;">TACTICAL DEBRIEF — USS DEFIANT NX-74205</div>
+      <div style="font-size:10px;margin-bottom:8px;">
+        ${row('Enemy vessel', `${cfg.label || G.enemyArchetype} [${cfg.faction || '—'}]`)}
+        ${row('Phase reached', phaseStr)}
+        ${row('Time in combat', Math.round(s.timeSurvived) + 's')}
+        ${row('Hull integrity at end', hullPct + '%')}
+      </div>
+      <div style="font-family:'Antonio';font-size:10px;color:var(--b);letter-spacing:1px;margin:6px 0 3px;">WEAPONS FIRED</div>
+      <div style="font-size:10px;margin-bottom:8px;">
+        ${row('Pulse Cannons', s.weaponsFired.cannons)}
+        ${row('Nose Emitter', s.weaponsFired.nose)}
+        ${row('Quantum Torpedoes', s.weaponsFired.quantum)}
+        ${row('Photon Torpedoes', s.weaponsFired.photon)}
+        ${row('Total volleys', totalWpn)}
+        ${row('Total yield delivered', Math.round(s.totalDmgDealt) + ' MW')}
+      </div>
+      <div style="font-family:'Antonio';font-size:10px;color:var(--b);letter-spacing:1px;margin:6px 0 3px;">HULL BREACHES BY SECTOR</div>
+      <div style="font-size:10px;margin-bottom:2px;">${sectorBreachStr}</div>
+      ${s.peakHullHit > 0 ? `<div style="font-size:10px;color:#aabbcc;margin-bottom:8px;">Peak single hit: <span style="color:#ff8888">${Math.round(s.peakHullHit)} MW</span></div>` : '<div style="margin-bottom:8px;"></div>'}
+      <div style="font-family:'Antonio';font-size:10px;color:var(--b);letter-spacing:1px;margin:6px 0 3px;">SYSTEMS TRIPPED</div>
+      <div style="font-size:10px;margin-bottom:8px;">${trippedStr}</div>
+      <div style="font-family:'Antonio';font-size:10px;color:var(--b);letter-spacing:1px;margin:6px 0 3px;">CREW STATUS</div>
+      <div style="font-size:10px;margin-bottom:8px;">${crewRows}</div>
+      <div style="font-family:'Antonio';font-size:10px;color:var(--o);letter-spacing:1px;margin:8px 0 3px;border-top:1px solid rgba(255,170,0,0.3);padding-top:6px;">BATTLE LOG (last 15):</div>
+    `;
+    G.historicalLogTracks.slice(-15).forEach(e => {
       const d = document.createElement('div');
+      d.style.cssText = 'font-size:10px;';
       d.style.color = { info:'#aabbcc', good:'#00cc66', warn:'#ffaa00', crit:'#ff4444' }[e.tier] || '#aabbcc';
       d.textContent = `[${e.ts}] ${e.msg}`;
       box.appendChild(d);
@@ -327,4 +403,5 @@ function concludeSimulationRun(victory, msg, escaped) {
 
   showCloakVulnOverlay(false);
   const sg = document.getElementById('sensor-ghost-overlay'); if (sg) sg.style.display = 'none';
+  const mv = document.querySelector('.main-viewport'); if (mv) mv.classList.remove('last-stand-flash');
 }

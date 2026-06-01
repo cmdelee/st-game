@@ -16,6 +16,27 @@ function handleWarpCoreTrip() {
     postLogEvent(`Systems scaled to ${impulseMax}MW impulse budget.`, 'warn');
   }
   if (G.batteryCharge > 0) postLogEvent("Emergency battery available — activate in engineering panel.", 'warn');
+
+  // EPS backwash — stress spike to directly-fed systems
+  const cascadeStress = { engines: 35, shields: 22, sensors: 15 };
+  const trippedByCascade = [];
+  Object.entries(cascadeStress).forEach(([key, spike]) => {
+    const sys = G.systems[key];
+    sys.stress = Math.min(100, sys.stress + spike);
+    if (sys.stress >= 100 && !sys.tripped) {
+      sys.tripped = true;
+      trippedByCascade.push(sys.label);
+      postLogEvent(`EPS SURGE: ${sys.label} overloaded by power backwash!`, 'crit');
+      checkSystemDegradationThresholds(key);
+    }
+  });
+  if (trippedByCascade.length > 0) {
+    postLogEvent(`CASCADE FAILURE — ${trippedByCascade.join(', ')} offline!`, 'crit');
+    crewReportSystemTripped(trippedByCascade[0]);
+  } else {
+    postLogEvent("EPS backwash stressed engines, shields, and sensor grid.", 'warn');
+  }
+
   rebuildEngineeringMatrixInterface();
   refreshEngineeringPanelGraphics();
 }
@@ -662,6 +683,7 @@ function computeConduitConduction(dt) {
 // ============================================================
 function checkSystemDegradationThresholds(key) {
   const sys = G.systems[key]; if (!sys) return;
+  if (sys.tripped && G.score && !G.score.systemsTripped.includes(key)) G.score.systemsTripped.push(key);
   if (key === 'sensors' && sys.health < 70) postLogEvent("Sensor array degraded — targeting accuracy reduced.", 'warn');
   if (key === 'engines' && sys.health < 50) {
     postLogEvent("Engine critical — power cap reduced!", 'crit');

@@ -29,11 +29,15 @@ You command the USS Defiant NX-74205 in real-time combat. Choose your operationa
   - Four sensor scan profiles (shields / hull fissures / weapons disrupt / tetryon ECM)
   - Enemy subsystem targeting
   - Ablative armour (6 regenerating layers)
+  - **Canon weapon arcs** — pulse cannons are forward-only; aft torpedo tubes bear on port, starboard, and aft; all enemy weapons respect their Trek-accurate firing arcs
 - **Engineering Power System**: Zero-sum EPS allocation across 11 systems, thermal buildup, breaker trips, one-click power presets (Attack / Silent Running / Evasive / Damage Control)
+- **Warp Core Cascade**: Tripping the warp core sends an EPS backwash stress spike into engines, shields, and sensors — already-stressed systems cascade-trip
 - **Helm Controls**: Speed, attack vector, engagement range, attack runs, come-about, and advanced manoeuvres
 - **Dynamic AI**: Klingons close range; Romulans generate sensor ghosts; Borg adapt per-weapon; Jem'Hadar can ram
 - **Captain's Chair**: Live crew comms feed, 40+ order buttons across Worf/O'Brien/Nog, autonomous crew automation with command overrides
 - **Named Crew**: Worf, O'Brien, Bashir, Nog — casualties degrade their station's effectiveness
+- **Last Stand**: Below 20% hull the crew acts autonomously — Nog pushes to full impulse, O'Brien reroutes shield power, Worf calls battle stations; the viewport pulses red
+- **Post-battle Debrief**: Full tactical report after every engagement — weapons fired by type, breaches by shield sector, systems tripped, peak hit, crew status, enemy phase reached
 - **Emergency Systems**: Battery backup, emergency warp escape, damage control, emergency thrusters
 
 ---
@@ -59,23 +63,25 @@ Open `http://localhost:8000`. No build step, no bundler.
 ### 🔴 Tactical
 Direct weapons fire, manage evasive manoeuvres, operate the cloaking device, and run sensor sweeps. Engineering runs on auto-delegation.
 
-| Control | Effect |
-|---|---|
-| All Pulse Cannons | Fire all 4 cannons simultaneously |
-| Nose Beam | Heavy fore emitter — 55-unit yield |
-| Quantum Torpedo | Binary damage — full yield at ≥60% lock |
-| Photon Torpedo | Reliable flat damage, no lock required |
-| ⚡⚡ Burst Salvo | 4-cannon 800ms barrage; overwhelms shield regen |
-| 🛡 Rotate Frequency | 25% incoming reduction for 12s; counters enemy weapon type |
-| ◈ Evasive Delta | Enemy lock rate −60% for 8s; 20s cooldown |
-| Cloak | 1200ms vulnerability on engage/disengage; regen credit accumulates |
-| Alpha Salvo | All weapons at once |
-| ⚡ Overcharge | Cannons +50% yield, breaker risk; 30s CD |
-| ☢ Unstable Torpedo | Quantum +70% yield, 25% misfire chance; 35s CD |
-| ⚡⚡ Power Dump | All weapons +40% for 10s, EPS spike, shields −30%; 50s CD |
-| Sensor Scans | +25% vs shields / +35% all dmg / −50% enemy fire / −70% enemy lock |
-| Subsystem Grid | Target enemy weapons, shields, engines, sensors individually |
-| Emergency Warp | Escape at hull ≤35% |
+| Control | Arc | Effect |
+|---|---|---|
+| All Pulse Cannons ×N | **Fore** (upper); **Fore/Port** or **Fore/Stbd** (lower) | Fire all cannons currently in arc — button label updates dynamically |
+| Nose Beam | **Fore only** | Heavy emitter — 55-unit yield |
+| Fwd Quantum Torpedo | **Fore / Port / Stbd** | Binary damage — full yield at ≥60% lock |
+| Fwd Photon Torpedo | **Fore / Port / Stbd** | Flat damage, no lock required |
+| Aft Quantum Torpedo | **Aft / Port / Stbd** | Same yield as forward tube; shares quantum magazine |
+| Aft Photon Torpedo | **Aft / Port / Stbd** | Flat damage; shares photon magazine |
+| ⚡⚡ Burst Salvo | In-arc cannons only | 4-cannon (or fewer) 800ms barrage; overwhelms shield regen |
+| 🛡 Rotate Frequency | — | 25% incoming reduction for 12s; counters enemy weapon type |
+| ◈ Evasive Delta | — | Enemy lock rate −60% for 8s; 20s cooldown |
+| Cloak | — | 1200ms vulnerability on engage/disengage; regen credit accumulates |
+| Alpha Salvo | All in-arc weapons | Fires every weapon that bears on current attack vector |
+| ⚡ Overcharge | — | Cannons +50% yield, breaker risk; 30s CD |
+| ☢ Unstable Torpedo | — | Quantum +70% yield, 25% misfire chance; 35s CD |
+| ⚡⚡ Power Dump | — | All weapons +40% for 10s, EPS spike, shields −30%; 50s CD |
+| Sensor Scans | — | +25% vs shields / +35% all dmg / −50% enemy fire / −70% enemy lock |
+| Subsystem Grid | — | Target enemy weapons, shields, engines, sensors individually |
+| Emergency Warp | — | Escape at hull ≤35% |
 
 ### 🟣 Engineering
 Allocate power, manage repairs, and run the cloaking device. Auto-tactical fires weapons on a 2.4s clock.
@@ -138,17 +144,20 @@ The crew acts independently — Worf fires weapons and uses burst fire when cond
 
 ## Combat Tips
 
-1. **Attack Vector**: Angle your strongest shields toward incoming fire — fore (320SP) is strongest
-2. **Burst Fire**: Use when lock ≥20% to overwhelm enemy shield regen before it recovers
-3. **Cloak timing**: Engage during a lull; regen credit accrues while cloaked, restoring shields on decloak
-4. **Borg weapons**: Rotate through all weapon types — each builds resistance independently (caps at 65%)
-5. **Klingons**: Stay at long range or use Evasive Pattern when they close to brawling distance
-6. **Romulan ghosts**: False sensor contacts while cloaked — hold fire and await the real decloak window
-7. **Jem'Hadar ram**: Pump fore shields and activate Evasive Pattern when you see "RAMMING RUN"
-8. **EPS heat**: Sustained fire heats conduits — above 70% reduces capacitor recharge rate
-9. **Subsystem targeting**: Destroying enemy weapons or cloak device changes the whole fight
-10. **Captain's Chair**: Issue Hold Fire to O'Brien before cloaking — saves capacitor charge for the decloak window
-11. **Power presets**: Switch to Damage Control mode when shields are low; Attack mode for a decisive strike
+1. **Attack Vector & Arcs**: Stay on FORE vector for maximum firepower (all 4 cannons + nose + forward torps). Aft vector gives you aft torpedo tubes but silences everything else — useful for shield tanking while still firing
+2. **Port/Stbd vectors**: All torpedo tubes (fore and aft) bear on port and starboard — maximum torpedo throughput when flanking
+3. **Burst Fire**: Use when lock ≥20% to overwhelm enemy shield regen before it recovers
+4. **Cloak timing**: Engage during a lull; regen credit accrues while cloaked, restoring shields on decloak
+5. **Warp core trips cascade**: A tripped core spikes stress on engines (+35%), shields (+22%), and sensors (+15%) — if systems are already stressed the cascade can chain-trip them; keep EPS stress low before a core risk
+6. **Last stand**: Below 20% hull the crew acts immediately — don't fight it; use the window to issue orders the auto-delegation won't think of (burst fire, overload modes, emergency scan)
+7. **Borg weapons**: Rotate through all weapon types — each builds resistance independently (caps at 65%)
+8. **Klingons**: Stay at long range or use Evasive Pattern when they close to brawling distance
+9. **Romulan ghosts**: False sensor contacts while cloaked — hold fire and await the real decloak window
+10. **Jem'Hadar ram**: Pump fore shields and activate Evasive Pattern when you see "RAMMING RUN"
+11. **EPS heat**: Sustained fire heats conduits — above 70% reduces capacitor recharge rate
+12. **Subsystem targeting**: Destroying enemy weapons or cloak device changes the whole fight
+13. **Power presets**: Switch to Damage Control mode when shields are low; Attack mode for a decisive strike
+14. **Read the debrief**: The post-battle report shows which shield sector took the most breaches — adjust your default attack vector accordingly next run
 
 ---
 

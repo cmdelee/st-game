@@ -32,6 +32,7 @@ function _applyPhase(phase) {
   G.enemyPhase       = phase.name;
   G.enemyPhaseFireMult = phase.fireRateMult;
   G.enemyPhaseLockMult = phase.lockRateMult;
+  G.score.enemyPhaseReached = phase.name;
   // Update phase label in left panel
   const lbl = document.getElementById('lbl-enemy-phase-left');
   if (lbl) {
@@ -133,6 +134,78 @@ function processEncounterPhase(dt) {
 }
 
 // ============================================================
+// HULL MILESTONE EVENTS — faction-specific reactions at 75/50/25/10%
+// ============================================================
+
+const _MILESTONE_DATA = {
+  75: {
+    klingon:    { msg:"TACTICAL: Klingon vessel taking hull damage — watch for increased aggression.", tier:'warn',  crew:'worf',   crewMsg:"Klingon hull at seventy-five percent, Captain. Still fully combat-capable." },
+    romulan:    { msg:"TACTICAL: Romulan hull breached. Enemy may attempt evasive cloaking.", tier:'warn',          crew:'worf',   crewMsg:"Romulan vessel registering hull damage. Expect a cloaking manoeuvre, Captain." },
+    cardassian: { msg:"CARDASSIAN VESSEL: 'Your weapons are noted, Defiant. Cardassia does not yield easily.'", tier:'warn', crew:null },
+    dominion:   { msg:"TACTICAL: Jem'Hadar at 75% hull — no defensive posture. They are accelerating.", tier:'warn', crew:'worf',  crewMsg:"Jem'Hadar are taking damage and speeding up, Captain. No signs of retreat." },
+    borg:       { msg:"BORG: 'Your offensive capabilities are noted. Adaptation is in progress.'", tier:'warn',     crew:null },
+  },
+  50: {
+    klingon:    { msg:"TACTICAL: Klingon hull at 50% — entering maximum aggression threshold!", tier:'warn',        crew:'worf',   crewMsg:"Captain — Klingon hull at fifty percent. Fire rate is increasing. Stay focused." },
+    romulan:    { msg:"TACTICAL: Romulan hull at 50% — enemy will attempt fade and repair under cloak.", tier:'warn', crew:'worf', crewMsg:"Romulan vessel at fifty percent hull, Captain. Anticipate emergency cloaking." },
+    cardassian: { msg:"CARDASSIAN VESSEL: 'You fight well for a Starfleet crew. This engagement is not over.'", tier:'warn', crew:null },
+    dominion:   { msg:"JEM'HADAR: 'Victory is life. We do not retreat — we accelerate!' Fire rate escalating.", tier:'crit', crew:'worf', crewMsg:"Jem'Hadar vessel at fifty percent hull and increasing fire rate. They never stop, Captain." },
+    borg:       { msg:"BORG: 'We are the Borg. Your crew will be assimilated. Your biological distinctiveness will be added to our own.'", tier:'crit', crew:null },
+  },
+  25: {
+    klingon:    { msg:"TACTICAL: KLINGON HULL CRITICAL — BERSERK STATE! 'TODAY IS A GOOD DAY TO DIE!'", tier:'crit', crew:'worf', crewMsg:"Klingon vessel at critical hull, Captain. They will fight to absolute destruction!" },
+    romulan:    { msg:"TACTICAL: Romulan hull critical — emergency cloak imminent. They will not surrender.", tier:'crit', crew:'worf', crewMsg:"Romulan vessel severely damaged, Captain. They are cloaking for emergency repairs." },
+    cardassian: { msg:"CARDASSIAN VESSEL: 'Shields failing... structural integrity compromised... Cardassia Prime will hear of this.'", tier:'crit', crew:null },
+    dominion:   { msg:"JEM'HADAR: 'We are already dead. The Founders will be avenged!' Ramming protocol approaching!", tier:'crit', crew:'worf', crewMsg:"Jem'Hadar at twenty-five percent hull. Ramming run is imminent, Captain — fore shields!" },
+    borg:       { msg:"BORG: 'Your resistance has been... inefficient. Assimilation will now proceed. Prepare yourself.'", tier:'crit', crew:null },
+  },
+  10: {
+    klingon:    { msg:"KLINGON VESSEL CRITICAL — FIRING DEATH SALVO! 'Qa'pla! Hegh'bat! Glory to the Empire!'", tier:'crit', crew:'worf', crewMsg:"EVASIVE! Klingon death salvo incoming — all hands brace for impact!" },
+    romulan:    { msg:"TACTICAL: Romulan hull at 10% — they will self-destruct before surrender.", tier:'crit', crew:'worf',          crewMsg:"Romulan vessel at ten percent hull, Captain. Their honour code forbids capture." },
+    cardassian: { msg:"CARDASSIAN VESSEL: 'Power failing... life support critical... *static*... Garak was right about you.'", tier:'crit', crew:null },
+    dominion:   { msg:"JEM'HADAR: 'FOR THE FOUNDERS! VICTORY IS LIFE!' Maximum ramming velocity!", tier:'crit', crew:'worf',          crewMsg:"BRACE! Jem'Hadar at ten percent — ramming run confirmed! All power to fore shields!" },
+    borg:       { msg:"BORG: 'Your crew will service us well. Resistance is — ' [HULL BREACH DETECTED]", tier:'crit', crew:null },
+  },
+};
+
+function checkEnemyHullMilestones() {
+  if (!G.running || G.dead) return;
+  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
+  const key = _getFactionKey(cfg);
+  const pct = G.threat.hull / G.threat.maxHull;
+
+  [75, 50, 25, 10].forEach(threshold => {
+    if (pct <= threshold / 100 && !G.enemyHullMilestones[threshold]) {
+      G.enemyHullMilestones[threshold] = true;
+      const data = key ? _MILESTONE_DATA[threshold][key] : null;
+      if (data) {
+        postLogEvent(data.msg, data.tier);
+        if (data.crew && typeof postCrewReport === 'function') {
+          postCrewReport(data.crew, data.crewMsg, 'alert');
+        }
+      }
+      // Faction-specific reactions
+      if (threshold === 10 && key === 'klingon') _triggerKlingonDeathSalvo();
+      if (threshold === 25 && key === 'romulan' && !G.enemyCloaked) triggerEnemyCloak(cfg);
+      if (threshold === 25 && key === 'dominion') {
+        // Jem'Hadar final push — lock the phase to sacrifice/overwhelm
+        G.enemyPhaseFireMult = Math.min(G.enemyPhaseFireMult, 0.60);
+      }
+    }
+  });
+}
+
+function _triggerKlingonDeathSalvo() {
+  // Fire three rapid volleys — the Klingon death salvo
+  postLogEvent("KLINGON DEATH SALVO — MAXIMUM WEAPONS DISCHARGE!", 'crit');
+  [300, 700, 1100].forEach(delay => {
+    setTimeout(() => {
+      if (!G.dead && G.running) executeThreatCounterVolley();
+    }, delay);
+  });
+}
+
+// ============================================================
 // ENEMY-AI.JS — Enemy AI, firing, cloaking, auto-delegation
 // Depends on: config.js, state.js, engineering.js, crew.js,
 //             sensors.js, tactical.js, helm.js
@@ -186,6 +259,16 @@ function triggerEnemyDecloak(cfg, reason) {
   postLogEvent(`${cfg.label} DECLOAKING (${reason}) — shields offline 1.5s! Fire now!`, 'crit');
   crewReportEnemyDecloak();
   postTacticalAdvisory("Enemy shields down during decloak — maximum yield fire window open!");
+  // Romulan strike phase: fire plasma immediately on decloak — terrifying DS9-accurate behavior
+  if (cfg.faction === 'Romulan' && G.enemyPhase === 'strike' && G.plasmaTorpedoReady) {
+    setTimeout(() => {
+      if (!G.dead && G.running) {
+        postLogEvent("ROMULAN PLASMA TORPEDO — FIRED ON DECLOAK! BRACE!", 'crit');
+        G.threatCycleTimer = G.threat.fireInterval + 1; // force fire cycle to trigger
+        executeThreatCounterVolley();
+      }
+    }, 800);
+  }
   setTimeout(() => {
     if (G.dead) return;
     G.enemyCloakVulnTimer = 0;
@@ -457,6 +540,25 @@ function processEnemyAI(dt) {
       postTacticalAdvisory("All primary weapons fully adapted — target subsystems or use photon torpedoes!");
   }
 
+  // Hull milestone events — faction-specific reactions at 75/50/25/10%
+  checkEnemyHullMilestones();
+
+  // Enemy weapon degradation below 35% hull — ship is falling apart
+  const _enemyHullPct = G.threat.hull / G.threat.maxHull;
+  if (_enemyHullPct < 0.35 && Math.random() < 0.004 * sc * 60) {
+    const weaponKeys = Object.keys(G.enemySystems).filter(k => G.enemySystems[k].isWeapon && G.enemySystems[k].health > 10);
+    if (weaponKeys.length > 0) {
+      const hitKey = weaponKeys[Math.floor(Math.random() * weaponKeys.length)];
+      const dmg = Math.floor(Math.random() * 12) + 5;
+      G.enemySystems[hitKey].health = Math.max(0, G.enemySystems[hitKey].health - dmg);
+      if (G.enemySystems[hitKey].health <= 0) {
+        postLogEvent(`INTEL: Enemy ${G.enemySystems[hitKey].label} destroyed by internal damage!`, 'good');
+      } else if (Math.random() < 0.5) {
+        postLogEvent(`INTEL: Enemy ${G.enemySystems[hitKey].label} at ${Math.round(G.enemySystems[hitKey].health)}% — battle damage spreading.`, 'warn');
+      }
+    }
+  }
+
   // General advisories
   const hullPct = G.threat.hull / G.threat.maxHull;
   if (hullPct < 0.30 && Math.random() < 0.001 * sc * 60) {
@@ -522,12 +624,14 @@ function executeThreatCounterVolley() {
         dmgMin = chosenSys.dmgMin; dmgMax = chosenSys.dmgMax;
         const arc = chosenSys.firingArc.length ? chosenSys.firingArc : ['fore','port','starboard','aft'];
         targetSector = arc[Math.floor(Math.random() * arc.length)] || 'fore';
-        if (!G.comeAboutActive && Math.random() < 0.65) targetSector = G.helmAttackVector;
+        if (!G.comeAboutActive && arc.includes(G.helmAttackVector) && Math.random() < 0.65) targetSector = G.helmAttackVector;
         G.enemyLockProgress = 0; G.enemyManeuverState = 'neutral';
       } else {
         [chosenKey, chosenSys] = torps;
         dmgMin = chosenSys.dmgMin; dmgMax = chosenSys.dmgMax;
-        targetSector = ['fore','port','starboard','aft'].reduce((w, s) => G.player.shields[s] < G.player.shields[w] ? s : w, 'fore');
+        const torpArc = chosenSys.firingArc.length ? chosenSys.firingArc : ['fore','port','starboard','aft'];
+        const torpCandidates = ['fore','port','starboard','aft'].filter(s => torpArc.includes(s));
+        targetSector = torpCandidates.reduce((w, s) => G.player.shields[s] < G.player.shields[w] ? s : w, torpCandidates[0] || 'fore');
         G.enemyLockProgress = 0; G.enemyManeuverState = 'neutral';
         const sl = document.getElementById('lbl-enemy-state-left');
         if (sl) { sl.textContent = 'Holding attack vector'; sl.style.color = '#aabbcc'; }
@@ -556,7 +660,8 @@ function executeThreatCounterVolley() {
     const preferredValid = validSectors.filter(s => preferred.includes(s));
     const pool = preferredValid.length > 0 ? preferredValid : validSectors;
     targetSector = pool[Math.floor(Math.random() * pool.length)] || 'fore';
-    if (!G.comeAboutActive && Math.random() < 0.65) targetSector = G.helmAttackVector;
+    // Only snap to attack vector if the weapon arc actually covers that sector
+    if (!G.comeAboutActive && arc.includes(G.helmAttackVector) && Math.random() < 0.65) targetSector = G.helmAttackVector;
   }
 
   let rawDmg = (Math.random() * (dmgMax - dmgMin) + dmgMin) * (chosenSys.health / 100) * diff.enemyDmgMult;
@@ -629,6 +734,8 @@ function executeThreatCounterVolley() {
     const residual = applyAblativeArmour(leak);
     G.player.hull  = Math.max(0, G.player.hull - residual);
     G.score.hullBreaches++;
+    G.score.sectorBreaches[targetSector] = (G.score.sectorBreaches[targetSector] || 0) + 1;
+    G.score.peakHullHit = Math.max(G.score.peakHullHit, residual);
     const ablaticNote = (leak - residual) > 1 ? ` Ablative absorbed ${Math.round(leak - residual)}.` : '';
     postLogEvent(`BREACH — ${targetSector.toUpperCase()} down! Hull −${Math.round(residual)}.${ablaticNote}`, 'crit');
     G.damageParticles.push(...spawnParticles('player', 10, C.red));

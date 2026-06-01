@@ -99,10 +99,16 @@ function masterSimulationCoreLoop(ts) {
 
   // Enemy fire cycle — phase multiplier adjusts fire rate per faction arc
   G.threatCycleTimer += dt;
-  const fi = G.threat.fireInterval * (G.enemyPhaseFireMult || 1.0) * (G.weaponsDisrupted ? 2 : 1);
+  // Jem'Hadar fury: fire rate scales INVERSELY with hull — they get faster as they die
+  const _cfg = ENEMY_CONFIGS[G.enemyArchetype];
+  const _jemFury = (_cfg && _cfg.faction === 'Dominion')
+    ? Math.max(0.50, 1.0 - (1.0 - G.threat.hull / G.threat.maxHull) * 0.55)
+    : 1.0;
+  const fi = G.threat.fireInterval * (G.enemyPhaseFireMult || 1.0) * (G.weaponsDisrupted ? 2 : 1) * _jemFury;
   if (G.threatCycleTimer > fi) { G.threatCycleTimer = 0; executeThreatCounterVolley(); }
 
   updateWarpAvailability();
+  checkLastStandCondition();
   synchronizeGlobalInterfaceDisplays();
 
   // Canvas rendering — helm and captain share the tactical monitor pair
@@ -228,7 +234,13 @@ function initiateVesselSimulation(station) {
     CREW_STATIONS[k].status = 'nominal';
     CREW_STATIONS[k].casualties = 0;
   });
-  G.score              = { totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false };
+  G.score              = { totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false,
+                           weaponsFired:{ cannons:0, nose:0, quantum:0, photon:0 },
+                           sectorBreaches:{ fore:0, port:0, starboard:0, aft:0 },
+                           peakHullHit:0, systemsTripped:[], enemyPhaseReached:'' };
+  G.lastStandActive    = false;
+  G.lastStandReported  = false;
+  G.enemyHullMilestones = {};
   G.repairQueue        = [];
   G.enemyRepairQueue   = [];  // clear stale entries from previous game
   G.repairTeams        = [

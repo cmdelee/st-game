@@ -615,6 +615,59 @@ function crewReportScanCommitted(type) {
   postCrewReport('worf', msgs[type] || "Scan profile committed.", 'good');
 }
 
+// ── Last stand ────────────────────────────────────────────────
+
+function checkLastStandCondition() {
+  if (!G.running || G.dead) return;
+  const hp = G.player.hull / G.player.maxHull;
+
+  if (hp <= 0.20 && !G.lastStandActive) {
+    G.lastStandActive   = true;
+    G.lastStandReported = true;
+
+    // Red flash on main viewport
+    const mv = document.querySelector('.main-viewport');
+    if (mv) { mv.classList.add('last-stand-flash'); }
+
+    // Station-agnostic log alerts
+    postLogEvent("⚠ CRITICAL HULL INTEGRITY — LAST STAND PROTOCOLS ENGAGED", 'crit');
+    postLogEvent("WORF: All hands, battle stations! Emergency procedures on all decks!", 'crit');
+    postLogEvent("O'BRIEN: Emergency EPS reroute — boosting shield power from weapons bus.", 'warn');
+    postLogEvent("NOG: Pushing to full impulse — maximum evasion available.", 'warn');
+
+    // Captain's chair crew reports (layered with delays for drama)
+    postCrewReport('worf', "Hull critical, Captain! All hands battle stations — we fight to the last!", 'alert');
+    setTimeout(() => {
+      if (!G.dead) postCrewReport('obrien', "Emergency EPS reroute active — pulling shield power from weapon reserves.", 'alert');
+    }, 800);
+    setTimeout(() => {
+      if (!G.dead) postCrewReport('nog', "Full impulse, Captain — best evasion I can give you!", 'alert');
+    }, 1600);
+
+    // Mechanical: Nog pushes to full impulse
+    if (G.helmSpeed !== 'full') {
+      setHelmSpeed('full');
+    }
+
+    // Mechanical: O'Brien emergency shield boost — pull 5MW from weapons to shields if possible
+    const shieldSys = G.systems.shields;
+    const totalPow  = getTotalAllocatedPower();
+    const headroom  = getWarpOutput() - totalPow;
+    const boost     = headroom >= 5 ? 5 : 0;
+    if (boost > 0) {
+      shieldSys.allocatedPower = Math.min(60, shieldSys.allocatedPower + boost);
+      recalculateShieldRegenRate();
+    }
+
+  } else if (hp > 0.25 && G.lastStandActive) {
+    // Hull recovered above threshold — stand down
+    G.lastStandActive = false;
+    const mv = document.querySelector('.main-viewport');
+    if (mv) mv.classList.remove('last-stand-flash');
+    postLogEvent("Hull integrity recovering — last stand protocols stood down.", 'good');
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────
 
 function initCaptainStation() {

@@ -31,7 +31,7 @@ const ENEMY_CONFIGS = {
     systems:{
       disruptors_fwd:{ health:100, label:'Forward Disruptors', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:45,  dmgMax:80,  systemTargetKey:'disruptors' },
       disruptors_aft:{ health:100, label:'Aft Disruptors',     isWeapon:true,  firingArc:['aft','port','starboard'],  dmgMin:30,  dmgMax:55,  systemTargetKey:'disruptors' },
-      torpedoes_fwd: { health:100, label:'Forward Torpedoes',  isWeapon:true,  firingArc:['fore'],                    dmgMin:90,  dmgMax:160, systemTargetKey:'torpedoes', isTorpedo:true },
+      torpedoes_fwd: { health:100, label:'Forward Torpedoes',  isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:90,  dmgMax:160, systemTargetKey:'torpedoes', isTorpedo:true },
       cloak_device:  { health:100, label:'Cloaking Device',    isWeapon:false, firingArc:[] },
       shields_sys:   { health:100, label:'Shield Generators',  isWeapon:false, firingArc:[] },
       engines:       { health:100, label:'Impulse Engines',    isWeapon:false, firingArc:[] },
@@ -51,7 +51,7 @@ const ENEMY_CONFIGS = {
     systems:{
       disruptors_fwd:  { health:100, label:'Forward Disruptors', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:55,  dmgMax:95,  systemTargetKey:'disruptors' },
       disruptors_wing: { health:100, label:'Wing Disruptors',    isWeapon:true,  firingArc:['port','starboard'],        dmgMin:35,  dmgMax:60,  systemTargetKey:'disruptors' },
-      torpedoes_fwd:   { health:100, label:'Forward Torpedoes',  isWeapon:true,  firingArc:['fore'],                    dmgMin:100, dmgMax:170, systemTargetKey:'torpedoes', isTorpedo:true },
+      torpedoes_fwd:   { health:100, label:'Forward Torpedoes',  isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:100, dmgMax:170, systemTargetKey:'torpedoes', isTorpedo:true },
       cloak_device:    { health:100, label:'Cloaking Device',    isWeapon:false, firingArc:[] },
       shields_sys:     { health:100, label:'Shield Generators',  isWeapon:false, firingArc:[] },
       engines:         { health:100, label:'Impulse Engines',    isWeapon:false, firingArc:[] },
@@ -71,7 +71,7 @@ const ENEMY_CONFIGS = {
     systems:{
       plasma_fwd:  { health:100, label:'Plasma Torpedo Banks', isWeapon:true,  firingArc:['fore'],                    dmgMin:110, dmgMax:190, systemTargetKey:'torpedoes', isTorpedo:true },
       phasers_fwd: { health:100, label:'Forward Phasers',      isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:35,  dmgMax:60,  systemTargetKey:'phasers' },
-      phasers_aft: { health:100, label:'Aft Phasers',          isWeapon:true,  firingArc:['aft'],                    dmgMin:25,  dmgMax:45,  systemTargetKey:'phasers' },
+      phasers_aft: { health:100, label:'Aft Phasers',          isWeapon:true,  firingArc:['aft','port','starboard'], dmgMin:25,  dmgMax:45,  systemTargetKey:'phasers' },
       cloak_device:{ health:100, label:'Cloaking Device',      isWeapon:false, firingArc:[] },
       shields_sys: { health:100, label:'Shield Generators',    isWeapon:false, firingArc:[] },
       engines:     { health:100, label:'Impulse Engines',      isWeapon:false, firingArc:[] },
@@ -108,7 +108,7 @@ const ENEMY_CONFIGS = {
     preferredTargets:['fore','port','starboard'],
     systems:{
       phasers_fwd: { health:100, label:'Forward Phasers',   isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:22, dmgMax:42, systemTargetKey:'phasers' },
-      phasers_aft: { health:100, label:'Aft Phasers',       isWeapon:true,  firingArc:['aft'],                    dmgMin:15, dmgMax:30, systemTargetKey:'phasers' },
+      phasers_aft: { health:100, label:'Aft Phasers',       isWeapon:true,  firingArc:['aft','port','starboard'], dmgMin:15, dmgMax:30, systemTargetKey:'phasers' },
       shields_sys: { health:100, label:'Shield Generators', isWeapon:false, firingArc:[] },
       engines:     { health:100, label:'Impulse Engines',   isWeapon:false, firingArc:[] },
       sensors:     { health:100, label:'Sensor Array',      isWeapon:false, firingArc:[] },
@@ -124,8 +124,8 @@ const ENEMY_CONFIGS = {
     preferredTargets:['fore','port','starboard'],
     systems:{
       phasers_fwd:   { health:100, label:'Forward Phasers',   isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:45, dmgMax:75,  systemTargetKey:'phasers' },
-      phasers_aft:   { health:100, label:'Aft Phasers',       isWeapon:true,  firingArc:['aft'],                    dmgMin:30, dmgMax:50,  systemTargetKey:'phasers' },
-      torpedoes_fwd: { health:100, label:'Photon Torpedoes',  isWeapon:true,  firingArc:['fore'],                    dmgMin:70, dmgMax:120, systemTargetKey:'torpedoes', isTorpedo:true },
+      phasers_aft:   { health:100, label:'Aft Phasers',       isWeapon:true,  firingArc:['aft','port','starboard'], dmgMin:30, dmgMax:50,  systemTargetKey:'phasers' },
+      torpedoes_fwd: { health:100, label:'Photon Torpedoes',  isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:70, dmgMax:120, systemTargetKey:'torpedoes', isTorpedo:true },
       shields_sys:   { health:100, label:'Shield Generators', isWeapon:false, firingArc:[] },
       engines:       { health:100, label:'Impulse Engines',   isWeapon:false, firingArc:[] },
       sensors:       { health:100, label:'Sensor Array',      isWeapon:false, firingArc:[] },
@@ -144,8 +144,8 @@ const ENEMY_CONFIGS = {
     ramDamage:280,
     systems:{
       polaron_fwd: { health:100, label:'Polaron Beam Arrays', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:35, dmgMax:65,  systemTargetKey:'phasers', isPolaron:true },
-      polaron_aft: { health:100, label:'Aft Polaron Arrays',  isWeapon:true,  firingArc:['aft'],                    dmgMin:20, dmgMax:40,  systemTargetKey:'phasers', isPolaron:true },
-      torpedoes:   { health:100, label:'Photon Torpedoes',    isWeapon:true,  firingArc:['fore'],                    dmgMin:60, dmgMax:100, systemTargetKey:'torpedoes', isTorpedo:true },
+      polaron_aft: { health:100, label:'Aft Polaron Arrays',  isWeapon:true,  firingArc:['aft','port','starboard'], dmgMin:20, dmgMax:40,  systemTargetKey:'phasers', isPolaron:true },
+      torpedoes:   { health:100, label:'Photon Torpedoes',    isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:60, dmgMax:100, systemTargetKey:'torpedoes', isTorpedo:true },
       shields_sys: { health:100, label:'Shield Generators',  isWeapon:false, firingArc:[] },
       engines:     { health:100, label:'Impulse Engines',    isWeapon:false, firingArc:[] },
       sensors:     { health:100, label:'Sensor Array',       isWeapon:false, firingArc:[] },
@@ -165,7 +165,7 @@ const ENEMY_CONFIGS = {
     systems:{
       polaron_fwd:   { health:100, label:'Forward Polaron Banks', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:65,  dmgMax:105, systemTargetKey:'phasers', isPolaron:true },
       polaron_aft:   { health:100, label:'Aft Polaron Banks',     isWeapon:true,  firingArc:['aft','port','starboard'],  dmgMin:45,  dmgMax:75,  systemTargetKey:'phasers', isPolaron:true },
-      torpedoes_fwd: { health:100, label:'Photon Torpedoes',      isWeapon:true,  firingArc:['fore'],                    dmgMin:110, dmgMax:180, systemTargetKey:'torpedoes', isTorpedo:true },
+      torpedoes_fwd: { health:100, label:'Photon Torpedoes',      isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:110, dmgMax:180, systemTargetKey:'torpedoes', isTorpedo:true },
       shields_sys:   { health:100, label:'Shield Generators',     isWeapon:false, firingArc:[] },
       engines:       { health:100, label:'Impulse Engines',       isWeapon:false, firingArc:[] },
       sensors:       { health:100, label:'Sensor Array',          isWeapon:false, firingArc:[] },
@@ -182,7 +182,7 @@ const ENEMY_CONFIGS = {
     adaptiveShields:true,
     systems:{
       cutting_beam: { health:100, label:'Cutting Beam',        isWeapon:true,  firingArc:['fore','port','starboard','aft'], dmgMin:70, dmgMax:120, systemTargetKey:'phasers' },
-      tractor_beam: { health:100, label:'Tractor Beam',        isWeapon:false, firingArc:['fore'], isTractor:true },
+      tractor_beam: { health:100, label:'Tractor Beam',        isWeapon:false, firingArc:['fore','port','starboard','aft'], isTractor:true },
       shields_sys:  { health:100, label:'Regenerative Matrix', isWeapon:false, firingArc:[] },
       engines:      { health:100, label:'Drive System',        isWeapon:false, firingArc:[] },
       sensors:      { health:100, label:'Sensor Cluster',      isWeapon:false, firingArc:[] },
@@ -193,13 +193,18 @@ const ENEMY_CONFIGS = {
 
 // ── Player weapons ────────────────────────────────────────────
 const ARRAYS_DICTIONARY = {
-  cannon_port_upper:{ yield:18, cost:20, parentSystem:'cannon_pu', tag:'cpu', label:'Port Upper Pulse Cannon', arc:['fore','port'] },
-  cannon_port_lower:{ yield:18, cost:20, parentSystem:'cannon_pl', tag:'cpl', label:'Port Lower Pulse Cannon', arc:['fore','port','aft'] },
-  cannon_stbd_upper:{ yield:18, cost:20, parentSystem:'cannon_su', tag:'csu', label:'Stbd Upper Pulse Cannon', arc:['fore','starboard'] },
-  cannon_stbd_lower:{ yield:18, cost:20, parentSystem:'cannon_sl', tag:'csl', label:'Stbd Lower Pulse Cannon', arc:['fore','starboard','aft'] },
-  emitter_nose:     { yield:55, cost:50, parentSystem:'nose_beam', tag:'emn', label:'Heavy Nose Array Emitter', arc:['fore'] },
-  torpedo_quantum:  { yield:90, cost:85, parentSystem:'torpedoes', tag:'tff', label:'Forward Quantum Tube',     arc:['fore','port','starboard'], isQuantum:true },
-  torpedo_photon:   { yield:60, cost:30, parentSystem:'torpedoes', tag:'tph', label:'Photon Torpedo Tube',      arc:['fore','port','starboard'], isPhoton:true },
+  // Pulse cannons: 22/each — "overpowered and overgunned for a ship its size" (Sisko, The Search)
+  cannon_port_upper:{ yield:22, cost:20, parentSystem:'cannon_pu', tag:'cpu', label:'Port Upper Pulse Cannon', arc:['fore'] },
+  cannon_port_lower:{ yield:22, cost:20, parentSystem:'cannon_pl', tag:'cpl', label:'Port Lower Pulse Cannon', arc:['fore','port'] },
+  cannon_stbd_upper:{ yield:22, cost:20, parentSystem:'cannon_su', tag:'csu', label:'Stbd Upper Pulse Cannon', arc:['fore'] },
+  cannon_stbd_lower:{ yield:22, cost:20, parentSystem:'cannon_sl', tag:'csl', label:'Stbd Lower Pulse Cannon', arc:['fore','starboard'] },
+  // Nose emitter: 65 — heavy Type-XII array, precision strike weapon
+  emitter_nose:     { yield:65, cost:50, parentSystem:'nose_beam', tag:'emn', label:'Heavy Nose Array Emitter', arc:['fore'] },
+  // Quantum torpedo: 125 — designed to exceed Borg shielding; far superior to photon (The Search, Defiant tech manual)
+  torpedo_quantum:     { yield:125, cost:85, parentSystem:'torpedoes', tag:'tff', label:'Fwd Quantum Tube',     arc:['fore','port','starboard'], isQuantum:true },
+  torpedo_photon:      { yield:60,  cost:30, parentSystem:'torpedoes', tag:'tph', label:'Fwd Photon Tube',      arc:['fore','port','starboard'], isPhoton:true },
+  torpedo_quantum_aft: { yield:125, cost:85, parentSystem:'torpedoes', tag:'tqa', label:'Aft Quantum Tube',     arc:['aft','port','starboard'],  isQuantum:true },
+  torpedo_photon_aft:  { yield:60,  cost:30, parentSystem:'torpedoes', tag:'tpa', label:'Aft Photon Tube',      arc:['aft','port','starboard'],  isPhoton:true },
 };
 
 // ── Crew stations ─────────────────────────────────────────────

@@ -201,8 +201,24 @@ const G = {
   autoShieldTrack:false,  autoShieldTrackTimer:0,
   silentRunning:false,    silentRunningTimer:0,
 
+  // Last stand
+  lastStandActive:false,
+  lastStandReported:false,
+
+  // Enemy hull milestones (tracks which % thresholds have already fired)
+  enemyHullMilestones:{},
+
   // Scoring
-  score:{ totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false },
+  score:{
+    totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0,
+    repairsCompleted:0, timeSurvived:0, warpedOut:false,
+    // debrief tracking
+    weaponsFired:{ cannons:0, nose:0, quantum:0, photon:0 },
+    sectorBreaches:{ fore:0, port:0, starboard:0, aft:0 },
+    peakHullHit:0,
+    systemsTripped:[],
+    enemyPhaseReached:'',
+  },
 
   // Visual effects state
   shieldHitFlash:{ player:{ sector:null, timer:0 }, enemy:{ sector:null, timer:0 } },
