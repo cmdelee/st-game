@@ -643,7 +643,9 @@ function executeThreatCounterVolley() {
       }
     } else {
       [chosenKey, chosenSys] = wpns[0]; dmgMin = chosenSys.dmgMin; dmgMax = chosenSys.dmgMax;
-      targetSector = G.enemyPreferredSector || 'fore';
+      // Apply arc check — fallback sector must be within the weapon's firingArc
+      const _fbArc = chosenSys.firingArc && chosenSys.firingArc.length ? chosenSys.firingArc : ['fore','port','starboard','aft'];
+      targetSector = _fbArc.includes(G.enemyPreferredSector) ? G.enemyPreferredSector : (_fbArc[0] || 'fore');
       G.enemyLockProgress = 0; G.enemyManeuverState = 'neutral';
     }
   } else {

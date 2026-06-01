@@ -23,6 +23,10 @@ function masterSimulationCoreLoop(ts) {
   G.lastFrameTimestamp = ts;
   G.score.timeSurvived += dt / 1000;
 
+  // Shield hit flash timers — must decrement or flash persists forever
+  if (G.shieldHitFlash.player.timer > 0) G.shieldHitFlash.player.timer = Math.max(0, G.shieldHitFlash.player.timer - dt);
+  if (G.shieldHitFlash.enemy.timer  > 0) G.shieldHitFlash.enemy.timer  = Math.max(0, G.shieldHitFlash.enemy.timer  - dt);
+
   // Cloak cooldown timers
   if (G.cloakVulnTimer > 0) G.cloakVulnTimer = Math.max(0, G.cloakVulnTimer - dt);
   if (G.cloakCooldown > 0) {

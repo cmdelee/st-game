@@ -271,7 +271,8 @@ function applyDamageToEnemy(dmg, weapon, targetSectorOverride) {
       if (sys.health <= 0) {
         G.score.systemsDestroyed++;
         postLogEvent(`DESTROYED: [${sys.label}]!`, 'crit');
-        G.enemyRepairQueue.push({ sysKey: target, totalTime: 25000 + Math.random() * 15000, remaining: 25000 });
+        const _ert = 25000 + Math.random() * 15000;
+        G.enemyRepairQueue.push({ sysKey: target, totalTime: _ert, remaining: _ert });
         if (target === 'cloak_device' && G.enemyCloaked) {
           G.enemyCloaked = false; G.enemyCloakVulnTimer = 0;
           postLogEvent("Enemy cloaking destroyed — forced decloak!", 'crit');
@@ -312,7 +313,7 @@ function executeCannonOvercharge() {
       if (G.dead) return;
       const weapon = ARRAYS_DICTIONARY[k]; const sys = G.systems[weapon.parentSystem];
       if (!sys || sys.tripped || sys.cap < weapon.cost) return;
-      G._overchargeActive = true; fireSelectedArray(k); G._overchargeActive = false;
+      G._overchargeActive = true; try { fireSelectedArray(k); } finally { G._overchargeActive = false; }
       sys.stress = Math.min(100, sys.stress + 55);
       G.epsHeat  = Math.min(100, G.epsHeat + 8);
     }, i * 150);
@@ -330,7 +331,7 @@ function executeUnstableTorpedo() {
   postLogEvent("UNSTABLE TORPEDO — +70% yield, misfire risk!", 'crit');
   G.unstableTorpReady    = false;
   G.unstableTorpCooldown = 35000;
-  G._unstableTorpActive  = true; fireSelectedArray('torpedo_quantum'); G._unstableTorpActive = false;
+  G._unstableTorpActive = true; try { fireSelectedArray('torpedo_quantum'); } finally { G._unstableTorpActive = false; }
   if (Math.random() < 0.25) {
     const dmg = 30 + Math.random() * 20;
     sys.health = Math.max(0, sys.health - dmg);

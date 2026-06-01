@@ -265,7 +265,7 @@ function renderHullSchematicCanvas() {
     if (ab.regenTimers[i] > 0) return `(${Math.ceil(ab.regenTimers[i]/1000)}s)`;
     return `↑${Math.round((ab.regenProgress[i]/ABLATIVE_ARMOUR.regenTime)*100)}%`;
   }).join(' ');
-  dRow('Layers', `${ab.layers}/5`, ab.layers > 3 ? C.green : ab.layers > 1 ? C.warn : C.red);
+  dRow('Layers', `${ab.layers}/6`, ab.layers > 3 ? C.green : ab.layers > 1 ? C.warn : C.red);
   ctx.fillStyle = '#6688aa'; ctx.font = '8px Roboto Mono'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   ctx.fillText(ablStr, rx, ry); ry += lH;
 

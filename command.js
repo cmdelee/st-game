@@ -237,7 +237,7 @@ function _capTargetSystem(cdKey, sysKeyHint, fallbackLabel) {
 
 function capTgtHull()      { _capTargetSystem('tgt_hull',     'hull',       'Hull'); }
 function capTgtShields()   { _capTargetSystem('tgt_shields',  'shields',    'Shield Generators'); }
-function capTgtWeapons()   { _capTargetSystem('tgt_weapons',  'disruptors', 'Weapons'); }   // tries disruptors, phasers, etc.
+function capTgtWeapons()   { capTgtWeaponsAny(); }   // delegates to multi-key search covering all factions
 function capTgtEngines()   { _capTargetSystem('tgt_engines',  'engines',    'Impulse Engines'); }
 function capTgtCloak()     { _capTargetSystem('tgt_cloak',    'cloak',      'Cloaking Device'); }
 function capTgtSensors()   { _capTargetSystem('tgt_sensors',  'sensors',    'Sensor Array'); }
@@ -451,6 +451,11 @@ function _capDamageControl() {
   const freeIdx = G.repairTeams.findIndex(t => !t.sysKey);
   if (freeIdx < 0) {
     postCrewReport('obrien', "Both repair teams already deployed, Captain.", 'alert');
+    return;
+  }
+  // Guard: don't assign free team to a system the other team is already repairing
+  if (G.repairTeams.some(t => t.sysKey === worst)) {
+    postCrewReport('obrien', `${G.systems[worst]?.label || worst} already under repair, Captain.`, 'status');
     return;
   }
   const sys = G.systems[worst];
