@@ -1,8 +1,8 @@
-# LCARS Dual-Deck Tactical Suite — Developer Reference
+# Starship Battle Simulator — Developer Reference
 
 ## Project overview
 
-Single-page Star Trek tactical combat simulator set aboard the **USS Defiant (NX-74205)**. The player commands the **Tactical**, **Engineering**, **Helm**, or **Captain's Chair** station; the unchosen stations are delegated to the computer. All game logic lives across **13 JS files** served from the same directory — no build step, no bundler.
+Single-page Star Trek tactical combat simulator. The player selects a vessel (**USS Defiant NX-74205** or **USS Enterprise NCC-1701-E**) and a command station (**Tactical**, **Engineering**, **Helm**, or **Captain's Chair**); the unchosen stations are delegated to the computer. All game logic lives across **13 JS files** served from the same directory — no build step, no bundler.
 
 **File load order (matters — each file depends on the previous):**
 ```
@@ -18,19 +18,19 @@ index.html (HTML shell + script tags)
 
 | File | Responsibility |
 |---|---|
-| `config.js` | All game constants: `C` colour palette, `DIFFICULTY`, `ENEMY_CONFIGS`, `ARRAYS_DICTIONARY`, `CREW_STATIONS`, `WARP_CORE`, `ABLATIVE_ARMOUR`, `HELM_SPEED_CONFIG`, `CAMPAIGN_ORDER`; `let currentDifficulty` |
+| `config.js` | All game constants: `C` colour palette, `DIFFICULTY`, `ENEMY_CONFIGS`, `ARRAYS_DICTIONARY`, `PLAYER_SHIP_CONFIGS` (both ships — stats, weapon arrays, crew, labels), `CREW_STATIONS`, `WARP_CORE`, `ABLATIVE_ARMOUR`, `HELM_SPEED_CONFIG`, `CAMPAIGN_ORDER`; `let currentDifficulty` |
 | `state.js` | `G` game state object; `getWarpOutput()`, `getTotalAllocatedPower()`, `setDifficulty()`, `postLogEvent()` |
 | `engineering.js` | Warp core trip, emergency battery, ablative armour processing, shield regen rate calculation, repair queue (2 independent teams), engineering matrix UI, power allocation (`tuneBusAllocation`), power presets (`applyPowerPreset`), EPS conduit conduction + thermal buildup, system degradation thresholds, shield manipulation |
 | `crew.js` | Crew casualties (`inflictCrewCasualty`), efficiency modifiers (`getCrewEfficiency`, `getMedicalEfficiency`, `getHelmEvasiveModifier`), `updateCrewStatusDisplay`, `attemptEmergencyWarp`, `updateWarpAvailability`, `postTacticalAdvisory` |
 | `sensors.js` | Scan profiles (`activateScanProfile`, `commitScanProfile`), active sensor toggle, enemy subsystem target grid (`buildEnemySubsystemTargetGrid`, `setEnemyTarget`) |
-| `tactical.js` | Player weapons only: burst-fire salvo, shield frequency rotation, evasive pattern, `fireSelectedArray`, `applyDamageToEnemy`, overload modes (overcharge/unstable torp/power dump), player cloaking (`toggleCloakingDevice`) |
+| `tactical.js` | Player weapons: burst-fire/concentrated phaser fire, shield freq rotation, evasive, `fireSelectedArray`, `applyDamageToEnemy`, overload modes; Defiant: `firePulseCannons`, `toggleCloakingDevice`; Enterprise-E: `fireAllPhaserArrays`, `toggleSaucerSeparation`, `executeConcentratedPhaserFire`, `executeMaxPhaserOutput`, `executeTricobalWarhead` |
 | `helm.js` | Helm timer processing (`processHelmTimers`), speed control (`setHelmSpeed`), attack vector (`setHelmAttackVector`), engagement range (`setPlayerRangeBracket`), attack run, come about, Picard Manoeuvre, Attack Pattern Omega, Evasive Pattern Alpha, helm panel UI (`updateHelmPanel`) |
 | `enemy-ai.js` | Enemy cloaking AI (`processEnemyCloakDecision`, `triggerEnemyCloak/Decloak`), sensor ghosts, all mechanics timers (`processNewMechanicsTimers` — delegates to `processHelmTimers`), Jem'Hadar ramming, enemy AI loop (`processEnemyAI`), enemy fire (`executeThreatCounterVolley`), full auto-delegation (`processAutomatedDelegation`) |
-| `command.js` | Captain's Chair: crew report feed (`postCrewReport`), captain overview panels (`updateCaptainOverview`), order cooldown table (`_CAP_CD`), all captain order functions (40+), new manoeuvres (Hold Fire, Auto Shield Track, Silent Running, Emergency Thrusters), manoeuvre ticker (`tickCaptainManoeuvres`), periodic + event-driven crew reports, `initCaptainStation()` |
-| `canvas-three.js` | Three.js 3D spatial battle view (ships, weapon beams, torpedoes, particles, engine glow, starfield) |
-| `canvas-2d.js` | Enemy schematic 2D canvas (silhouette + system nodes); hull schematic 2D canvas (Defiant outline + ablative rings); power distribution 2D canvas (EPS bars + thermal) |
+| `command.js` | Captain's Chair: `postCrewReport`, `_renderCrewComms` (uses `_crewLabel`/`_crewColour` getters — ship-aware); `_CAP_CD` cooldowns; 40+ order functions; manoeuvre ticker; ship-specific periodic reports (`_WORF_REPORTS`, `_OBRIEN_REPORTS`/`_LAFORGE_REPORTS`, `_NOG_REPORTS`/`_DATA_REPORTS`); `initCaptainStation()` |
+| `canvas-three.js` | Three.js 3D spatial battle view; `buildDefiantGeometry()` + `buildSovereignGeometry()` + `rebuildPlayerMesh()` — swaps player mesh on ship select |
+| `canvas-2d.js` | Enemy schematic; hull schematic (`_renderDefiantSchematic` / `_renderEnterpriseESchematic` — branches on `G.playerShipKey`); power distribution canvas |
 | `ui.js` | Deck switching (`toggleActiveDeck` — handles tactical/engineering/helm/captain), global UI sync (`synchronizeGlobalInterfaceDisplays`), scoring with hull integrity bonus (`calculateFinalScore`), end-game (`concludeSimulationRun`) |
-| `main.js` | Main game loop (`masterSimulationCoreLoop`), simulation init with full state reset (`initiateVesselSimulation`), boot sequence (`runMasterBootSequence`), captain manoeuvre tickers, splash screen (`dismissSplash`), campaign mode (`startCampaign`, `_launchCampaignLevel`, `concludeCampaignLevel`, `_nextCampaignLevel`), `returnToSetup()` |
+| `main.js` | Game loop; simulation init (`initiateVesselSimulation`); boot; ship selection (`selectPlayerShip`, `rebuildWeaponFireMatrix`, `_rebuildCapBarGrid`, `_updateSpecialAbilityButtons`); campaign mode; `returnToSetup()` |
 
 ---
 
@@ -41,16 +41,30 @@ G.running / G.dead                    // game lifecycle
 G.playerChosenStation                 // 'tactical' | 'engineering' | 'helm' | 'captain'
 G.activePanel                         // same — drives canvas and UI selection
 
-// Player
-G.player.hull / G.player.maxHull      // 500 base (scaled by difficulty)
-G.player.torpedoes / G.player.maxTorpedoes        // quantum: 18 per game
-G.player.photonTorpedoes / G.player.maxPhotonTorpedoes  // photon: 12 per game
-G.player.shields    // { fore:320, port:260, starboard:260, aft:200, maxSectorValue:320 }
+// Ship selection — set by selectPlayerShip() before each game
+G.playerShipKey                       // 'defiant' | 'enterprise_e'
+G.playerShipConfig                    // reference to PLAYER_SHIP_CONFIGS[key]
+G.activeWeaponArrays                  // ARRAYS_DICTIONARY (Defiant) or enterprise_e.weaponArrays
 
-// Systems (11 total)
+// Player (values come from G.playerShipConfig at game start)
+G.player.hull / G.player.maxHull      // Defiant:500 / Enterprise:750 (×playerHullMult)
+G.player.torpedoes / G.player.maxTorpedoes        // Defiant:18 / Enterprise:24
+G.player.photonTorpedoes / G.player.maxPhotonTorpedoes  // Defiant:12 / Enterprise:30
+G.player.shields    // Defiant: fore:320 port:260 stbd:260 aft:200 max:320
+                    // Enterprise: fore:500 port:400 stbd:400 aft:350 max:500
+
+// Systems (11 total — labels change per ship; cannon_pu/pl/su/sl = weapon arrays for both)
 G.systems[key]  // { health, allocatedPower, cap, stress, tripped, label, isWeapon }
   // keys: cannon_pu, cannon_pl, cannon_su, cannon_sl, nose_beam, torpedoes,
   //       shields, sensors, engines, cloak_dev, warp_core
+  // Defiant labels: 'Pulse Cannon P/U' etc.
+  // Enterprise labels: 'Saucer Dorsal Sys', 'Stardrive Fwd Sys' etc.
+
+// Saucer separation (Enterprise-E only — replaces cloak)
+G.saucerSepActive / G.saucerSepTimer / G.saucerSepCooldown  // 15s active, 50s CD
+
+// Tricobalt warhead (Enterprise-E only — 1 per engagement)
+G.tricobalReady                       // false after first use; reset on new game
 
 // Enemy
 G.enemyArchetype                      // string key into ENEMY_CONFIGS
@@ -94,6 +108,7 @@ G.enemyAdaptiveHits    // legacy counter for Borg regen scaling
 // Campaign mode
 G.campaignMode         // bool — true during campaign run
 G.campaignStation      // station chosen at campaign start (persists all 9 levels)
+G.campaignShipKey      // ship chosen at campaign start (persists all 9 levels)
 G.campaignLevel        // 0-indexed into CAMPAIGN_ORDER (0–8)
 G.campaignScore        // accumulated score across completed levels
 G.campaignLevelResults // [{ level, title, score, hullPct, time, won, escaped }]
@@ -202,9 +217,11 @@ G.score = { totalDmgDealt, volleysFired, hullBreaches, systemsDestroyed,
 
 ---
 
-## Player weapons — ARRAYS_DICTIONARY
+## Player weapons
 
-Arcs are **enforced** — `fireSelectedArray` blocks a weapon if `G.helmAttackVector` is not in `weapon.arc`. Fire buttons dim and become unclickable when out of arc. The "All Pulse Cannons" button label dynamically shows how many cannons currently bear.
+`G.activeWeaponArrays` is set to `ARRAYS_DICTIONARY` (Defiant) or `PLAYER_SHIP_CONFIGS.enterprise_e.weaponArrays` depending on ship. `fireSelectedArray(key)` reads from `G.activeWeaponArrays`. All weapon arcs are enforced — buttons dim when out of arc.
+
+### USS Defiant — ARRAYS_DICTIONARY (9 entries)
 
 | Key | Label | Yield | Cost | Arc | System |
 |---|---|---|---|---|---|
@@ -218,25 +235,44 @@ Arcs are **enforced** — `fireSelectedArray` blocks a weapon if `G.helmAttackVe
 | `torpedo_quantum_aft` | Aft Quantum Tube | **125** | 85 | aft, port, starboard | torpedoes |
 | `torpedo_photon_aft` | Aft Photon Tube | 60 | 30 | aft, port, starboard | torpedoes |
 
-**Arc coverage by attack vector:**
-- FORE: all 4 cannons + nose + fwd quantum + fwd photon (maximum firepower)
-- PORT: port-lower cannon + fwd quantum + fwd photon + aft quantum + aft photon
-- STARBOARD: stbd-lower cannon + fwd quantum + fwd photon + aft quantum + aft photon
-- AFT: aft quantum + aft photon only (all cannons and nose silent)
+Defiant arc coverage: FORE = all 4 cannons + nose + fwd torps. AFT = aft torps only.
 
-Aft tubes share the same `torpedoes` parent system (same magazine, same power, same health). The `isQuantum`/`isPhoton` flags on the weapon entry drive all magazine/damage logic in `fireSelectedArray` — key names are not used for branching.
+### USS Enterprise NCC-1701-E — weaponArrays (14 entries)
 
-**Quantum torpedo damage is binary:**
-- ≥60% lock → 85–115% of yield (clean hit)
-- <60% lock → 45–65% of yield (glancing)
-- Blind-fire at cloaked enemy → 40% yield (works from both tubes)
+Nine Type-XII phaser arrays across all hull sections, sharing 5 weapon system keys:
 
-**Photon torpedo:** reliable flat damage, no lock scaling, no lock required to fire.
+| Key | Label | Yield | Cost | Arc | System |
+|---|---|---|---|---|---|
+| `cannon_port_upper` | Saucer Dorsal Fwd | 42 | 32 | fore/port/stbd | cannon_pu |
+| `phaser_saucer_port` | Saucer Port Array | 36 | 28 | fore/port/aft | cannon_pu |
+| `cannon_port_lower` | Saucer Ventral Fwd | 38 | 28 | fore/port/stbd | cannon_pl |
+| `phaser_saucer_stbd` | Saucer Stbd Array | 36 | 28 | fore/stbd/aft | cannon_pl |
+| `cannon_stbd_upper` | Stardrive Fwd Arrays | 40 | 30 | fore/port/stbd | cannon_su |
+| `phaser_secondary` | Secondary Hull Arrays | 42 | 32 | fore/port/stbd | cannon_su |
+| `cannon_stbd_lower` | Saucer Aft Arrays | 35 | 26 | aft/port/stbd | cannon_sl |
+| `emitter_nose` | Primary Stardrive Emitter | **90** | 65 | fore | nose_beam |
+| `phaser_aft_emitter` | Aft Stardrive Emitter | **55** | 42 | aft/port/stbd | nose_beam |
+| `torpedo_quantum` | Fwd Quantum Tube A | **125** | 85 | fore/port/stbd | torpedoes |
+| `torpedo_quantum_b` | Fwd Quantum Tube B | **125** | 85 | fore/port/stbd | torpedoes |
+| `torpedo_photon` | Fwd Photon Tube | 65 | 30 | fore/port/stbd | torpedoes |
+| `torpedo_quantum_aft` | Aft Quantum Tube | **125** | 85 | aft/port/stbd | torpedoes |
+| `torpedo_photon_aft` | Aft Photon Tube | 65 | 30 | aft/port/stbd | torpedoes |
 
-**Helm range modifiers** (applied in `fireSelectedArray` after base damage):
+Enterprise arc coverage: FORE = 7 phaser arrays + fwd torps. AFT = 4 arrays + aft torps. The ship has meaningful firepower on every vector.
+
+Enterprise `primaryWeaponKeys` = all 9 phaser array keys (used for "⚡ All Phaser Arrays ×N" arc counter and `fireAllPhaserArrays()`).
+
+The capacitor bar grid for Enterprise-E shows 6 system-level bars (one per weapon system, 3-column compact layout) rather than 14 individual weapon bars, since arrays sharing a system always show the same cap%.
+
+**Shared torpedo mechanics (both ships):**
+- Quantum ≥60% lock → 85–115% yield. <60% lock → ~55%. Blind-fire (cloaked) → 40%
+- Photon: flat damage, no lock required
+- `isQuantum`/`isPhoton` flags drive all branching — key names are not used
+
+**Helm range modifiers** (applied after base damage, both ships):
 - Torpedoes: long +15%, close −10%
-- Pulse cannons: close +20% (or attackRunActive), long −10%
-- Nose beam: close +10%, long −10%
+- Cannons/phaser arrays (cannon_* parent): close +20%, long −10%
+- Nose/emitter (nose_beam parent): close +10%, long −10%
 
 ---
 
@@ -254,18 +290,27 @@ Elite is tuned specifically for the Borg probe encounter — the challenge comes
 
 ---
 
-## Shield & power values (current)
+## Shield & power values (per ship)
 
 ```
-Player shields:  fore 320 | port 260 | starboard 260 | aft 200 | maxSectorValue 320
-Shield regen:    sp/9 * health_pct  →  28MW=3.1/s, 60MW=6.7/s (min 0.5)
+                  Defiant          Enterprise-E
+Fore shields:     320              500
+Port/Stbd:        260/260          400/400
+Aft shields:      200              350
+maxSectorValue:   320              500
+Shield regen:     sp/9 * health    sp/9 * health * 1.4  (regen bonus)
+                  28MW→3.1/s       28MW→4.4/s
 Attack suppression: 3000ms (regen pauses after any hit)
 Equalisation delay: 2s transfer, shields dip to 80% during switch
 
-Default EPS allocations (114MW / 120MW — 6MW headroom):
-  cannon_pu:8  cannon_pl:8  cannon_su:8  cannon_sl:6
-  nose_beam:10  torpedoes:10
-  shields:28  sensors:16  engines:10  cloak_dev:0  warp_core:10
+Default EPS allocations:
+  Defiant   (114/120MW):  cannon_pu:8   cannon_pl:8  cannon_su:8   cannon_sl:6
+                          nose_beam:10  torpedoes:10
+                          shields:28  sensors:16  engines:10  cloak_dev:0  warp_core:10
+
+  Enterprise (114/120MW):  cannon_pu:12  cannon_pl:10  cannon_su:10  cannon_sl:10
+                            nose_beam:14  torpedoes:10
+                            shields:30  sensors:14  engines:10  cloak_dev:0  warp_core:10
 ```
 
 ### Power presets (`POWER_PRESETS` / `applyPowerPreset(name)`)
@@ -429,12 +474,19 @@ Engine glow intensity and Defiant drift amplitude in the 3D view both scale with
 - 2s transfer delay; shields dip to 80% during EPS conduit switching
 
 ### Crew role effects
-| Station | Crew | Wounded | Incapacitated |
-|---|---|---|---|
-| Tactical | Worf | 65% fire efficiency | 30% fire efficiency |
-| Engineering | O'Brien | 65% repair speed | 30% repair speed |
-| Helm | Nog | Evasive: 40% reduction | Evasive: 20% reduction |
-| Medical | Bashir | Casualty threshold ×0.7 | Casualty threshold ×0.4 |
+
+Crew is applied from `G.playerShipConfig.crewStations` at game start and drives `CREW_STATIONS`. The internal role keys (`tactical`, `engineering`, `helm`, `medical`) are ship-agnostic; only names and comms colours change. `_crewLabel(key)` and `_crewColour(key)` in command.js resolve the active ship's display names.
+
+| Station | Defiant crew | Enterprise-E crew | Wounded | Incapacitated |
+|---|---|---|---|---|
+| Tactical | Lt. Cmdr Worf | Lt. Cmdr Worf | 65% fire efficiency | 30% fire efficiency |
+| Engineering | Chief O'Brien (blue) | Lt. Cmdr La Forge (teal) | 65% repair speed | 30% repair speed |
+| Helm | Ensign Nog (pink) | Lt. Cmdr Data (gold) | Evasive: 40% reduction | Evasive: 20% reduction |
+| Medical | Dr. Bashir | Dr. Beverly Crusher | Casualty threshold ×0.7 | Casualty threshold ×0.4 |
+
+**Captain's Chair periodic report sets:**
+- Engineering: `_OBRIEN_REPORTS` (Defiant) / `_LAFORGE_REPORTS` (Enterprise-E — enthusiastic, can-do)
+- Helm: `_NOG_REPORTS` (Defiant) / `_DATA_REPORTS` (Enterprise-E — precise, formal, no contractions)
 
 ### Enemy hull milestone events (`checkEnemyHullMilestones` in enemy-ai.js)
 Fires once per threshold (75/50/25/10% hull) tracked in `G.enemyHullMilestones{}` (reset on new game). Each threshold fires:
@@ -457,6 +509,38 @@ In `triggerEnemyDecloak`: if faction is Romulan, phase is 'strike', and `G.plasm
 
 ### Enemy weapon degradation at low hull
 In `processEnemyAI`: below 35% enemy hull, 0.4% chance per frame-second of randomly degrading a live enemy weapon system by 5–17%. Represents internal battle damage spreading. Can destroy weapon systems without player targeting them. Logged as `INTEL:` when health reaches 0.
+
+### Enterprise-E exclusive mechanics
+
+**Saucer Separation** (`toggleSaucerSeparation` in tactical.js):
+- Saucer section flies independent decoy pattern for 15s
+- Enemy lock rate ×0.4 (−60%) via `saucerSepMod` in `processEnemyAI`
+- Engine stress +20 on activate; 50s cooldown
+- `G.saucerSepActive / G.saucerSepTimer / G.saucerSepCooldown`
+- Timers tick in `masterSimulationCoreLoop`; status bar shows in tactical panel
+
+**Tricobalt Warhead** (`executeTricobalWarhead`):
+- 250–350 total yield (random); 40% bypass shields directly to hull
+- No lock required; fires without capacitor cost
+- `G.tricobalReady` → false after first use; only one per engagement; reset on new game
+- Used in First Contact to destroy Borg temporal vortex; classified as subspatial weapon
+
+**Maximum Phaser Output** (`executeMaxPhaserOutput`):
+- All in-arc phaser arrays from `primaryWeaponKeys` +60% yield (via `G._overchargeActive + G._maxPhaserActive` flags)
+- 30s cooldown shared with Defiant's cannon overcharge slot
+- EPS heat +6 per array fired
+
+**Concentrated Phaser Fire** (`executeConcentratedPhaserFire`):
+- All in-arc arrays from `primaryWeaponKeys` in 180ms/array stagger sequence
+- 9s burst cooldown (shared with Defiant's burst salvo slot)
+- Requires ≥15% lock; fires in background via `setTimeout`
+
+**Regenerative Shielding**:
+- `shieldRegenBonus` from `G.playerShipConfig` multiplies regen rate in `recalculateShieldRegenRate()`
+- Enterprise-E: ×1.4 → 28MW power gives ~4.4 SP/s vs Defiant's ~3.1 SP/s
+- Ablative armour (`processAblativeArmour`, `applyAblativeArmour`) is gated by `G.playerShipConfig.hasAblativeArmour` — skipped entirely for Enterprise-E
+
+**3D mesh**: `buildSovereignGeometry()` draws large saucer disc, elongated stardrive hull, swept nacelles, phaser array torus strips. `rebuildPlayerMesh()` replaces the player mesh at game start.
 
 ### Defiant power balance (canon justification)
 | Weapon | Yield | Rationale |
@@ -590,6 +674,12 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 38. Overcharge/unstable flags not in `try/finally` — exception in `fireSelectedArray` would leave permanent damage multiplier
 39. `btn.firstChild.textContent` in `_updateCaptainOrderButtons` had no null guard — could crash captain panel
 40. Torpedo fallback fire path used `enemyPreferredSector` without arc check
+41. `state.js` initial `G.player.torpedoes` was 30 instead of 18 — old `initiateVesselSimulation` always overwrote it to 18, but the initial state was stale
+42. Ship-selection button clicks landed on zero-dimension elements during the 700ms splash animation — `selectPlayerShip` must be called after the overlay is visible
+43. All hardcoded "USS Defiant" strings in user-visible messages (escape warp, ramming log, campaign loss title) replaced with `G.playerShipConfig.label`
+44. Campaign end text "DEFIANT DESTROYED" was hardcoded — now uses active ship name
+45. `_OBRIEN_REPORTS` ablative armour status line shown for Enterprise-E — now gated by `hasAblativeArmour`; replaced with regenerative shield status line
+46. Crew comms feed speaker names were hardcoded constants — replaced with `_crewLabel()`/`_crewColour()` getters that read from `G.playerShipConfig.crewLabels/crewColours`
 
 ---
 
