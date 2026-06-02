@@ -35,28 +35,28 @@ const _MODEL_CONFIG = {
 // rotations align the ship so nose→+X and height→+Y for Three.js.
 // Flip y by Math.PI if a ship appears to face backward.
 const _MODEL_ROTATIONS = {
-  // Long axis Z (span 307), height Y already = Three.js up → rotate Z to X
-  defiant:              { x:0,           y:Math.PI/2,  z:0 },
-  // Long axis Y (span 422), height Z → x:-π/2 makes Z→Y(up), then nose(-Y)→+Z→+X
-  enterprise_e:         { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
-  // Long axis Y (span 107), height Z (24%) → x:-π/2 makes Z→Y(up), y:π/2 faces +X
-  ktinga:               { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
-  // Long axis Y (span 14745), height Z → same transform as enterprise
-  vor_cha:              { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
-  // Long axis X (span 74) already = forward, height Z → x:-π/2 makes Z→Y(up)
-  romulan_bop:          { x:-Math.PI/2,  y:0,           z:0 },
-  // Long axis Y (span 2813), height Z → same transform as enterprise
-  romulan_warbird:      { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
-  // Long axis Y (span 25), height Z → same as enterprise; very flat model
-  cardassian_scout:     { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
-  // Long axis Y (span 240), height Z → same transform
-  galor_class:          { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
-  // Long axis X (span 35) already = forward, height Z → x:-π/2
-  jem_hadar_fighter:    { x:-Math.PI/2,  y:0,           z:0 },
-  // OBJ — assume similar orientation to fighter
-  jem_hadar_battleship: { x:-Math.PI/2,  y:0,           z:0 },
-  // Real model — perfect 1:1:1 cube (43K tris), symmetric so rotation irrelevant
-  borg_probe:           { x:0,           y:0,           z:0 },
+  // Long axis Z, Y-up native → rotate Z to +X
+  defiant:              { x:0,            y:Math.PI/2,   z:0 },
+  // Y-up native STL; nose at +Z → y:π/2 maps +Z to +X
+  enterprise_e:         { x:0,            y:Math.PI/2,   z:0 },
+  // Y-up native STL; nose empirically requires y:π to face +X
+  ktinga:               { x:0,            y:Math.PI,     z:0 },
+  // Y-up native STL; nose at +Z facing −X in STL → y:−π/2 maps to +X
+  vor_cha:              { x:0,            y:-Math.PI/2,  z:0 },
+  // Long axis X already = forward, height Z → x:-π/2 makes Z→Y(up)
+  romulan_bop:          { x:-Math.PI/2,   y:0,           z:0 },
+  // Z-up STL; x:-π/2 corrects up, y:π/2 faces nose +X
+  romulan_warbird:      { x:-Math.PI/2,   y:Math.PI/2,  z:0 },
+  // Procedural fallback (STL too heavy) — rotation unused
+  cardassian_scout:     { x:-Math.PI/2,   y:Math.PI/2,  z:0 },
+  // Y-up native STL; nose at −Y in STL → y:−π/2 maps to +X
+  galor_class:          { x:0,            y:-Math.PI/2,  z:0 },
+  // Procedural fallback (STL too heavy) — rotation unused
+  jem_hadar_fighter:    { x:-Math.PI/2,   y:0,           z:0 },
+  // OBJ; Y-up native; nose at +X after x:-π/2 rotation
+  jem_hadar_battleship: { x:-Math.PI/2,   y:0,           z:0 },
+  // Symmetric cube — rotation irrelevant
+  borg_probe:           { x:0,            y:0,           z:0 },
 };
 
 // Faction PBR materials — applied to single-colour STL geometry
