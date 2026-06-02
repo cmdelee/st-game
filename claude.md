@@ -63,8 +63,9 @@ G.systems[key]  // { health, allocatedPower, cap, stress, tripped, label, isWeap
   // Defiant labels: 'Pulse Cannon P/U' etc.
   // Enterprise labels: 'Saucer Dorsal Sys', 'Stardrive Fwd Sys' etc.
 
-// Saucer separation (Enterprise-E only — replaces cloak)
-G.saucerSepActive / G.saucerSepTimer / G.saucerSepCooldown  // 15s active, 50s CD
+// Saucer separation (Enterprise-E only — replaces cloak) — toggle, not timed
+// State: ready → separated (until reconnect ordered) → reconnecting (6s docking) → cooldown (60s) → ready
+G.saucerSepActive / G.saucerSepReconnecting / G.saucerSepReconnectTimer / G.saucerSepCooldown
 
 // Tricobalt warhead (Enterprise-E only — 1 per engagement)
 G.tricobalReady                       // false after first use; reset on new game
@@ -390,7 +391,7 @@ Engine glow intensity and Defiant drift amplitude in the 3D view both scale with
 - Visible as concentric arcs on hull schematic, strip on tactical panel
 
 ### Burst-fire salvo (`executeBurstFireSalvo`)
-- All 4 cannons fire in 800ms window (200ms stagger); 12s recharge
+- All 4 cannons fire in 800ms window (200ms stagger); 9s recharge
 - Requires ≥20% lock; ≥1 cannon charged; no cloak/tractor
 - Pushes `burst_flash` to `renderedBeamsVector` → expanding white ring on canvas
 
@@ -409,14 +410,18 @@ Engine glow intensity and Defiant drift amplitude in the 3D view both scale with
 - Does not scale gradually with lock like energy weapons
 
 ### Deep scan system (sensors.js)
-Four scan types initiated by `startDeepScan(type)`, processed by `processDeepScan(dt)`, and committed via `_SCAN_RESULTS`. Bonuses are **permanent frequency locks** (not timed) — they persist until the next scan overwrites them or `checkBorgScanExpiry` reverts the fire interval after a Borg disrupt scan lapses.
+Single comprehensive scan initiated by `startDeepScan()` (no type argument), processed by `processDeepScan(dt)`, committed via `_commitDeepScan()` → `_SCAN_RESULTS[archetype]`. One button reveals **all** bonuses for the current enemy simultaneously. Bonuses are **permanent frequency locks** — they persist until the next scan overwrites them or `checkBorgScanExpiry` resets them when the Borg adaptation level increases.
 
-| Profile | Effect | Borg Expiry |
+Each enemy archetype has 2–4 entries in `_SCAN_RESULTS`; possible bonus types:
+
+| Bonus type | Key in `permanentScanBonuses` | Effect |
 |---|---|---|
-| Shields | +25% weapon yield vs shields | No |
-| Fissures | +35% all damage | No |
-| Disrupt | −50% enemy fire rate | Yes — `checkBorgScanExpiry` restores base rate |
-| Tetryon | −70% enemy lock rate | No |
+| `shield_freq` | `G.permanentScanBonuses.shield_freq` | −25% incoming damage of matched weapon type |
+| `hull_weakness` | `G.permanentScanBonuses.hull_weakness` | +20% all outgoing damage |
+| `sensor_blind` | `G.permanentScanBonuses.sensor_blind` | −40% enemy lock rate (via `permSensorBlind ×0.60`) |
+| `weapon_disrupt` | `G.permanentScanBonuses.weapon_disrupt` | +30% longer enemy fire interval (applied immediately) |
+
+Borg scans expire when `borgEscalationLevel` increases (`checkBorgScanExpiry`); Borg scan cooldown is 10s vs 60s for all others.
 
 ### Borg per-weapon adaptation
 - `G.enemyAdaptiveResist[weaponKey]` tracks 0–0.65 resistance per weapon
@@ -518,11 +523,14 @@ In `processEnemyAI`: below 35% enemy hull, 0.4% chance per frame-second of rando
 ### Enterprise-E exclusive mechanics
 
 **Saucer Separation** (`toggleSaucerSeparation` in tactical.js):
-- Saucer section flies independent decoy pattern for 15s
-- Enemy lock rate ×0.4 (−60%) via `saucerSepMod` in `processEnemyAI`
-- Engine stress +20 on activate; 50s cooldown
-- `G.saucerSepActive / G.saucerSepTimer / G.saucerSepCooldown`
-- Timers tick in `masterSimulationCoreLoop`; status bar shows in tactical panel
+- **Toggle mechanic** — saucer stays separated until player orders reconnect (no fixed duration)
+- Separated: `saucerSepActive=true, saucerSepReconnecting=false` — saucer arrays (cannon_pu/pl) offline; decoy active
+- Reconnecting: `saucerSepReconnecting=true` — 6s docking sequence; decoy effect drops
+- Enemy lock rate ×0.4 (−60%) via `saucerSepMod` in `processEnemyAI` (×0.75 while reconnecting)
+- Stardrive cap recharge ×1.15 boost (freed EPS budget); stardrive weapon yield ×1.20
+- Engine stress +15 on separate; 60s cooldown after full reconnect
+- `G.saucerSepActive / G.saucerSepReconnecting / G.saucerSepReconnectTimer / G.saucerSepCooldown`
+- Timers tick in `masterSimulationCoreLoop`; status bar shows in tactical panel and eng-utility panel
 
 **Tricobalt Warhead** (`executeTricobalWarhead`):
 - 250–350 total yield (random); 40% bypass shields directly to hull
@@ -736,7 +744,7 @@ Weapon buttons dim (`opacity:0.35; pointer-events:none`) when the weapon's arc d
 | Fwd Photon Torpedo | `fireSelectedArray('torpedo_photon')` | Fore/port/stbd arc; no lock required |
 | Aft Quantum Torpedo | `fireSelectedArray('torpedo_quantum_aft')` | Aft/port/stbd arc; ≥5% lock; torps > 0 |
 | Aft Photon Torpedo | `fireSelectedArray('torpedo_photon_aft')` | Aft/port/stbd arc; no lock required |
-| ⚡⚡ BURST SALVO | `executeBurstFireSalvo()` | In-arc cannons only; ≥20% lock; 12s CD |
+| ⚡⚡ BURST SALVO | `executeBurstFireSalvo()` | In-arc cannons only; ≥20% lock; 9s CD |
 | ALPHA SALVO | `executeAlphaSalvoFire()` | All in-arc weapons (cannons + nose + all torp tubes) |
 | ⚡ OVERCHARGE | `executeCannonOvercharge()` | 30s CD |
 | ☢ UNSTABLE TORP | `executeUnstableTorpedo()` | Fires `torpedo_quantum` (fwd tube explicitly); 35s CD |
@@ -744,10 +752,7 @@ Weapon buttons dim (`opacity:0.35; pointer-events:none`) when the weapon's arc d
 | ◉ ENGAGE CLOAK | `toggleCloakingDevice()` | Health ≥20%, no active cooldown |
 | 🛡 ROTATE FREQ | `rotateShieldFrequency()` | 30s CD |
 | ◈ EVASIVE PATTERN | `executeEvasivePattern()` | Engines ≥20%, 20s CD |
-| 🛡 Shields scan | `startDeepScan('shields')` | Initiates deep scan; permanent bonus on completion |
-| 💥 Fissures scan | `startDeepScan('hull')` | Initiates deep scan; permanent bonus on completion |
-| ⚡ Disrupt scan | `startDeepScan('weapons')` | Initiates deep scan; permanent bonus on completion |
-| 〜 Tetryon scan | `startDeepScan('tetryon')` | Initiates deep scan; permanent bonus on completion |
+| 🔭 DEEP SCAN | `startDeepScan()` | Single comprehensive scan; reveals all enemy frequency bonuses permanently |
 | Reinforce Fore/Port/Stbd/Aft | `pumpShieldSector(sector)` | Not cloaked |
 | Equalise | `rebalanceShieldArrays()` | Not cloaked, 2s delay |
 | ⚡ EMERGENCY WARP | `attemptEmergencyWarp()` | Hull ≤35%, core online |
@@ -774,7 +779,7 @@ Orders grouped by crew member. All have cooldowns from `_CAP_CD` (active time + 
 
 **Worf — Fire Control:** Cannons, Quantum, Photon, Burst, Alpha, Rotate Freq, Cloak/Decloak toggle, Hold Fire  
 **Worf — Targeting:** Target Hull/Shields/Weapons/Engines/Cloak/Sensors/Warp Core  
-**Worf — Scans:** Shield/Hull/Disrupt/Tetryon (auto-commits on completion)  
+**Worf — Scans:** Deep Scan button (calls `startDeepScan()`; reveals all enemy frequency bonuses; auto-commits on completion)  
 **O'Brien — Shields & Power:** Equalise, Boost Regen, Emergency Battery, Repair Weapons/Systems/Cloak, Flush EPS, Damage Control  
 **Nog — Vectors:** Fore/Port/Stbd/Aft  
 **Nog — Speed/Range/Manoeuvres:** Full/Half/Stop, Long/Medium/Close, Attack Run, Come About, Picard, Pattern Omega, Evasive Alpha, Auto Shield Track, Silent Running, Emergency Thrusters, Emergency Warp

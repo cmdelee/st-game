@@ -131,7 +131,7 @@ Direct weapons fire, manage evasive manoeuvres, operate cloak or saucer sep, and
 | Individual phaser buttons | F/P/S or F/P/A or A/P/S | 9 individually targetable arrays |
 | Fwd Quantum Tube A + B | Fore/Port/Stbd | Dual forward quantum launchers |
 | Aft Quantum / Photon | Aft/Port/Stbd | Aft launcher |
-| ◯ Saucer Separation | — | Enemy lock −60% for duration, 50s CD after reconnect |
+| ◯ Saucer Separation | — | Toggle — stays separated until reconnect ordered. Enemy lock −60%. 60s CD after reconnect |
 | ⚡ Max Phaser Output | — | All phasers +60%, 30s CD |
 | ☢ Tricobalt Warhead | — | 300yd, no lock, 40% hull bleed-through, 1 per engagement |
 
@@ -216,7 +216,7 @@ All three stations fully automated. Issue orders and override crew decisions.
 2. **Attack Vector (Enterprise-E)**: FORE brings 7 of 9 phaser arrays into arc. AFT still fields 4 arrays + aft tubes — the Enterprise fights effectively in every direction
 3. **Burst Fire / Concentrated Fire**: Use at ≥20% lock to overwhelm shield regen before it recovers
 4. **Cloak timing (Defiant)**: Engage during a lull; regen credit accrues while cloaked, restoring shields on decloak
-5. **Saucer Separation (Enterprise-E)**: Cuts enemy lock by 60% for 15s — use offensively when building lock, or defensively when enemy lock is dangerously high
+5. **Saucer Separation (Enterprise-E)**: Toggle mechanic — saucer stays separated until you order reconnect. Enemy lock −60% the whole time. Use offensively to build lock safely, or defensively when you need sustained pressure relief. 60s cooldown starts after the 6s docking sequence completes
 6. **Tricobalt Warhead (Enterprise-E)**: 40% bypasses shields directly to hull. Save it for the Borg (adaptation doesn't apply to subspace weapons) or a Klingon berserk window
 7. **Regenerative Shields (Enterprise-E)**: The ×1.4 regen bonus means even heavily damaged shield sectors recover quickly — play aggressively and let the shields do their job
 8. **Warp core cascades**: A tripped core spikes stress on engines (+35%), shields (+22%), sensors (+15%) — keep EPS stress low before a core risk
