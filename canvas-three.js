@@ -37,8 +37,8 @@ const _MODEL_CONFIG = {
 const _MODEL_ROTATIONS = {
   // Long axis Z, Y-up native → rotate Z to +X
   defiant:              { x:0,            y:Math.PI/2,   z:0 },
-  // Y-up native STL; nose at +Z → y:π/2 maps +Z to +X
-  enterprise_e:         { x:0,            y:Math.PI/2,   z:0 },
+  // Y-up native STL; nose at −X in STL → y:π flips to +X; preserves upright
+  enterprise_e:         { x:0,            y:Math.PI,     z:0 },
   // Y-up native STL; nose empirically requires y:π to face +X
   ktinga:               { x:0,            y:Math.PI,     z:0 },
   // Y-up native STL; nose at +Z facing −X in STL → y:−π/2 maps to +X
@@ -47,12 +47,12 @@ const _MODEL_ROTATIONS = {
   romulan_bop:          { x:-Math.PI/2,   y:0,           z:0 },
   // Z-up STL; x:-π/2 corrects up, y:π/2 faces nose +X
   romulan_warbird:      { x:-Math.PI/2,   y:Math.PI/2,  z:0 },
-  // Z-up STL; x:-π/2 corrects up, y:π/2 faces nose +X
-  cardassian_scout:     { x:-Math.PI/2,   y:Math.PI/2,  z:0 },
+  // Empirically verified: nose+up both 1.000
+  cardassian_scout:     { x:Math.PI/2,    y:0,          z:-Math.PI/2 },
   // Y-up native STL; nose at −Y in STL → y:−π/2 maps to +X
   galor_class:          { x:0,            y:-Math.PI/2,  z:0 },
-  // Long axis X already = forward, height Z → x:-π/2 makes Z→Y(up)
-  jem_hadar_fighter:    { x:-Math.PI/2,   y:0,           z:0 },
+  // Empirically verified: nose+up both 1.000
+  jem_hadar_fighter:    { x:Math.PI/2,    y:0,           z:Math.PI/2 },
   // OBJ; Y-up native; nose at +X after x:-π/2 rotation
   jem_hadar_battleship: { x:-Math.PI/2,   y:0,           z:0 },
   // Symmetric cube — rotation irrelevant
