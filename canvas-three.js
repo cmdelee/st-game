@@ -47,11 +47,11 @@ const _MODEL_ROTATIONS = {
   romulan_bop:          { x:-Math.PI/2,   y:0,           z:0 },
   // Z-up STL; x:-π/2 corrects up, y:π/2 faces nose +X
   romulan_warbird:      { x:-Math.PI/2,   y:Math.PI/2,  z:0 },
-  // Procedural fallback (STL too heavy) — rotation unused
+  // Z-up STL; x:-π/2 corrects up, y:π/2 faces nose +X
   cardassian_scout:     { x:-Math.PI/2,   y:Math.PI/2,  z:0 },
   // Y-up native STL; nose at −Y in STL → y:−π/2 maps to +X
   galor_class:          { x:0,            y:-Math.PI/2,  z:0 },
-  // Procedural fallback (STL too heavy) — rotation unused
+  // Long axis X already = forward, height Z → x:-π/2 makes Z→Y(up)
   jem_hadar_fighter:    { x:-Math.PI/2,   y:0,           z:0 },
   // OBJ; Y-up native; nose at +X after x:-π/2 rotation
   jem_hadar_battleship: { x:-Math.PI/2,   y:0,           z:0 },
@@ -110,7 +110,7 @@ function _loadShipModel(key, callback) {
       const triCount = geoOrGroup.index
         ? geoOrGroup.index.count / 3
         : (geoOrGroup.attributes.position?.count || 0) / 3;
-      if (triCount > 50000) {
+      if (triCount > 100000) {
         console.warn(`[Models] ${key}: ${Math.round(triCount).toLocaleString()} triangles — too heavy for web, using procedural`);
         callback(null);
         return;
