@@ -34,9 +34,14 @@ const ENEMY_CONFIGS = {
     prefersCloseRange:true,
     closeRangeDmgBonus:1.4,
     systems:{
-      disruptors_fwd:{ health:100, label:'Forward Disruptors', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:45,  dmgMax:80,  systemTargetKey:'disruptors' },
-      disruptors_aft:{ health:100, label:'Aft Disruptors',     isWeapon:true,  firingArc:['aft','port','starboard'],  dmgMin:30,  dmgMax:55,  systemTargetKey:'disruptors' },
-      torpedoes_fwd: { health:100, label:'Forward Torpedoes',  isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:90,  dmgMax:160, systemTargetKey:'torpedoes', isTorpedo:true },
+      // Canon: Mark-8 disruptors (upgrade from D7 Mark-7), forward-mounted in command pod
+      disruptors_fwd:{ health:100, label:'Forward Disruptors', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:45, dmgMax:80,  systemTargetKey:'disruptors' },
+      // Canon: secondary aft disruptors (dorsal/ventral secondary emitters)
+      disruptors_aft:{ health:100, label:'Aft Disruptors',     isWeapon:true,  firingArc:['aft','port','starboard'],  dmgMin:28, dmgMax:50,  systemTargetKey:'disruptors' },
+      // Canon: 1 forward torpedo tube (below bridge in forward command pod)
+      torpedoes_fwd: { health:100, label:'Forward Torpedoes',  isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:90, dmgMax:160, systemTargetKey:'torpedoes', isTorpedo:true },
+      // Canon: 1 aft torpedo tube (between impulse engines at stern)
+      torpedoes_aft: { health:100, label:'Aft Torpedoes',      isWeapon:true,  firingArc:['aft','port','starboard'],  dmgMin:70, dmgMax:130, systemTargetKey:'torpedoes', isTorpedo:true },
       cloak_device:  { health:100, label:'Cloaking Device',    isWeapon:false, firingArc:[] },
       shields_sys:   { health:100, label:'Shield Generators',  isWeapon:false, firingArc:[] },
       engines:       { health:100, label:'Impulse Engines',    isWeapon:false, firingArc:[] },
@@ -54,9 +59,14 @@ const ENEMY_CONFIGS = {
     prefersCloseRange:true,
     closeRangeDmgBonus:1.35,
     systems:{
-      disruptors_fwd:  { health:100, label:'Forward Disruptors', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:55,  dmgMax:95,  systemTargetKey:'disruptors' },
-      disruptors_wing: { health:100, label:'Wing Disruptors',    isWeapon:true,  firingArc:['port','starboard'],        dmgMin:35,  dmgMax:60,  systemTargetKey:'disruptors' },
+      // Canon: 1 large heavy forward disruptor in forward assault module + flanking cannons
+      disruptors_fwd:  { health:100, label:'Forward Disruptors', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:55, dmgMax:95,  systemTargetKey:'disruptors' },
+      // Canon: quad heavy disruptor cannons in wing/claw extensions — broadside-dominant
+      disruptors_wing: { health:100, label:'Wing Disruptors',    isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:35, dmgMax:60,  systemTargetKey:'disruptors' },
+      // Canon: 2 forward torpedo launchers in forward pod
       torpedoes_fwd:   { health:100, label:'Forward Torpedoes',  isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:100, dmgMax:170, systemTargetKey:'torpedoes', isTorpedo:true },
+      // Canon: 2 aft torpedo launchers — 1 in aft pod, 1 in superstructure beneath aft pod
+      torpedoes_aft:   { health:100, label:'Aft Torpedoes',      isWeapon:true,  firingArc:['aft','port','starboard'],  dmgMin:80,  dmgMax:140, systemTargetKey:'torpedoes', isTorpedo:true },
       cloak_device:    { health:100, label:'Cloaking Device',    isWeapon:false, firingArc:[] },
       shields_sys:     { health:100, label:'Shield Generators',  isWeapon:false, firingArc:[] },
       engines:         { health:100, label:'Impulse Engines',    isWeapon:false, firingArc:[] },
@@ -74,9 +84,13 @@ const ENEMY_CONFIGS = {
     hasSensorGhosts:true,
     plasmaReloadTime:18000,
     systems:{
-      plasma_fwd:  { health:100, label:'Plasma Torpedo Banks', isWeapon:true,  firingArc:['fore'],                    dmgMin:110, dmgMax:190, systemTargetKey:'torpedoes', isTorpedo:true },
-      phasers_fwd: { health:100, label:'Forward Phasers',      isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:35,  dmgMax:60,  systemTargetKey:'phasers' },
-      phasers_aft: { health:100, label:'Aft Phasers',          isWeapon:true,  firingArc:['aft','port','starboard'], dmgMin:25,  dmgMax:45,  systemTargetKey:'phasers' },
+      // Canon: plasma torpedo — forward-firing but can bear on broadside targets
+      // Arc expanded from ['fore'] only to ['fore','port','starboard'] so torpeodcharge
+      // state can aim at the weakest player shield sector, not always fore
+      plasma_fwd:  { health:100, label:'Plasma Torpedo Banks', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:110, dmgMax:190, systemTargetKey:'torpedoes', isTorpedo:true, label:'Plasma Torpedo Banks' },
+      // Canon: Romulan disruptors — this class uses disruptors, not Federation phasers
+      disruptors_fwd: { health:100, label:'Forward Disruptors', isWeapon:true, firingArc:['fore','port','starboard'], dmgMin:35, dmgMax:60, systemTargetKey:'disruptors' },
+      disruptors_aft: { health:100, label:'Aft Disruptors',     isWeapon:true, firingArc:['aft','port','starboard'],  dmgMin:25, dmgMax:45, systemTargetKey:'disruptors' },
       cloak_device:{ health:100, label:'Cloaking Device',      isWeapon:false, firingArc:[] },
       shields_sys: { health:100, label:'Shield Generators',    isWeapon:false, firingArc:[] },
       engines:     { health:100, label:'Impulse Engines',      isWeapon:false, firingArc:[] },
@@ -94,30 +108,38 @@ const ENEMY_CONFIGS = {
     hasSensorGhosts:true,
     plasmaReloadTime:22000,
     systems:{
-      disruptors_fwd: { health:100, label:'Forward Disruptors',  isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:50,  dmgMax:85,  systemTargetKey:'disruptors' },
-      disruptors_aft: { health:100, label:'Aft Disruptors',      isWeapon:true,  firingArc:['aft','port','starboard'],  dmgMin:45,  dmgMax:75,  systemTargetKey:'disruptors' },
-      plasma_torp:    { health:100, label:'Plasma Torpedo Banks', isWeapon:true,  firingArc:['fore'],                    dmgMin:120, dmgMax:200, systemTargetKey:'torpedoes', isTorpedo:true },
-      cloak_device:   { health:100, label:'Cloaking Device',      isWeapon:false, firingArc:[] },
-      shields_sys:    { health:100, label:'Shield Generators',    isWeapon:false, firingArc:[] },
-      engines:        { health:100, label:'Impulse Engines',      isWeapon:false, firingArc:[] },
-      sensors:        { health:100, label:'Sensor Array',         isWeapon:false, firingArc:[] },
-      warp_core:      { health:100, label:'Singularity Core',     isWeapon:false, firingArc:[] },
+      // Canon: forward disruptors in the "head" — primary directed energy weapons,
+      // fires both beams and pulses, covers full forward hemisphere
+      disruptors_fwd: { health:100, label:'Forward Disruptors',     isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:50, dmgMax:85,  systemTargetKey:'disruptors' },
+      // Canon: aft/lateral disruptors — D'Deridex has 360° disruptor coverage
+      disruptors_aft: { health:100, label:'Lateral Disruptors',     isWeapon:true,  firingArc:['aft','port','starboard'],  dmgMin:45, dmgMax:75,  systemTargetKey:'disruptors' },
+      // Canon: plasma torpedoes — expanded arc so torpedocharge can aim at weakest sector
+      // D'Deridex fires from forward section but plasma can bear on broadside
+      plasma_torp:    { health:100, label:'Plasma Torpedo Banks',   isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:120, dmgMax:200, systemTargetKey:'torpedoes', isTorpedo:true },
+      cloak_device:   { health:100, label:'Cloaking Device',        isWeapon:false, firingArc:[] },
+      shields_sys:    { health:100, label:'Shield Generators',      isWeapon:false, firingArc:[] },
+      engines:        { health:100, label:'Impulse Engines',        isWeapon:false, firingArc:[] },
+      sensors:        { health:100, label:'Sensor Array',           isWeapon:false, firingArc:[] },
+      // Canon: D'Deridex uses artificial quantum singularity as power source — not M/ARA
+      warp_core:      { health:100, label:'Quantum Singularity Core', isWeapon:false, firingArc:[] },
     }
   },
   cardassian_scout: {
     label:"CARDASSIAN SCOUT VESSEL", faction:'Cardassian', era:'DS9',
-    description:"Fast, agile. No cloak. Locks on quickly, fires frequent harassing phaser bursts.",
+    description:"Fast, agile. No cloak. Locks on quickly, fires frequent harassing spiral-wave disruptor bursts.",
     hull:480, maxHull:480,
     shields:{ fore:120, port:100, starboard:100, aft:80, maxSectorValue:120 },
     hasCloakDevice:false, recoveryCoefficient:0.6, fireInterval:2200, lockRate:7.5,
     preferredTargets:['fore','port','starboard'],
     systems:{
-      phasers_fwd: { health:100, label:'Forward Phasers',   isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:22, dmgMax:42, systemTargetKey:'phasers' },
-      phasers_aft: { health:100, label:'Aft Phasers',       isWeapon:true,  firingArc:['aft','port','starboard'], dmgMin:15, dmgMax:30, systemTargetKey:'phasers' },
-      shields_sys: { health:100, label:'Shield Generators', isWeapon:false, firingArc:[] },
-      engines:     { health:100, label:'Impulse Engines',   isWeapon:false, firingArc:[] },
-      sensors:     { health:100, label:'Sensor Array',      isWeapon:false, firingArc:[] },
-      warp_core:   { health:100, label:'Warp Core',         isWeapon:false, firingArc:[] },
+      // Canon: Cardassian spiral-wave disruptors — NOT Federation phasers.
+      // systemTargetKey changed to 'disruptors' so shield frequency rotation works correctly.
+      disruptors_fwd: { health:100, label:'Spiral-Wave Disruptors', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:22, dmgMax:42, systemTargetKey:'disruptors' },
+      disruptors_aft: { health:100, label:'Aft Disruptor Array',    isWeapon:true,  firingArc:['aft','port','starboard'],  dmgMin:15, dmgMax:30, systemTargetKey:'disruptors' },
+      shields_sys:    { health:100, label:'Shield Generators',      isWeapon:false, firingArc:[] },
+      engines:        { health:100, label:'Impulse Engines',        isWeapon:false, firingArc:[] },
+      sensors:        { health:100, label:'Sensor Array',           isWeapon:false, firingArc:[] },
+      warp_core:      { health:100, label:'Warp Core',              isWeapon:false, firingArc:[] },
     }
   },
   galor_class: {
@@ -128,13 +150,18 @@ const ENEMY_CONFIGS = {
     hasCloakDevice:false, recoveryCoefficient:0.5, fireInterval:4000, lockRate:5.5,
     preferredTargets:['fore','port','starboard'],
     systems:{
-      phasers_fwd:   { health:100, label:'Forward Phasers',   isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:45, dmgMax:75,  systemTargetKey:'phasers' },
-      phasers_aft:   { health:100, label:'Aft Phasers',       isWeapon:true,  firingArc:['aft','port','starboard'], dmgMin:30, dmgMax:50,  systemTargetKey:'phasers' },
-      torpedoes_fwd: { health:100, label:'Photon Torpedoes',  isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:70, dmgMax:120, systemTargetKey:'torpedoes', isTorpedo:true },
-      shields_sys:   { health:100, label:'Shield Generators', isWeapon:false, firingArc:[] },
-      engines:       { health:100, label:'Impulse Engines',   isWeapon:false, firingArc:[] },
-      sensors:       { health:100, label:'Sensor Array',      isWeapon:false, firingArc:[] },
-      warp_core:     { health:100, label:'Warp Core',         isWeapon:false, firingArc:[] },
+      // Canon: heavy forward spiral-wave disruptors (equivalent to Starfleet Type-IX)
+      // Poor forward arc is a noted design weakness — balanced in game with good damage
+      disruptors_fwd:   { health:100, label:'Spiral-Wave Disruptors', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:45, dmgMax:75,  systemTargetKey:'disruptors' },
+      // Canon: large aft disruptor wave cannon — a distinctive Galor feature, powerful aft weapon
+      disruptor_cannon: { health:100, label:'Aft Disruptor Cannon',   isWeapon:true,  firingArc:['aft','port','starboard'],  dmgMin:40, dmgMax:65,  systemTargetKey:'disruptors' },
+      // Canon: 2 forward torpedo tubes + 1 aft torpedo tube (standard complement 200 torps)
+      torpedoes_fwd:    { health:100, label:'Forward Torpedoes',       isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:70, dmgMax:120, systemTargetKey:'torpedoes', isTorpedo:true },
+      torpedoes_aft:    { health:100, label:'Aft Torpedoes',           isWeapon:true,  firingArc:['aft','port','starboard'],  dmgMin:55, dmgMax:90,  systemTargetKey:'torpedoes', isTorpedo:true },
+      shields_sys:      { health:100, label:'Shield Generators',       isWeapon:false, firingArc:[] },
+      engines:          { health:100, label:'Impulse Engines',         isWeapon:false, firingArc:[] },
+      sensors:          { health:100, label:'Sensor Array',            isWeapon:false, firingArc:[] },
+      warp_core:        { health:100, label:'Warp Core',               isWeapon:false, firingArc:[] },
     }
   },
   jem_hadar_fighter: {
@@ -241,20 +268,20 @@ const MISSION_INTEL = {
     silhouette: '🛸',
     threat: 'HIGH',
     cards: [
-      { label:'VESSEL CLASS',      text:"K'Tinga-class battle cruiser. 900 hull, heavy torpedoes.", revealAt:50 },
-      { label:'THREAT ASSESSMENT', text:"Cloaking device confirmed. Closes to disruptor range aggressively — disruptors gain +40% at close quarters.", revealAt:70 },
+      { label:'VESSEL CLASS',      text:"K'Tinga-class battle cruiser. 900 hull, heavy torpedoes fore AND aft, disruptors all quadrants.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"Cloaking device confirmed. Closes to disruptor range aggressively — disruptors gain +40% at close quarters. Aft torpedo tube is a threat when breaking off.", revealAt:70 },
       { label:'KNOWN WEAKNESS',    text:"Hull integrity degrades quickly under sustained cannon fire. Cloaking device is a priority target.", revealAt:90 },
-      { label:'TACTICS',           text:"Hold long range. Use Evasive Pattern when they close. Target disruptors or cloak device to neutralise their advantages.", revealAt:90 },
+      { label:'TACTICS',           text:"Hold long range. Use Evasive Pattern when they close. Target disruptors or cloak device to neutralise their advantages. Watch aft when manoeuvring.", revealAt:90 },
     ]
   },
   vor_cha: {
     silhouette: '🛸',
     threat: 'HIGH',
     cards: [
-      { label:'VESSEL CLASS',      text:"Vor'Cha-class attack cruiser. 1050 hull, wing disruptors, heavy torpedoes.", revealAt:50 },
-      { label:'THREAT ASSESSMENT', text:"More powerful than K'Tinga. Closes aggressively — wing disruptors gain +35% at close range. Cloaking confirmed.", revealAt:70 },
-      { label:'KNOWN WEAKNESS',    text:"Wing disruptors have limited firing arc. Aft quarter is comparatively light. Target engines to slow their advance.", revealAt:90 },
-      { label:'TACTICS',           text:"Maintain long range and use come-about to present fore shields. Destroy wing disruptors early to reduce close-range threat.", revealAt:90 },
+      { label:'VESSEL CLASS',      text:"Vor'Cha-class attack cruiser. 1050 hull, heavy forward disruptor, wing cannons, torpedoes fore AND aft.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"More powerful than K'Tinga. Closes aggressively — wing disruptors gain +35% at close range. Cloaking confirmed. Aft torpedo launchers make disengagement dangerous.", revealAt:70 },
+      { label:'KNOWN WEAKNESS',    text:"Wing disruptors require broadside positioning. Target engines to slow their advance and reduce close-range effectiveness.", revealAt:90 },
+      { label:'TACTICS',           text:"Maintain long range and use come-about to present fore shields. Destroy wing disruptors early. Don't break off aft — they have aft torpedo tubes.", revealAt:90 },
     ]
   },
   romulan_bop: {
@@ -281,20 +308,20 @@ const MISSION_INTEL = {
     silhouette: '⬡',
     threat: 'MODERATE',
     cards: [
-      { label:'VESSEL CLASS',      text:"Cardassian scout vessel. 480 hull, rapid-fire phasers, fast targeting lock.", revealAt:50 },
-      { label:'THREAT ASSESSMENT', text:"No cloaking device. Highest lock rate of any Cardassian design — achieves targeting lock in under 15 seconds.", revealAt:70 },
+      { label:'VESSEL CLASS',      text:"Cardassian scout vessel. 480 hull, rapid-fire spiral-wave disruptors, fast targeting lock.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"No cloaking device. Highest lock rate of any Cardassian design — achieves targeting lock in under 15 seconds. Spiral-wave disruptors fire fore and aft.", revealAt:70 },
       { label:'KNOWN WEAKNESS',    text:"Thin hull and light shielding. Aggressive fire pattern means EPS conduits run hot. Sustained pressure destroys it quickly.", revealAt:90 },
-      { label:'TACTICS',           text:"Attack immediately. Burst salvo early — its shields won't last. Tetryon scan negates its lock-rate advantage. Evasive only if lock exceeds 70%.", revealAt:90 },
+      { label:'TACTICS',           text:"Attack immediately. Burst salvo early — its shields won't last. Tetryon scan negates its lock-rate advantage. Shield frequency rotation works against their disruptor signature.", revealAt:90 },
     ]
   },
   galor_class: {
     silhouette: '⬡',
     threat: 'MODERATE',
     cards: [
-      { label:'VESSEL CLASS',      text:"Galor-class warship. 800 hull, forward phasers, photon torpedoes.", revealAt:50 },
-      { label:'THREAT ASSESSMENT', text:"No cloaking device. Strong fore shields. Photon torpedoes confirmed — reliable fire, no lock required.", revealAt:70 },
-      { label:'KNOWN WEAKNESS',    text:"Aft quarter is the weakest. Phaser systems are targetable and significantly reduce incoming fire rate when disabled.", revealAt:90 },
-      { label:'TACTICS',           text:"Come about to present strongest shields then press with cannons. Target phasers early. Shield frequency rotation counters their weapon signature.", revealAt:90 },
+      { label:'VESSEL CLASS',      text:"Galor-class warship. 800 hull, spiral-wave disruptors, photon torpedoes fore AND aft. Large aft wave cannon.", revealAt:50 },
+      { label:'THREAT ASSESSMENT', text:"No cloaking device. Strong fore shields. Spiral-wave disruptors confirmed — frequency-lock countermeasures effective. Aft wave cannon is a significant threat from behind.", revealAt:70 },
+      { label:'KNOWN WEAKNESS',    text:"Aft shields are the weakest sector. Disruptor systems are targetable and reduce incoming fire rate significantly when disabled.", revealAt:90 },
+      { label:'TACTICS',           text:"Come about to present strongest shields then press with cannons. Target disruptors early. Shield frequency rotation counters their spiral-wave signature. Watch the aft wave cannon.", revealAt:90 },
     ]
   },
   jem_hadar_fighter: {
