@@ -128,7 +128,9 @@ function fireSelectedArray(weaponKey) {
   }
   const parentSys = G.systems[weapon.parentSystem];
   if (!parentSys || parentSys.health < 10 || parentSys.tripped) { postLogEvent(`${weapon.label} offline.`, 'warn'); return; }
-  if (parentSys.cap < weapon.cost) { postLogEvent(`${weapon.label} capacitor low (${Math.round(parentSys.cap)}%).`, 'warn'); return; }
+  const _isAftTube = !!(weapon.arc?.includes('aft') && !weapon.arc?.includes('fore'));
+  const _capSrc = (_isAftTube && parentSys.aftCap !== undefined) ? 'aftCap' : 'cap';
+  if (parentSys[_capSrc] < weapon.cost) { postLogEvent(`${weapon.label} capacitor low (${Math.round(parentSys[_capSrc])}%).`, 'warn'); return; }
 
   // Block energy weapons vs fully cloaked enemy; torpedoes fire blind
   if (G.enemyCloaked && G.enemyCloakVulnTimer <= 0) {
@@ -137,7 +139,7 @@ function fireSelectedArray(weaponKey) {
       const tube = weapon.isPhoton ? 'Photon' : 'Quantum';
       if (mag <= 0) { postLogEvent(`${tube} torpedo magazine empty.`, 'warn'); return; }
       if (weapon.isPhoton) G.player.photonTorpedoes--; else G.player.torpedoes--;
-      parentSys.cap -= weapon.cost;
+      parentSys[!!(weapon.arc?.includes('aft') && !weapon.arc?.includes('fore')) && parentSys.aftCap !== undefined ? 'aftCap' : 'cap'] -= weapon.cost;
       G.inFlightTorpedoes.push({ dmg: weapon.yield * 0.4, timeToImpact: 3500, fromEnemy: false });
       postLogEvent(`${tube} torpedo blind-fired from ${weapon.arc.includes('aft') ? 'aft' : 'forward'} tube.`, 'warn');
     } else {
@@ -157,7 +159,7 @@ function fireSelectedArray(weaponKey) {
     G.player.photonTorpedoes--;
   }
 
-  parentSys.cap -= weapon.cost;
+  parentSys[_capSrc] -= weapon.cost;
 
   const sensorPow    = G.systems.sensors.allocatedPower;
   const sensorHealth = G.systems.sensors.health;

@@ -232,7 +232,8 @@ function synchronizeGlobalInterfaceDisplays() {
   const _aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
   Object.keys(_aw).forEach(wk => {
     const wd  = _aw[wk]; const sys = G.systems[wd.parentSystem];
-    const cap = sys.tripped ? 0 : sys.cap;
+    const _isAft = !!(wd.arc?.includes('aft') && !wd.arc?.includes('fore'));
+    const cap = sys.tripped ? 0 : (_isAft && sys.aftCap !== undefined ? sys.aftCap : sys.cap);
     const b   = document.getElementById(`bar-cap-${wd.tag}`);
     if (b) { b.style.width = `${cap}%`; b.style.color = sys.tripped ? C.red : cap > 50 ? C.b : C.warn; }
     const t = document.getElementById(`txt-cap-${wd.tag}`);

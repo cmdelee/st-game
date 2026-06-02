@@ -720,6 +720,7 @@ function initiateVesselSimulation(station) {
     G.systems[k].stress = 0;
     G.systems[k].tripped = false;
     G.systems[k].cap = 100;
+    if (G.systems[k].aftCap !== undefined) G.systems[k].aftCap = 100;
   });
   // Apply ship-specific system labels and default EPS allocations
   const _shipCfg = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
