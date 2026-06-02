@@ -227,7 +227,7 @@ function fireSelectedArray(weaponKey) {
   applyDamageToEnemy(dmg * bonusMult, weapon);
   if (weapon) {
     parentSys.stress = Math.min(100, parentSys.stress + weapon.cost * 0.18);
-    G.renderedBeamsVector.push({ type: weapon.isPhoton ? 'photon' : weapon.parentSystem, trackingStartTime: performance.now(), duration: 300 });
+    G.renderedBeamsVector.push({ type: weapon.isPhoton ? 'photon' : weapon.parentSystem, weaponKey, trackingStartTime: performance.now(), duration: 300 });
     if (parentSys.isWeapon) G.epsHeat = Math.min(100, G.epsHeat + weapon.cost * 0.12);
     G.lastPlayerFireTime = performance.now();
   }

@@ -565,4 +565,19 @@ function executeThreatCounterVolley() {
   }
 
   if (G.player.hull <= 0) concludeSimulationRun(false, "Vessel destroyed.", false);
+
+  // Push visual beam event — 3D canvas picks this up for faction-accurate weapon rendering
+  const _isEnemyTorp = !!chosenSys.isTorpedo;
+  G.renderedBeamsVector.push({
+    fromEnemy: true, faction: cfg.faction, weaponKey: chosenKey,
+    isTorp: _isEnemyTorp, isPlasma: !!(chosenSys.label && chosenSys.label.includes('Plasma')),
+    targetSector,
+    trackingStartTime: performance.now(), duration: _isEnemyTorp ? 200 : 400,
+  });
+  if (_isEnemyTorp) {
+    G.inFlightTorpedoes.push({
+      dmg: 0, timeToImpact: 3500, fromEnemy: true,
+      isPhoton: false, isPlasma: !!(chosenSys.label && chosenSys.label.includes('Plasma')),
+    });
+  }
 }

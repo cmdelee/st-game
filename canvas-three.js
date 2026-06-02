@@ -222,6 +222,61 @@ const _PLAYER_BEAM_COL = {
   nose_beam: 0xff6600, torpedoes: 0x99ccff, photon: 0xff6600,
 };
 
+// ── Weapon hardpoints (world-space offsets from ship position) ──────────────
+// Player ship faces +X. Port = +Z, Starboard = -Z.
+// Defiant targetSize=16 → bow ≈ +8, stern ≈ -8 from centre.
+// Enterprise targetSize=20 → bow ≈ +10, stern ≈ -10.
+const _PLAYER_HP = {
+  defiant: {
+    cannon_pu:           [+5.0, +0.5, +3.5],  // Port Upper pulse cannon (outer upper nacelle flank)
+    cannon_pl:           [+3.0, -0.5, +3.5],  // Port Lower pulse cannon (inner lower nacelle flank)
+    cannon_su:           [+5.0, +0.5, -3.5],  // Stbd Upper pulse cannon
+    cannon_sl:           [+3.0, -0.5, -3.5],  // Stbd Lower pulse cannon
+    nose_beam:           [+8.0,  0.0,  0.0],  // Heavy nose emitter — bow tip
+    torpedoes:           [+6.5, -0.7,  0.0],  // Forward torpedo launcher (under bow)
+    photon:              [+6.5, -0.7,  0.0],
+    torpedo_quantum_aft: [-6.5, -0.3,  0.0],  // Aft torpedo tube
+    torpedo_photon_aft:  [-6.5, -0.3,  0.0],
+  },
+  enterprise_e: {
+    cannon_pu:           [+8.5, +1.5,  0.0],  // Saucer Dorsal Fwd (top of saucer, forward arc)
+    phaser_saucer_port:  [ 0.0, +1.0, +7.5],  // Saucer Port Array (port saucer edge)
+    cannon_pl:           [+6.0, -0.3,  0.0],  // Saucer Ventral Fwd (underside forward)
+    phaser_saucer_stbd:  [ 0.0, +1.0, -7.5],  // Saucer Stbd Array (stbd saucer edge)
+    cannon_su:           [+4.0, -1.5,  0.0],  // Stardrive Fwd Arrays (forward stardrive hull)
+    phaser_secondary:    [-1.0, -1.5,  0.0],  // Secondary Hull Arrays
+    cannon_sl:           [-2.0, +0.5,  0.0],  // Saucer Aft Arrays
+    nose_beam:           [+2.0, -1.5,  0.0],  // Primary Stardrive Emitter (deflector housing)
+    phaser_aft_emitter:  [-9.0, -1.5,  0.0],  // Aft Stardrive Emitter
+    torpedoes:           [+3.0, -1.1,  0.0],  // Fwd Quantum Tube A
+    torpedo_quantum_b:   [+3.0, -1.1, +0.5],  // Fwd Quantum Tube B (offset)
+    photon:              [+3.0, -1.1, -0.5],  // Fwd Photon Tube
+    torpedo_quantum_aft: [-9.0, -0.5,  0.0],  // Aft Quantum Tube
+    torpedo_photon_aft:  [-9.0, -0.5,  0.0],  // Aft Photon Tube
+  },
+};
+
+// Enemy hardpoints — multiple points per archetype, picked randomly per shot.
+// Enemy faces -X (rotation.y = π) so "forward" weapons originate from -X offset.
+// Borg cube is omnidirectional — all 6 faces are valid origins.
+const _ENEMY_HP = {
+  ktinga:               [ [-5.0, 0.0, 0.0], [-1.5, 0.0,+4.0], [-1.5, 0.0,-4.0] ],
+  vor_cha:              [ [-6.0,-0.5, 0.0], [-2.5, 0.0,+4.0], [-2.5, 0.0,-4.0] ],
+  romulan_bop:          [ [-2.0,-0.5,+3.5], [-2.0,-0.5,-3.5], [-4.0,-0.5, 0.0] ],
+  romulan_warbird:      [ [-8.0, 0.0, 0.0], [-3.0,+1.0,+3.0], [-3.0,+1.0,-3.0], [-3.0,-1.0, 0.0] ],
+  cardassian_scout:     [ [-4.5,+0.5, 0.0], [-2.0, 0.0,+1.5], [-2.0, 0.0,-1.5] ],
+  galor_class:          [ [-4.0,+0.5, 0.0], [-2.0, 0.0,+2.5], [-2.0, 0.0,-2.5] ],
+  jem_hadar_fighter:    [ [-5.0,-0.5, 0.0], [-4.0,-0.5,+2.0], [-4.0,-0.5,-2.0] ],
+  jem_hadar_battleship: [ [-5.0,-0.5, 0.0], [-4.0,-0.5,+2.5], [-4.0,-0.5,-2.5], [-4.0,-0.5,+4.0], [-4.0,-0.5,-4.0] ],
+  borg_probe:           [ [ 0.0,+3.5, 0.0], [ 0.0,-3.5, 0.0], [-3.5, 0.0, 0.0], [+3.5, 0.0, 0.0], [ 0.0, 0.0,+3.5], [ 0.0, 0.0,-3.5] ],
+};
+
+// Sector-biased hit points on the player hull (where enemy beams land)
+const _PLAYER_SECTOR_HIT = {
+  fore:      [+4.5, 0.0,  0.0], aft: [-4.5, 0.0, 0.0],
+  port:      [ 0.0, 0.0, +3.0], starboard: [0.0, 0.0, -3.0],
+};
+
 let THREE_scene, THREE_camera, THREE_renderer, THREE_clock;
 let mesh_defiant, mesh_enemy, mesh_enemyGroup;
 let shield_player, shield_enemy;
@@ -1419,14 +1474,35 @@ function renderSpatialViewCanvas() {
     b._three_spawned = true;
 
     const isEnemy = !!b.fromEnemy;
-    const fromV = isEnemy
-      ? mesh_enemyGroup.position.clone().add(new THREE.Vector3(-4,0,0))
-      : mesh_defiant.position.clone().add(new THREE.Vector3(5,0,0));
-    const toV = isEnemy
-      ? mesh_defiant.position.clone().add(new THREE.Vector3(4,0,0))
-      : mesh_enemyGroup.position.clone().add(new THREE.Vector3(-4,0,0));
+
+    // ── Weapon origin: use per-ship / per-faction hardpoints ──────
+    let fromV, toV;
+    if (isEnemy) {
+      const pts = _ENEMY_HP[G.enemyArchetype] || [ [-5,0,0] ];
+      const off = pts[Math.floor(Math.random() * pts.length)];
+      fromV = mesh_enemyGroup.position.clone().add(new THREE.Vector3(off[0], off[1], off[2]));
+      // Target: player hull biased toward the attacked sector
+      const sOff = _PLAYER_SECTOR_HIT[b.targetSector] || [0,0,0];
+      toV = mesh_defiant.position.clone().add(new THREE.Vector3(
+        sOff[0] + (Math.random()-0.5)*1.5,
+        sOff[1] + (Math.random()-0.5)*1.2,
+        sOff[2] + (Math.random()-0.5)*1.5
+      ));
+    } else {
+      const shipHp = _PLAYER_HP[G.playerShipKey] || _PLAYER_HP.defiant;
+      const wk = b.weaponKey || b.type;
+      const off = shipHp[wk] || shipHp[b.type] || [+5, 0, 0];
+      fromV = mesh_defiant.position.clone().add(new THREE.Vector3(off[0], off[1], off[2]));
+      // Target: enemy hull with small random scatter
+      toV = mesh_enemyGroup.position.clone().add(new THREE.Vector3(
+        (Math.random()-0.5)*3 - 3,
+        (Math.random()-0.5)*2,
+        (Math.random()-0.5)*3
+      ));
+    }
+
     const col = isEnemy
-      ? (_FACTION_BEAM_COL[ENEMY_CONFIGS[G.enemyArchetype]?.faction] || 0xff4422)
+      ? (b.isPlasma ? 0x00ff66 : (_FACTION_BEAM_COL[b.faction || ENEMY_CONFIGS[G.enemyArchetype]?.faction] || 0xff4422))
       : (bCols[b.type] || 0xffffff);
     const dur = b.duration / 1000;
 
@@ -1469,10 +1545,23 @@ function renderSpatialViewCanvas() {
   // ── Torpedoes ────────────────────────────────────────────────
   G.inFlightTorpedoes.forEach(t => {
     if (t._three_mesh) return;
-    const fromV = t.fromEnemy ? mesh_enemyGroup.position.clone() : mesh_defiant.position.clone();
-    const toV   = t.fromEnemy ? mesh_defiant.position.clone() : mesh_enemyGroup.position.clone();
-    // Enemy: red warning. Player quantum: blue-white (First Contact canon). Player photon: orange-red (classic Trek).
-    const col   = t.fromEnemy ? 0xff2200 : (t.isPhoton ? 0xff6600 : 0x99ccff);
+    let fromV, toV;
+    if (t.fromEnemy) {
+      // Enemy torpedo: fire from forward-facing weapons bay
+      const pts = _ENEMY_HP[G.enemyArchetype] || [ [-5,0,0] ];
+      const off = pts[0];  // use primary forward hardpoint for torpedoes
+      fromV = mesh_enemyGroup.position.clone().add(new THREE.Vector3(off[0], off[1], off[2]));
+      toV   = mesh_defiant.position.clone();
+    } else {
+      // Player torpedo: fire from correct tube
+      const shipHp = _PLAYER_HP[G.playerShipKey] || _PLAYER_HP.defiant;
+      const wk = t.isAft ? (t.isPhoton ? 'torpedo_photon_aft' : 'torpedo_quantum_aft') : (t.isPhoton ? 'photon' : 'torpedoes');
+      const off = shipHp[wk] || [+6.5, -0.7, 0];
+      fromV = mesh_defiant.position.clone().add(new THREE.Vector3(off[0], off[1], off[2]));
+      toV   = mesh_enemyGroup.position.clone();
+    }
+    // Enemy: plasma=green, other=red. Player quantum: blue-white. Player photon: orange-red.
+    const col = t.fromEnemy ? (t.isPlasma ? 0x00ff66 : 0xff2200) : (t.isPhoton ? 0xff6600 : 0x99ccff);
     const geo   = new THREE.SphereGeometry(0.5, 8, 6);
     const mat   = new THREE.MeshPhongMaterial({ color:col, emissive:col, emissiveIntensity:2, transparent:true, opacity:0.9 });
     const mesh  = new THREE.Mesh(geo, mat);
