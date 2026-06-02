@@ -342,9 +342,7 @@ function concludeCampaignLevel(victory, escaped) {
       `;
     }
   }
-  showCloakVulnOverlay(false);
-  const sg = document.getElementById('sensor-ghost-overlay'); if (sg) sg.style.display = 'none';
-  const mv = document.querySelector('.main-viewport'); if (mv) mv.classList.remove('last-stand-flash');
+  _cleanupPostBattleOverlays();
   const hud = document.getElementById('campaign-hud'); if (hud) hud.style.display = 'none';
 }
 
@@ -463,7 +461,7 @@ function masterSimulationCoreLoop(ts) {
     } else {
       const regen = G.shieldRegenRate * (dt / 1000);
       const max   = G.player.shields.maxSectorValue;
-      ['fore','port','starboard','aft'].forEach(s => {
+      SHIELD_SECTORS.forEach(s => {
         G.player.shields[s] = Math.min(max, G.player.shields[s] + regen);
       });
     }

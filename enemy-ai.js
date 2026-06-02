@@ -18,7 +18,7 @@ function processEnemyCloakDecision(dt) {
 
   if (G.enemyCloaked) {
     G.enemyCloakPower = Math.max(0, G.enemyCloakPower - 4 * (dt / 1000));  // 4%/s fixed drain (independent of player cloak rate)
-    ['fore','port','starboard','aft'].forEach(s => { G.threat.shields[s] = 0; });
+    SHIELD_SECTORS.forEach(s => { G.threat.shields[s] = 0; });
     if (G.enemyCloakPower <= 0) { triggerEnemyDecloak(cfg, 'power exhausted'); return; }
     const repDone = G.enemyRepairQueue.length === 0;
     const hullOk  = G.threat.hull / G.threat.maxHull > 0.52;
@@ -37,7 +37,7 @@ function processEnemyCloakDecision(dt) {
 
 function triggerEnemyCloak(cfg) {
   G.enemyFrozenShields = { fore:G.threat.shields.fore, port:G.threat.shields.port, starboard:G.threat.shields.starboard, aft:G.threat.shields.aft };
-  ['fore','port','starboard','aft'].forEach(s => { G.threat.shields[s] = 0; });
+  SHIELD_SECTORS.forEach(s => { G.threat.shields[s] = 0; });
   G.enemyCloakVulnTimer = 1500;
   postLogEvent(`WARNING: ${cfg.label} cloaking — fire now during transition!`, 'warn');
   setTimeout(() => {
@@ -51,7 +51,7 @@ function triggerEnemyCloak(cfg) {
 
 function triggerEnemyDecloak(cfg, reason) {
   G.enemyCloaked = false; G.enemyCloakPower = 0; G.enemyCloakVulnTimer = 1500; G.enemyCloakCooldown = 25000;
-  ['fore','port','starboard','aft'].forEach(s => { G.threat.shields[s] = 0; });
+  SHIELD_SECTORS.forEach(s => { G.threat.shields[s] = 0; });
   postLogEvent(`${cfg.label} DECLOAKING (${reason}) — shields offline 1.5s! Fire now!`, 'crit');
   crewReportEnemyDecloak();
   postTacticalAdvisory("Enemy shields down during decloak — maximum yield fire window open!");
@@ -75,7 +75,7 @@ function triggerEnemyDecloak(cfg, reason) {
     const regenEarned = eRegen * cloakSecs;
     const frozen     = G.enemyFrozenShields || { fore:0, port:0, starboard:0, aft:0 };
     const cfg2       = ENEMY_CONFIGS[G.enemyArchetype];
-    ['fore','port','starboard','aft'].forEach(s => { G.threat.shields[s] = Math.min(cfg2.shields[s], frozen[s] + regenEarned); });
+    SHIELD_SECTORS.forEach(s => { G.threat.shields[s] = Math.min(cfg2.shields[s], frozen[s] + regenEarned); });
     postLogEvent(`${cfg.label} decloaked — shields partially restored.`, 'warn');
   }, 1500);
 }
@@ -122,34 +122,27 @@ function processNewMechanicsTimers(dt) {
     }
   }
 
-  // Burst-fire cooldown
-  if (!G.burstFireReady) {
-    G.burstFireCooldown = Math.max(0, G.burstFireCooldown - dt);
-    if (G.burstFireCooldown <= 0) {
-      G.burstFireReady = true;
-      postLogEvent("Burst capacitors recharged — salvo ready.", 'good');
+  // Simple ready/cooldown pairs — tick cooldown, set ready on expiry
+  const _CDS = [
+    { ready:'burstFireReady',    cd:'burstFireCooldown',    msg:'Burst capacitors recharged — salvo ready.' },
+    { ready:'overchargeReady',   cd:'overchargeCooldown',   msg:'Cannon overcharge capacitors reset.' },
+    { ready:'unstableTorpReady', cd:'unstableTorpCooldown', msg:'Torpedo tube re-stabilised — unstable load ready.' },
+    { ready:'powerDumpReady',    cd:'powerDumpCooldown',    msg:'EPS power dump capacitors recharged.' },
+  ];
+  _CDS.forEach(c => {
+    if (!G[c.ready]) {
+      G[c.cd] = Math.max(0, G[c.cd] - dt);
+      if (G[c.cd] <= 0) { G[c.ready] = true; postLogEvent(c.msg, 'good'); }
     }
-  }
+  });
 
-  // Overload mode cooldowns + power dump active timer
-  if (!G.overchargeReady) {
-    G.overchargeCooldown = Math.max(0, G.overchargeCooldown - dt);
-    if (G.overchargeCooldown <= 0) { G.overchargeReady = true; postLogEvent("Cannon overcharge capacitors reset.", 'good'); }
-  }
-  if (!G.unstableTorpReady) {
-    G.unstableTorpCooldown = Math.max(0, G.unstableTorpCooldown - dt);
-    if (G.unstableTorpCooldown <= 0) { G.unstableTorpReady = true; postLogEvent("Torpedo tube re-stabilised — unstable load ready.", 'good'); }
-  }
+  // Power dump active window
   if (G.powerDumpActive) {
     G.powerDumpTimer = Math.max(0, G.powerDumpTimer - dt);
     if (G.powerDumpTimer <= 0) {
       G.powerDumpActive = false;
       postLogEvent("Emergency power dump expired — EPS returning to normal.", 'warn');
     }
-  }
-  if (!G.powerDumpReady) {
-    G.powerDumpCooldown = Math.max(0, G.powerDumpCooldown - dt);
-    if (G.powerDumpCooldown <= 0) { G.powerDumpReady = true; postLogEvent("EPS power dump capacitors recharged.", 'good'); }
   }
 
   // Shield frequency rotation — cooldown only ticks AFTER active window expires

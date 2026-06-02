@@ -85,6 +85,18 @@ function toggleActiveDeck(key) {
   synchronizeGlobalInterfaceDisplays();
 }
 
+function _cleanupPostBattleOverlays() {
+  showCloakVulnOverlay(false);
+  const sg = document.getElementById('sensor-ghost-overlay'); if (sg) sg.style.display = 'none';
+  const mv = document.querySelector('.main-viewport'); if (mv) mv.classList.remove('last-stand-flash');
+}
+
+// System abbreviation labels by ship — used in weapon-health-strip and sys-health-display
+const _SYS_ABBREV = {
+  defiant:      { cannon_pu:'P/U', cannon_pl:'P/L', cannon_su:'S/U', cannon_sl:'S/L', nose_beam:'NSE', torpedoes:'TRP', cloak_dev:'CLK', warp_core:'WRP', shields:'SHD', sensors:'SEN', engines:'ENG' },
+  enterprise_e: { cannon_pu:'SDO', cannon_pl:'SVN', cannon_su:'SFW', cannon_sl:'RIM', nose_beam:'EMT', torpedoes:'TRP', cloak_dev:'SSP', warp_core:'WRP', shields:'SHD', sensors:'SEN', engines:'ENG' },
+};
+
 // ============================================================
 // GLOBAL UI SYNC — called every frame
 // ============================================================
@@ -123,7 +135,7 @@ function synchronizeGlobalInterfaceDisplays() {
 
   // Player shield bars + incoming hit flash
   const _hitSector = G.shieldHitFlash.player.timer > 0 ? G.shieldHitFlash.player.sector : null;
-  ['fore','port','starboard','aft'].forEach(s => {
+  SHIELD_SECTORS.forEach(s => {
     const bar = document.getElementById(`bar-shield-${s}`);
     if (bar) {
       const pct = G.cloaked ? 0 : (G.player.shields[s] / G.player.shields.maxSectorValue) * 100;
@@ -165,7 +177,7 @@ function synchronizeGlobalInterfaceDisplays() {
 
   // Enemy shield sector bars (left panel) — only when game is running (shields initialised)
   if (G.running && G.threat.shields) {
-    ['fore','port','starboard','aft'].forEach(s => {
+    SHIELD_SECTORS.forEach(s => {
       const bar = document.getElementById(`bar-enem-sh-${s}`); const txt = document.getElementById(`txt-enem-sh-${s}`);
       if (!bar || !txt) return;
       if (G.enemyCloaked) { bar.style.width = '0%'; txt.textContent = 'CLK'; bar.style.color = C.p; return; }
@@ -254,10 +266,8 @@ function synchronizeGlobalInterfaceDisplays() {
   // Weapon health strip
   const ws = document.getElementById('weapon-health-strip');
   if (ws) {
-    const _isEnt = G.playerShipKey === 'enterprise_e';
-    const wk = _isEnt
-      ? [{k:'cannon_pu',l:'SDO'},{k:'cannon_pl',l:'SVN'},{k:'cannon_su',l:'SFW'},{k:'cannon_sl',l:'RIM'},{k:'nose_beam',l:'EMT'},{k:'torpedoes',l:'TRP'},{k:'cloak_dev',l:'SSP'},{k:'warp_core',l:'WRP'}]
-      : [{k:'cannon_pu',l:'P/U'},{k:'cannon_pl',l:'P/L'},{k:'cannon_su',l:'S/U'},{k:'cannon_sl',l:'S/L'},{k:'nose_beam',l:'NSE'},{k:'torpedoes',l:'TRP'},{k:'cloak_dev',l:'CLK'},{k:'warp_core',l:'WRP'}];
+    const _ab = _SYS_ABBREV[G.playerShipKey] || _SYS_ABBREV.defiant;
+    const wk = ['cannon_pu','cannon_pl','cannon_su','cannon_sl','nose_beam','torpedoes','cloak_dev','warp_core'].map(k => ({k, l:_ab[k]}));
     ws.innerHTML = wk.map(w => {
       const sys = G.systems[w.k]; const h = Math.round(sys.health);
       const col = sys.tripped ? '#ff3333' : h > 70 ? '#00cc66' : h > 35 ? '#ffaa00' : '#ff3333';
@@ -278,9 +288,7 @@ function synchronizeGlobalInterfaceDisplays() {
     sh.innerHTML = aks.map(key => {
       const sys = G.systems[key]; const h = Math.round(sys.health);
       const col = sys.tripped ? C.red : h > 70 ? C.green : h > 35 ? C.warn : C.red;
-      const _abbrev = G.playerShipKey === 'enterprise_e'
-        ? { cannon_pu:'SDO', cannon_pl:'SVN', cannon_su:'SFW', cannon_sl:'RIM', nose_beam:'EMT', torpedoes:'TRP', cloak_dev:'SSP', warp_core:'WRP', shields:'SHD', sensors:'SEN', engines:'ENG' }
-        : { cannon_pu:'P/U', cannon_pl:'P/L', cannon_su:'S/U', cannon_sl:'S/L', nose_beam:'NSE', torpedoes:'TRP', cloak_dev:'CLK', warp_core:'WRP', shields:'SHD', sensors:'SEN', engines:'ENG' };
+      const _abbrev = _SYS_ABBREV[G.playerShipKey] || _SYS_ABBREV.defiant;
       const ab  = _abbrev[key];
       const rep = G.repairTeams.some(t => t.sysKey === key);
       return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:1px;">
@@ -505,7 +513,5 @@ function concludeSimulationRun(victory, msg, escaped) {
     `;
   }
 
-  showCloakVulnOverlay(false);
-  const sg = document.getElementById('sensor-ghost-overlay'); if (sg) sg.style.display = 'none';
-  const mv = document.querySelector('.main-viewport'); if (mv) mv.classList.remove('last-stand-flash');
+  _cleanupPostBattleOverlays();
 }

@@ -64,8 +64,7 @@ function processHelmTimers(dt) {
     G.comeAboutTimer = Math.max(0, G.comeAboutTimer - dt);
     if (G.comeAboutTimer <= 0) {
       G.comeAboutActive   = false;
-      const strongest = ['fore','port','starboard','aft'].reduce((best, s) =>
-        G.player.shields[s] > G.player.shields[best] ? s : best, 'fore');
+      const strongest = getStrongestShieldSector();
       G.helmAttackVector = strongest;
       postLogEvent(`Come-about complete — ${strongest.toUpperCase()} shields presented (${Math.round(G.player.shields[strongest])}MW).`, 'good');
       crewReportComeAboutComplete(strongest);
@@ -236,7 +235,7 @@ function updateHelmPanel() {
   });
 
   // Vector buttons — live shield HP + white/blue glow on active
-  ['fore','port','starboard','aft'].forEach(s => {
+  SHIELD_SECTORS.forEach(s => {
     const btn = document.getElementById(`btn-helm-vector-${s}`); if (!btn) return;
     const hp    = G.running ? Math.ceil(G.player.shields[s]) : '—';
     const pct   = G.running ? (G.player.shields[s] / G.player.shields.maxSectorValue) * 100 : 100;
@@ -264,53 +263,20 @@ function updateHelmPanel() {
     }
   });
 
-  // Attack run button
-  const arBtn = document.getElementById('btn-helm-attack-run');
-  if (arBtn) {
-    if (G.attackRunActive)            { arBtn.textContent = `◈ ATTACK RUN ${Math.ceil(G.attackRunTimer/1000)}s`; arBtn.style.background='#ff3333'; arBtn.style.color='#fff'; arBtn.style.boxShadow='0 0 12px rgba(255,50,50,0.7)'; }
-    else if (G.attackRunCooldown > 0) { arBtn.textContent = `◈ ATK RUN CD ${Math.ceil(G.attackRunCooldown/1000)}s`; arBtn.style.background='var(--dim2)'; arBtn.style.color='#556677'; arBtn.style.boxShadow=''; }
-    else                              { arBtn.textContent = '◈ ATTACK RUN'; arBtn.style.background=''; arBtn.style.color=''; arBtn.style.boxShadow=''; }
+  // Manoeuvre buttons — active/cooldown/ready state
+  function _setManoeuvreBtn(id, active, timer, cd, labels, activeCol) {
+    const btn = document.getElementById(id); if (!btn) return;
+    if (active)  { btn.textContent=`${labels[0]} ${Math.ceil(timer/1000)}s`; btn.style.background=activeCol; btn.style.color=activeCol==='#fff'?'#000':'#fff'; btn.style.boxShadow=`0 0 12px ${activeCol}88`; }
+    else if (cd) { btn.textContent=`${labels[1]} ${Math.ceil(cd/1000)}s`;    btn.style.background='var(--dim2)'; btn.style.color='#556677'; btn.style.boxShadow=''; }
+    else         { btn.textContent=labels[2];                                 btn.style.background=''; btn.style.color=''; btn.style.boxShadow=''; }
   }
 
-  // Come about button
-  const caBtn = document.getElementById('btn-helm-come-about');
-  if (caBtn) {
-    if (G.comeAboutActive)            { caBtn.textContent = `↺ ROTATING ${Math.ceil(G.comeAboutTimer/1000)}s`; caBtn.style.background='#ff3333'; caBtn.style.color='#fff'; caBtn.style.boxShadow='0 0 12px rgba(255,50,50,0.7)'; }
-    else if (G.comeAboutCooldown > 0) { caBtn.textContent = `↺ COME ABOUT CD ${Math.ceil(G.comeAboutCooldown/1000)}s`; caBtn.style.background='var(--dim2)'; caBtn.style.color='#556677'; caBtn.style.boxShadow=''; }
-    else                              { caBtn.textContent = '↺ COME ABOUT'; caBtn.style.background=''; caBtn.style.color=''; caBtn.style.boxShadow=''; }
-  }
-
-  // Picard Manoeuvre button
-  const pmBtn = document.getElementById('btn-helm-picard');
-  if (pmBtn) {
-    if (G.picardManoeuverActive)             { pmBtn.textContent=`∞ PICARD ${Math.ceil(G.picardManoeuverTimer/1000)}s`; pmBtn.style.background='#fff'; pmBtn.style.color='#000'; pmBtn.style.boxShadow='0 0 14px rgba(100,200,255,0.9)'; }
-    else if (G.picardManoeuverCooldown > 0)  { pmBtn.textContent=`∞ PICARD CD ${Math.ceil(G.picardManoeuverCooldown/1000)}s`; pmBtn.style.background='var(--dim2)'; pmBtn.style.color='#556677'; pmBtn.style.boxShadow=''; }
-    else                                      { pmBtn.textContent='∞ PICARD MANOEUVER'; pmBtn.style.background=''; pmBtn.style.color=''; pmBtn.style.boxShadow=''; }
-  }
-
-  // Attack Pattern Omega button
-  const omegaBtn = document.getElementById('btn-helm-omega');
-  if (omegaBtn) {
-    if (G.attackPatternOmegaActive)             { omegaBtn.textContent=`Ω PATTERN OMEGA ${Math.ceil(G.attackPatternOmegaTimer/1000)}s`; omegaBtn.style.background='#ff6600'; omegaBtn.style.color='#fff'; omegaBtn.style.boxShadow='0 0 12px rgba(255,100,0,0.8)'; }
-    else if (G.attackPatternOmegaCooldown > 0)  { omegaBtn.textContent=`Ω OMEGA CD ${Math.ceil(G.attackPatternOmegaCooldown/1000)}s`; omegaBtn.style.background='var(--dim2)'; omegaBtn.style.color='#556677'; omegaBtn.style.boxShadow=''; }
-    else                                         { omegaBtn.textContent='Ω ATTACK PATTERN OMEGA'; omegaBtn.style.background=''; omegaBtn.style.color=''; omegaBtn.style.boxShadow=''; }
-  }
-
-  // Evasive Pattern Alpha button
-  const alphaBtn = document.getElementById('btn-helm-evasive-alpha');
-  if (alphaBtn) {
-    if (G.evasiveAlphaActive)             { alphaBtn.textContent=`◈ EVS ALPHA ${Math.ceil(G.evasiveAlphaTimer/1000)}s`; alphaBtn.style.background='#00ff88'; alphaBtn.style.color='#000'; alphaBtn.style.boxShadow='0 0 10px rgba(0,255,136,0.6)'; }
-    else if (G.evasiveAlphaCooldown > 0)  { alphaBtn.textContent=`◈ ALPHA CD ${Math.ceil(G.evasiveAlphaCooldown/1000)}s`; alphaBtn.style.background='var(--dim2)'; alphaBtn.style.color='#556677'; alphaBtn.style.boxShadow=''; }
-    else                                   { alphaBtn.textContent='◈ EVASIVE ALPHA'; alphaBtn.style.background=''; alphaBtn.style.color=''; alphaBtn.style.boxShadow=''; }
-  }
-
-  // Evasive button (mirrored from tactical deck)
-  const evBtn = document.getElementById('btn-evasive-helm');
-  if (evBtn) {
-    if (G.evasiveActive)            { evBtn.textContent=`◈ EVADING ${Math.ceil(G.evasiveCooldown/1000)}s`; evBtn.style.background='#00ff88'; evBtn.style.color='#000'; evBtn.style.boxShadow='0 0 10px rgba(0,255,136,0.6)'; }
-    else if (G.evasiveCooldown > 0) { evBtn.textContent=`◈ EVASIVE CD ${Math.ceil(G.evasiveCooldown/1000)}s`; evBtn.style.background='var(--dim2)'; evBtn.style.color='#556677'; evBtn.style.boxShadow=''; }
-    else                            { evBtn.textContent='◈ EVASIVE DELTA'; evBtn.style.background=''; evBtn.style.color=''; evBtn.style.boxShadow=''; }
-  }
+  _setManoeuvreBtn('btn-helm-attack-run',    G.attackRunActive,          G.attackRunTimer,          G.attackRunCooldown,          ['◈ ATTACK RUN','◈ ATK RUN CD','◈ ATTACK RUN'],         '#ff3333');
+  _setManoeuvreBtn('btn-helm-come-about',    G.comeAboutActive,          G.comeAboutTimer,          G.comeAboutCooldown,          ['↺ ROTATING','↺ COME ABOUT CD','↺ COME ABOUT'],         '#ff3333');
+  _setManoeuvreBtn('btn-helm-picard',        G.picardManoeuverActive,    G.picardManoeuverTimer,    G.picardManoeuverCooldown,    ['∞ PICARD','∞ PICARD CD','∞ PICARD MANOEUVER'],          '#fff');
+  _setManoeuvreBtn('btn-helm-omega',         G.attackPatternOmegaActive, G.attackPatternOmegaTimer, G.attackPatternOmegaCooldown, ['Ω PATTERN OMEGA','Ω OMEGA CD','Ω ATTACK PATTERN OMEGA'],'#ff6600');
+  _setManoeuvreBtn('btn-helm-evasive-alpha', G.evasiveAlphaActive,       G.evasiveAlphaTimer,       G.evasiveAlphaCooldown,       ['◈ EVS ALPHA','◈ ALPHA CD','◈ EVASIVE ALPHA'],           '#00ff88');
+  _setManoeuvreBtn('btn-evasive-helm',       G.evasiveActive,            G.evasiveCooldown,         G.evasiveActive?0:G.evasiveCooldown, ['◈ EVADING','◈ EVASIVE CD','◈ EVASIVE DELTA'],   '#00ff88');
 
   // Live status line — speed effects, vector, range
   const rl = document.getElementById('lbl-helm-range-status');

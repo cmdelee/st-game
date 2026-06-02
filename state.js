@@ -253,6 +253,17 @@ const G = {
   historicalLogTracks:[],
 };
 
+// ── Shield sector helpers ─────────────────────────────────────
+const SHIELD_SECTORS = ['fore','port','starboard','aft'];
+
+function getStrongestShieldSector() {
+  return SHIELD_SECTORS.reduce((b, s) => G.player.shields[s] > G.player.shields[b] ? s : b, 'fore');
+}
+
+function getWeakestShieldSector() {
+  return SHIELD_SECTORS.reduce((b, s) => G.player.shields[s] < G.player.shields[b] ? s : b, 'fore');
+}
+
 // ── Warp output (accounts for tripped/battery state) ─────────
 function getWarpOutput() {
   const wc = G.systems.warp_core;

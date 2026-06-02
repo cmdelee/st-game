@@ -15,7 +15,8 @@ function processAutomatedDelegation(dt) {
   // ── Auto-engineering: relay resets + repair dispatch ─────────
   if (runAutoEng) {
     const ce = getCrewEfficiency('engineering');
-    Object.keys(G.systems).forEach(key => {
+    const anyTripped = Object.values(G.systems).some(s => s.tripped);
+    if (anyTripped) Object.keys(G.systems).forEach(key => {
       const sys = G.systems[key];
       if (sys.tripped && Math.random() < 0.06 * ce * (dt / 1000)) {
         if (key === 'warp_core' && sys.health < 25) return;
@@ -120,8 +121,7 @@ function processAutomatedDelegation(dt) {
       const currentFacing = G.helmAttackVector;
       const max = G.player.shields.maxSectorValue;
       if (G.player.shields[currentFacing] < max * 0.10) {
-        const strongest = ['fore','port','starboard','aft'].reduce(
-          (best, s) => G.player.shields[s] > G.player.shields[best] ? s : best, 'fore');
+        const strongest = getStrongestShieldSector();
         if (strongest !== currentFacing) {
           G.helmAttackVector = strongest;
           typeof postCrewReport === 'function' &&

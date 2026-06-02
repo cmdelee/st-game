@@ -6,13 +6,7 @@
 // ============================================================
 
 function _getFactionKey(cfg) {
-  const f = (cfg.faction || '').toLowerCase();
-  if (f === 'klingon')    return 'klingon';
-  if (f === 'romulan')    return 'romulan';
-  if (f === 'cardassian') return 'cardassian';
-  if (f === 'dominion')   return 'dominion';
-  if (f === 'borg')       return 'borg';
-  return null;
+  return (cfg.faction || '').toLowerCase() || null;
 }
 
 function initEncounterPhases() {

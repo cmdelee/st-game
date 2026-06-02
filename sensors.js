@@ -206,17 +206,9 @@ function toggleActiveSensorSystems() {
     btn.textContent = G.activeScanningProfile ? "ACTIVE SWEEP ON" : "Passive Scan";
     if (G.activeScanningProfile) btn.classList.add('red-btn'); else btn.classList.remove('red-btn');
   });
-  if (G.activeScanningProfile) {
-    // Compute from base to avoid multiplicative drift on repeated toggles
-    const diff = DIFFICULTY[currentDifficulty];
-    const base = Math.round(ENEMY_CONFIGS[G.enemyArchetype].fireInterval * diff.enemyFireMult);
-    const withDisrupt = G.permanentScanBonuses?.weapon_disrupt ? Math.round(base * 1.30) : base;
-    G.threat.fireInterval = Math.round(withDisrupt * 0.85);
-    postLogEvent("Active scanning on — enemy also benefits from better targeting.", 'warn');
-  } else {
-    const diff = DIFFICULTY[currentDifficulty];
-    const base = Math.round(ENEMY_CONFIGS[G.enemyArchetype].fireInterval * diff.enemyFireMult);
-    G.threat.fireInterval = G.permanentScanBonuses?.weapon_disrupt ? Math.round(base * 1.30) : base;
-    postLogEvent("Passive tracking restored.", 'info');
-  }
+  const base = Math.round(ENEMY_CONFIGS[G.enemyArchetype].fireInterval * DIFFICULTY[currentDifficulty].enemyFireMult);
+  const withDisrupt = G.permanentScanBonuses?.weapon_disrupt ? Math.round(base * 1.30) : base;
+  G.threat.fireInterval = G.activeScanningProfile ? Math.round(withDisrupt * 0.85) : withDisrupt;
+  if (G.activeScanningProfile) postLogEvent("Active scanning on — enemy also benefits from better targeting.", 'warn');
+  else postLogEvent("Passive tracking restored.", 'info');
 }

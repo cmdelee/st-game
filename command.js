@@ -319,22 +319,18 @@ function capTgtWeaponsAny() {
 // All four legacy scan orders now delegate to the deep scan system.
 // The old activateScanProfile / commitScanProfile functions no longer exist.
 
-function _capScan(cdKey, scanType, worfMsg) {
+function _capScan(cdKey, worfMsg) {
   if (!_canOrder(cdKey)) return;
   _startCD(cdKey);
   postCrewReport('worf', worfMsg, 'status');
-  setTimeout(() => {
-    try {
-      startDeepScan();   // unified deep scan — permanent frequency analysis
-    } catch(e) {}
-  }, 350);
+  setTimeout(() => { try { startDeepScan(); } catch(e) {} }, 350);
   _updateCaptainOrderButtons();
 }
 
-function capScanShields()  { _capScan('scan_shields',  'shields', "Running shield frequency analysis, Captain. Committing when complete."); }
-function capScanHull()     { _capScan('scan_hull',     'hull',    "Scanning enemy hull for structural fissures, Captain."); }
-function capScanWeapons()  { _capScan('scan_weapons',  'weapons', "Initiating weapons disruption scan, Captain."); }
-function capScanTetryon()  { _capScan('scan_tetryon',  'tetryon', "Launching tetryon pulse — enemy targeting will be degraded, Captain."); }
+function capScanShields()  { _capScan('scan_shields',  "Running shield frequency analysis, Captain. Committing when complete."); }
+function capScanHull()     { _capScan('scan_hull',     "Scanning enemy hull for structural fissures, Captain."); }
+function capScanWeapons()  { _capScan('scan_weapons',  "Initiating weapons disruption scan, Captain."); }
+function capScanTetryon()  { _capScan('scan_tetryon',  "Launching tetryon pulse — enemy targeting will be degraded, Captain."); }
 
 // ── O'BRIEN — Simplified engineering orders ───────────────────
 
@@ -446,8 +442,7 @@ function tickCaptainManoeuvres(dt) {
       postCrewReport('nog', "Auto shield tracking complete, Captain. Helm returning to manual vector.", 'status');
     } else {
       // Update attack vector to strongest shield every tick
-      const strongest = ['fore','port','starboard','aft'].reduce(
-        (best, s) => G.player.shields[s] > G.player.shields[best] ? s : best, 'fore');
+      const strongest = getStrongestShieldSector();
       if (strongest !== G.helmAttackVector) {
         G.helmAttackVector = strongest;
       }
@@ -517,8 +512,7 @@ function _capDamageControl() {
   G.repairTeams[freeIdx].label     = sys.label;
   G.repairTeams[freeIdx].totalTime = rt;
   G.repairTeams[freeIdx].remaining = rt;
-  const _engName = G.playerShipKey === 'enterprise_e' ? 'La Forge' : "O'Brien";
-  postLogEvent(`${_engName}: ${freeIdx === 0 ? 'Alpha' : 'Beta'} Team dispatched to ${sys.label} on captain's order.`, 'good');
+  postLogEvent(`${_crewLabel('obrien')}: ${freeIdx === 0 ? 'Alpha' : 'Beta'} Team dispatched to ${sys.label} on captain's order.`, 'good');
 }
 
 // ── Periodic Crew Reports ─────────────────────────────────────

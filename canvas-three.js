@@ -59,6 +59,9 @@ const _MODEL_ROTATIONS = {
   borg_probe:           { x:0,            y:0,           z:0 },
 };
 
+// Reusable Vector3 for camera lookAt target — avoids per-frame allocation
+const _camLookAtTarget = new THREE.Vector3();
+
 // Faction PBR materials — applied to single-colour STL geometry
 // MeshStandardMaterial gives metallic hull plating with directional lighting
 function _makeShipMaterial(matKey) {
@@ -1278,7 +1281,7 @@ function renderSpatialViewCanvas() {
     mesh_defiant.position.z + _orbitR * Math.sin(_camOrbitAngle * 0.18)
   );
   THREE_camera.position.lerp(desiredCam, G.attackRunActive ? 0.06 : 0.03);
-  THREE_camera.lookAt(new THREE.Vector3(
+  THREE_camera.lookAt(_camLookAtTarget.set(
     mesh_enemyGroup.position.x*0.45 + mesh_defiant.position.x*0.55, 0, 0
   ));
 
@@ -1318,9 +1321,11 @@ function renderSpatialViewCanvas() {
     }
   }
 
-  // Cloaking — fade Defiant
+  // Cloaking — fade Defiant (only traverse when not fully opaque)
   const tOp = G.cloaked ? 0.0 : G.cloakVulnTimer>0 ? 0.3+Math.sin(now*20)*0.3 : 1.0;
-  mesh_defiant.traverse(child => { if (child.isMesh) { child.material.transparent=tOp<1; child.material.opacity=THREE.MathUtils.lerp(child.material.opacity??1, tOp, 0.12); } });
+  if (tOp < 1.0 || G.cloakVulnTimer > 0) {
+    mesh_defiant.traverse(child => { if (child.isMesh) { child.material.transparent=tOp<1; child.material.opacity=THREE.MathUtils.lerp(child.material.opacity??1, tOp, 0.12); } });
+  }
 
   // Player shield bubble
   shield_player.position.copy(mesh_defiant.position); shield_player.rotation.y=now*0.3;
@@ -1392,9 +1397,11 @@ function renderSpatialViewCanvas() {
       mesh_enemyGroup.position.x=THREE.MathUtils.lerp(mesh_enemyGroup.position.x,mesh_defiant.position.x+8,rp*0.08);
     }
 
-    // Enemy cloaking
+    // Enemy cloaking (only traverse when not fully opaque)
     const eOp=G.enemyCloaked?0.0:G.enemyCloakVulnTimer>0?0.25+Math.sin(now*18)*0.25:1.0;
-    mesh_enemyGroup.traverse(child=>{ if(child.isMesh&&child.material){child.material.transparent=eOp<1;child.material.opacity=THREE.MathUtils.lerp(child.material.opacity??1,eOp,0.10);} });
+    if (eOp < 1.0 || G.enemyCloakVulnTimer > 0) {
+      mesh_enemyGroup.traverse(child=>{ if(child.isMesh&&child.material){child.material.transparent=eOp<1;child.material.opacity=THREE.MathUtils.lerp(child.material.opacity??1,eOp,0.10);} });
+    }
 
     // Enemy hull damage
     const eHullPct = G.running && G.threat.hull ? G.threat.hull / G.threat.maxHull : 1;

@@ -694,7 +694,7 @@ function computeConduitConduction(dt) {
   // Cloak power drain + shield zero while cloaked
   if (G.cloaked) {
     G.cloakPowerReserve = Math.max(0, G.cloakPowerReserve - G.cloakPowerDrainRate * sc);
-    ['fore','port','starboard','aft'].forEach(s => { G.player.shields[s] = 0; });
+    SHIELD_SECTORS.forEach(s => { G.player.shields[s] = 0; });
     if (G.cloakPowerReserve <= 0) {
       G.systems.cloak_dev.health = Math.max(0, G.systems.cloak_dev.health - 0.5 * sc);
       if (G.systems.cloak_dev.health < 20) {
@@ -713,7 +713,7 @@ function computeConduitConduction(dt) {
     const eSS = G.enemySystems.shields;
     let eRegen = (eSS ? eSS.health / 100 : 1) * 1.2;
     if (cfg.adaptiveShields) eRegen *= (1 + G.enemyAdaptiveHits * 0.15);
-    ['fore','port','starboard','aft'].forEach(s => {
+    SHIELD_SECTORS.forEach(s => {
       if (G.threat.shields[s] < cfg.shields[s])
         G.threat.shields[s] = Math.min(cfg.shields[s], G.threat.shields[s] + eRegen * sc);
     });
@@ -767,11 +767,11 @@ function rebalanceShieldArrays() {
   // Bug 3 fix: capture session ID; cancel if new game starts during 2s transfer
   const transferSessionId = G.gameSessionId;
   G.shieldTransferInProgress = true;
-  ['fore','port','starboard','aft'].forEach(s => { G.player.shields[s] *= 0.80; });
+  SHIELD_SECTORS.forEach(s => { G.player.shields[s] *= 0.80; });
   postLogEvent("Shield equalisation in progress — EPS conduits switching (2s).", 'info');
   setTimeout(() => {
     if (G.dead || G.gameSessionId !== transferSessionId) { G.shieldTransferInProgress = false; return; }
-    ['fore','port','starboard','aft'].forEach(s => { G.player.shields[s] = Math.min(G.player.shields.maxSectorValue, even); });
+    SHIELD_SECTORS.forEach(s => { G.player.shields[s] = Math.min(G.player.shields.maxSectorValue, even); });
     G.shieldTransferInProgress = false;
     postLogEvent("Shields equalised.", 'good');
   }, 2000);

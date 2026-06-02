@@ -145,7 +145,7 @@ function renderEnemySchematicCanvas() {
   if (cfg.canRam)           dRow('Ram Run', G.enemyRammingRun ? `INCOMING ${Math.ceil(G.enemyRammingTimer/1000)}s` : 'Possible <20%', G.enemyRammingRun ? C.red : '#aabbcc');
   if (G.sensorGhostActive)  dRow('GHOST', 'FALSE CONTACT', C.warn);
   ry += 3; dHdr('SHIELDS');
-  ['fore','port','starboard','aft'].forEach(s => {
+  SHIELD_SECTORS.forEach(s => {
     const v = G.threat.shields[s]; const mx = cfg.shields[s]; const c = v > mx*0.5 ? C.green : v > mx*0.2 ? C.warn : C.red;
     const dispV = sH < 40 ? '?' : sH < 70 ? `~${Math.round(v/10)*10}` : `${Math.ceil(v)}/${mx}`;
     dRow(s.toUpperCase(), dispV, c);
@@ -278,7 +278,7 @@ function _renderDefiantSchematic() {
   if (G.cloaked) {
     dRow('ALL SECTORS', 'OFFLINE — CLOAKED', C.p);
   } else {
-    ['fore','port','starboard','aft'].forEach(s => {
+    SHIELD_SECTORS.forEach(s => {
       const sv = Math.ceil(G.player.shields[s]); const c = sv > 100 ? C.green : sv > 40 ? C.warn : C.red;
       dRow(s.toUpperCase(), `${sv}/${G.player.shields.maxSectorValue}`, c);
     });
@@ -437,7 +437,7 @@ function _renderEnterpriseESchematic() {
   dRow('EPS Output', `${getTotalAllocatedPower()}/${getWarpOutput()}MW`, G.systems.warp_core.tripped ? C.red : C.b);
 
   ry += 3; dHdr('REGEN SHIELDS');
-  ['fore','port','starboard','aft'].forEach(s => {
+  SHIELD_SECTORS.forEach(s => {
     const sv = Math.ceil(G.player.shields[s]); const c = sv > 200 ? C.b : sv > 80 ? C.warn : C.red;
     dRow(s.toUpperCase(), `${sv}/${G.player.shields.maxSectorValue}`, c);
   });

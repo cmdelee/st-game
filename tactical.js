@@ -268,7 +268,7 @@ function applyDamageToEnemy(dmg, weapon, targetSectorOverride) {
     if (cfg.adaptiveShields) G.enemyAdaptiveHits = Math.min(10, G.enemyAdaptiveHits + 1);
 
   } else if (target === 'shields') {
-    ['fore','port','starboard','aft'].forEach(s => { G.threat.shields[s] = Math.max(0, G.threat.shields[s] - dmg * 0.35); });
+    SHIELD_SECTORS.forEach(s => { G.threat.shields[s] = Math.max(0, G.threat.shields[s] - dmg * 0.35); });
     if (G.enemySystems.shields_sys) G.enemySystems.shields_sys.health = Math.max(0, G.enemySystems.shields_sys.health - dmg * 0.3);
     postLogEvent(`Shield generator hit — all sectors −${Math.round(dmg * 0.35)}.${sNote}`, 'good');
 
@@ -420,7 +420,7 @@ function executeEmergencyPowerDump() {
   G.powerDumpReady    = false;
   G.powerDumpCooldown = 50000;
   G.epsHeat = Math.min(100, G.epsHeat + 55);
-  ['fore','port','starboard','aft'].forEach(s => { G.player.shields[s] = Math.max(0, G.player.shields[s] * 0.70); });
+  SHIELD_SECTORS.forEach(s => { G.player.shields[s] = Math.max(0, G.player.shields[s] * 0.70); });
   postLogEvent("Shield power diverted — sectors at 70%.", 'warn');
 }
 
@@ -436,20 +436,20 @@ function toggleCloakingDevice() {
     G.cloaked = false; G.cloakVulnTimer = G.cloakVulnDuration; G.cloakCooldown = 25000;
     showCloakVulnOverlay(true);
     postLogEvent("DECLOAKING — shields offline 1.2s!", 'crit');
-    ['fore','port','starboard','aft'].forEach(s => { G.player.shields[s] = 0; });
+    SHIELD_SECTORS.forEach(s => { G.player.shields[s] = 0; });
     setTimeout(() => {
       if (G.dead) return;
       G.cloakVulnTimer = 0; showCloakVulnOverlay(false); recalculateShieldRegenRate();
       const cloakSecs   = (performance.now() - G.cloakEngagedAt) / 1000;
       const regenEarned = G.shieldRegenRate * cloakSecs;
       const max         = G.player.shields.maxSectorValue;
-      ['fore','port','starboard','aft'].forEach(s => { G.player.shields[s] = Math.min(max, G.frozenShields[s] + regenEarned); });
+      SHIELD_SECTORS.forEach(s => { G.player.shields[s] = Math.min(max, G.frozenShields[s] + regenEarned); });
       postLogEvent(`Decloak complete. Shields restored to ~${Math.round(G.player.shields.fore)}MW.`, 'good');
       updateCloakButton();
     }, G.cloakVulnDuration);
   } else {
     G.frozenShields = { fore:G.player.shields.fore, port:G.player.shields.port, starboard:G.player.shields.starboard, aft:G.player.shields.aft };
-    ['fore','port','starboard','aft'].forEach(s => { G.player.shields[s] = 0; });
+    SHIELD_SECTORS.forEach(s => { G.player.shields[s] = 0; });
     G.cloakVulnTimer = G.cloakVulnDuration;
     showCloakVulnOverlay(true);
     postLogEvent(`CLOAKING — shields frozen at ${Math.round(G.frozenShields.fore)}MW.`, 'crit');
