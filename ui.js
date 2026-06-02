@@ -233,10 +233,7 @@ function synchronizeGlobalInterfaceDisplays() {
   Object.keys(_aw).forEach(wk => {
     const wd  = _aw[wk]; const sys = G.systems[wd.parentSystem];
     const _isAft = !!(wd.arc?.includes('aft') && !wd.arc?.includes('fore'));
-    let cap;
-    if (sys.tripped) { cap = 0; }
-    else if (_isAft)  { cap = wd.isPhoton ? (sys.aftPhotonCap ?? sys.cap) : (sys.aftCap ?? sys.cap); }
-    else              { cap = wd.isPhoton ? (sys.photonCap    ?? sys.cap) : sys.cap; }
+    const cap = sys.tripped ? 0 : (_isAft && sys.aftCap !== undefined ? sys.aftCap : sys.cap);
     const b   = document.getElementById(`bar-cap-${wd.tag}`);
     if (b) { b.style.width = `${cap}%`; b.style.color = sys.tripped ? C.red : cap > 50 ? C.b : C.warn; }
     const t = document.getElementById(`txt-cap-${wd.tag}`);

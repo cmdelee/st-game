@@ -129,9 +129,7 @@ function fireSelectedArray(weaponKey) {
   const parentSys = G.systems[weapon.parentSystem];
   if (!parentSys || parentSys.health < 10 || parentSys.tripped) { postLogEvent(`${weapon.label} offline.`, 'warn'); return; }
   const _isAftTube = !!(weapon.arc?.includes('aft') && !weapon.arc?.includes('fore'));
-  const _capSrc = _isAftTube
-    ? (weapon.isPhoton ? 'aftPhotonCap' : 'aftCap')
-    : (weapon.isPhoton ? 'photonCap'   : 'cap');
+  const _capSrc = (_isAftTube && parentSys.aftCap !== undefined) ? 'aftCap' : 'cap';
   if (parentSys[_capSrc] < weapon.cost) { postLogEvent(`${weapon.label} capacitor low (${Math.round(parentSys[_capSrc])}%).`, 'warn'); return; }
 
   // Block energy weapons vs fully cloaked enemy; torpedoes fire blind
@@ -314,31 +312,38 @@ function fireEnergyWeapons() {
   energyKeys.forEach(k => fireSelectedArray(k));
 }
 
-// Fire best available torpedo for current arc — one tube, arc-strict.
-// Aft vector → aft tubes. All other vectors → fore tubes (fore/port/stbd arc).
-// Quantum if lock ≥ 5% and magazine, otherwise photon. Never crosses tube positions.
+// Fire both torpedo launchers for the current arc simultaneously.
+// Aft vector → aft bays. All other vectors → fore bays.
+// Quantum if magazine available, photon fallback. Both bays fire together.
+// Enterprise-E has dedicated torpedo_quantum_b as second fwd launcher;
+// all other ships fire the same key twice (two identical launchers per bay).
 function fireTorpedoBanks() {
   if (!G.running || G.dead) return;
   const aw  = G.activeWeaponArrays || ARRAYS_DICTIONARY;
   const vec = G.helmAttackVector;
+  const useAft = vec === 'aft';
 
-  // Pick the tube set whose arc covers the current vector
-  const useAft     = vec === 'aft';
   const quantumKey = useAft ? 'torpedo_quantum_aft' : 'torpedo_quantum';
   const photonKey  = useAft ? 'torpedo_photon_aft'  : 'torpedo_photon';
+  // Enterprise-E has a dedicated second fwd quantum tube; others reuse the same key
+  const quantum2   = (!useAft && aw['torpedo_quantum_b']) ? 'torpedo_quantum_b' : quantumKey;
 
-  // Verify the selected tubes actually bear on this vector
   const qInArc = aw[quantumKey] && aw[quantumKey].arc.includes(vec);
   const pInArc = aw[photonKey]  && aw[photonKey].arc.includes(vec);
 
-  // Quantum first (better yield), photon as fallback only — never simultaneous
+  let bay1, bay2;
   if (qInArc && G.lockProgress >= 5 && G.player.torpedoes > 0) {
-    fireSelectedArray(quantumKey);
+    bay1 = quantumKey; bay2 = quantum2;
   } else if (pInArc && G.player.photonTorpedoes > 0) {
-    fireSelectedArray(photonKey);
+    bay1 = photonKey;  bay2 = photonKey;
   } else {
     postLogEvent("No torpedoes available on current attack vector.", 'warn');
+    return;
   }
+
+  // Bay 1 fires immediately; bay 2 fires 80ms later (simultaneous visually)
+  fireSelectedArray(bay1);
+  setTimeout(() => { if (G.running && !G.dead) fireSelectedArray(bay2); }, 80);
 }
 
 // Fire everything in arc (energy + torpedoes)

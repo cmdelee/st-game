@@ -157,7 +157,7 @@ const G = {
     cannon_su:{ health:100, allocatedPower:8,  cap:100, stress:0, tripped:false, label:'Pulse Cannon S/U',  isWeapon:true  },
     cannon_sl:{ health:100, allocatedPower:6,  cap:100, stress:0, tripped:false, label:'Pulse Cannon S/L',  isWeapon:true  },
     nose_beam:{ health:100, allocatedPower:10, cap:100, stress:0, tripped:false, label:'Nose Array Beam',   isWeapon:true  },
-    torpedoes:{ health:100, allocatedPower:10, cap:100, photonCap:100, aftCap:100, aftPhotonCap:100, stress:0, tripped:false, label:'Quantum Torpedoes', isWeapon:true  },
+    torpedoes:{ health:100, allocatedPower:10, cap:100, aftCap:100, stress:0, tripped:false, label:'Quantum Torpedoes', isWeapon:true  },
     shields:  { health:100, allocatedPower:28, cap:100, stress:0, tripped:false, label:'Deflector Shields', isWeapon:false },
     sensors:  { health:100, allocatedPower:16, cap:100, stress:0, tripped:false, label:'Sensor Arrays',     isWeapon:false },
     engines:  { health:100, allocatedPower:10, cap:100, stress:0, tripped:false, label:'Impulse Engines',   isWeapon:false },

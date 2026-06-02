@@ -233,10 +233,10 @@ const ARRAYS_DICTIONARY = {
   // Nose emitter: 65 — heavy Type-XII array, precision strike weapon
   emitter_nose:     { yield:65, cost:50, parentSystem:'nose_beam', tag:'emn', label:'Heavy Nose Array Emitter', arc:['fore'] },
   // Quantum torpedo: 125 — designed to exceed Borg shielding; far superior to photon (The Search, Defiant tech manual)
-  torpedo_quantum:     { yield:125, cost:85, parentSystem:'torpedoes', tag:'tff', label:'Fwd Quantum Tube',     arc:['fore','port','starboard'], isQuantum:true },
-  torpedo_photon:      { yield:60,  cost:30, parentSystem:'torpedoes', tag:'tph', label:'Fwd Photon Tube',      arc:['fore','port','starboard'], isPhoton:true },
-  torpedo_quantum_aft: { yield:125, cost:85, parentSystem:'torpedoes', tag:'tqa', label:'Aft Quantum Tube',     arc:['aft','port','starboard'],  isQuantum:true, isAftTube:true },
-  torpedo_photon_aft:  { yield:60,  cost:30, parentSystem:'torpedoes', tag:'tpa', label:'Aft Photon Tube',      arc:['aft','port','starboard'],  isPhoton:true,  isAftTube:true },
+  torpedo_quantum:     { yield:125, cost:45, parentSystem:'torpedoes', tag:'tff', label:'Fwd Quantum Tube',     arc:['fore','port','starboard'], isQuantum:true },
+  torpedo_photon:      { yield:60,  cost:15, parentSystem:'torpedoes', tag:'tph', label:'Fwd Photon Tube',      arc:['fore','port','starboard'], isPhoton:true },
+  torpedo_quantum_aft: { yield:125, cost:45, parentSystem:'torpedoes', tag:'tqa', label:'Aft Quantum Tube',     arc:['aft','port','starboard'],  isQuantum:true, isAftTube:true },
+  torpedo_photon_aft:  { yield:60,  cost:15, parentSystem:'torpedoes', tag:'tpa', label:'Aft Photon Tube',      arc:['aft','port','starboard'],  isPhoton:true,  isAftTube:true },
 };
 
 // ── Crew stations ─────────────────────────────────────────────
@@ -516,12 +516,12 @@ const PLAYER_SHIP_CONFIGS = {
 
       // ── Torpedo launchers ──
       // 2 forward quantum tubes (above + below saucer-stardrive junction)
-      torpedo_quantum:     { yield:125, cost:85, parentSystem:'torpedoes', tag:'tff', label:'Fwd Quantum Tube A', arc:['fore','port','starboard'], isQuantum:true },
-      torpedo_quantum_b:   { yield:125, cost:85, parentSystem:'torpedoes', tag:'tfb', label:'Fwd Quantum Tube B', arc:['fore','port','starboard'], isQuantum:true },
-      torpedo_photon:      { yield:65,  cost:30, parentSystem:'torpedoes', tag:'tph', label:'Fwd Photon Tube',    arc:['fore','port','starboard'], isPhoton:true },
+      torpedo_quantum:     { yield:125, cost:45, parentSystem:'torpedoes', tag:'tff', label:'Fwd Quantum Tube A', arc:['fore','port','starboard'], isQuantum:true },
+      torpedo_quantum_b:   { yield:125, cost:45, parentSystem:'torpedoes', tag:'tfb', label:'Fwd Quantum Tube B', arc:['fore','port','starboard'], isQuantum:true },
+      torpedo_photon:      { yield:65,  cost:15, parentSystem:'torpedoes', tag:'tph', label:'Fwd Photon Tube',    arc:['fore','port','starboard'], isPhoton:true },
       // Aft torpedo launcher (quantum + photon capable — Insurrection, Nemesis)
-      torpedo_quantum_aft: { yield:125, cost:85, parentSystem:'torpedoes', tag:'tqa', label:'Aft Quantum Tube',   arc:['aft','port','starboard'],  isQuantum:true, isAftTube:true },
-      torpedo_photon_aft:  { yield:65,  cost:30, parentSystem:'torpedoes', tag:'tpa', label:'Aft Photon Tube',    arc:['aft','port','starboard'],  isPhoton:true,  isAftTube:true },
+      torpedo_quantum_aft: { yield:125, cost:45, parentSystem:'torpedoes', tag:'tqa', label:'Aft Quantum Tube',   arc:['aft','port','starboard'],  isQuantum:true, isAftTube:true },
+      torpedo_photon_aft:  { yield:65,  cost:15, parentSystem:'torpedoes', tag:'tpa', label:'Aft Photon Tube',    arc:['aft','port','starboard'],  isPhoton:true,  isAftTube:true },
     },
   },
 };
