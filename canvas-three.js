@@ -6,6 +6,188 @@
 // Depends on: state.js (G, C, ENEMY_CONFIGS, HELM_SPEED_CONFIG)
 // ============================================================
 
+// ============================================================
+// REAL SHIP MODEL LOADING SYSTEM
+// Loads STL/OBJ files from /models/. Falls back to procedural
+// geometry instantly while the real model loads in background.
+// ============================================================
+
+// Cached loaded models (key → THREE.Group, ready to clone)
+const _MODEL_CACHE = {};
+
+// Per-ship file config
+const _MODEL_CONFIG = {
+  defiant:              { file:'models/defiant.stl',              format:'stl', targetSize:16 },
+  enterprise_e:         { file:'models/enterprise_e.stl',         format:'stl', targetSize:20 },
+  ktinga:               { file:'models/ktinga.stl',               format:'stl', targetSize:16 },
+  vor_cha:              { file:'models/vor_cha.stl',              format:'stl', targetSize:18 },
+  romulan_bop:          { file:'models/romulan_bop.stl',          format:'stl', targetSize:14 },
+  romulan_warbird:      { file:'models/romulan_warbird.stl',      format:'stl', targetSize:22 },
+  cardassian_scout:     { file:'models/cardassian_scout.stl',     format:'stl', targetSize:12 },
+  galor_class:          { file:'models/galor_class.stl',          format:'stl', targetSize:16 },
+  jem_hadar_fighter:    { file:'models/jem_hadar_fighter.stl',    format:'stl', targetSize:12 },
+  jem_hadar_battleship: { file:'models/jem_hadar_battleship.obj', format:'obj', targetSize:18 },
+  borg_probe:           { file:'models/borg_probe.stl',           format:'stl', targetSize:16 },
+};
+
+// Per-ship rotation tuning — adjust if a model loads in the wrong direction.
+// Ships should face +X (nose pointing toward positive X axis).
+// Common fixes: y:Math.PI (180° flip), z:Math.PI/2 (roll upright), x:Math.PI/2 (pitch up)
+const _MODEL_ROTATIONS = {
+  defiant:              { x:0,           y:0,        z:0 },
+  enterprise_e:         { x:0,           y:0,        z:0 },
+  ktinga:               { x:0,           y:0,        z:0 },
+  vor_cha:              { x:0,           y:0,        z:0 },
+  romulan_bop:          { x:0,           y:0,        z:0 },
+  romulan_warbird:      { x:0,           y:0,        z:0 },
+  cardassian_scout:     { x:0,           y:0,        z:0 },
+  galor_class:          { x:0,           y:0,        z:0 },
+  jem_hadar_fighter:    { x:0,           y:0,        z:0 },
+  jem_hadar_battleship: { x:0,           y:0,        z:0 },
+  borg_probe:           { x:0,           y:0,        z:0 },
+};
+
+// Faction PBR materials — applied to single-colour STL geometry
+// MeshStandardMaterial gives metallic hull plating with directional lighting
+function _makeShipMaterial(matKey) {
+  const defs = {
+    player_defiant: { color:0x1e3060, metalness:0.60, roughness:0.38, emissive:0x050e22, emissiveIntensity:0.5 },
+    player_ent:     { color:0x1a2850, metalness:0.60, roughness:0.32, emissive:0x050a1a, emissiveIntensity:0.5 },
+    Klingon:        { color:0x2a0a08, metalness:0.65, roughness:0.52, emissive:0x0c0202, emissiveIntensity:0.4 },
+    Romulan:        { color:0x0a2a0a, metalness:0.62, roughness:0.46, emissive:0x021002, emissiveIntensity:0.4 },
+    Cardassian:     { color:0x2a1808, metalness:0.48, roughness:0.58, emissive:0x0e0800, emissiveIntensity:0.4 },
+    Dominion:       { color:0x18082a, metalness:0.72, roughness:0.36, emissive:0x080010, emissiveIntensity:0.5 },
+    Borg:           { color:0x001a10, metalness:0.82, roughness:0.24, emissive:0x002210, emissiveIntensity:0.6 },
+  };
+  const d = defs[matKey] || defs.Klingon;
+  return new THREE.MeshStandardMaterial({
+    color:             d.color,
+    metalness:         d.metalness,
+    roughness:         d.roughness,
+    emissive:          d.emissive,
+    emissiveIntensity: d.emissiveIntensity,
+  });
+}
+
+// Which material key to use for each ship
+const _MODEL_MAT_KEY = {
+  defiant:'player_defiant', enterprise_e:'player_ent',
+  ktinga:'Klingon', vor_cha:'Klingon',
+  romulan_bop:'Romulan', romulan_warbird:'Romulan',
+  cardassian_scout:'Cardassian', galor_class:'Cardassian',
+  jem_hadar_fighter:'Dominion', jem_hadar_battleship:'Dominion',
+  borg_probe:'Borg',
+};
+
+// Core load function — returns cloned group via callback, or null on failure/missing file
+function _loadShipModel(key, callback) {
+  // Cache hit — instant
+  if (_MODEL_CACHE[key]) { callback(_cloneModel(key)); return; }
+
+  const cfg = _MODEL_CONFIG[key];
+  if (!cfg) { callback(null); return; }
+
+  const matKey  = _MODEL_MAT_KEY[key] || 'Klingon';
+  const rotCfg  = _MODEL_ROTATIONS[key] || { x:0, y:0, z:0 };
+
+  function _processLoaded(geoOrGroup) {
+    let mesh;
+    if (geoOrGroup.isBufferGeometry) {
+      // STL → raw BufferGeometry
+      geoOrGroup.computeVertexNormals();
+      mesh = new THREE.Mesh(geoOrGroup, _makeShipMaterial(matKey));
+    } else {
+      // OBJ → Group with children
+      mesh = geoOrGroup;
+      mesh.traverse(c => {
+        if (c.isMesh) c.material = _makeShipMaterial(matKey);
+      });
+    }
+
+    // Apply orientation tuning
+    mesh.rotation.set(rotCfg.x, rotCfg.y, rotCfg.z);
+
+    // Auto-scale: fit longest bounding-box dimension to targetSize
+    const box    = new THREE.Box3().setFromObject(mesh);
+    const size   = new THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (maxDim > 0) mesh.scale.setScalar(cfg.targetSize / maxDim);
+
+    // Centre at origin so position offsets work correctly
+    box.setFromObject(mesh);
+    const centre = new THREE.Vector3();
+    box.getCenter(centre);
+    mesh.position.sub(centre);
+
+    // Wrap in group so external position/rotation is independent of model pivot
+    const group = new THREE.Group();
+    group.add(mesh);
+    _MODEL_CACHE[key] = group;
+    console.log(`[Models] Loaded: ${key} (${cfg.file})`);
+    callback(_cloneModel(key));
+  }
+
+  function _onError(err) {
+    console.warn(`[Models] Failed to load ${key} (${cfg.file}) — using procedural geometry`, err);
+    callback(null);
+  }
+
+  if (cfg.format === 'stl') {
+    const loader = new THREE.STLLoader();
+    loader.load(cfg.file, _processLoaded, undefined, _onError);
+  } else {
+    const loader = new THREE.OBJLoader();
+    loader.load(cfg.file, _processLoaded, undefined, _onError);
+  }
+}
+
+// Deep clone a cached model (geometry is shared, materials are independent)
+function _cloneModel(key) {
+  const src = _MODEL_CACHE[key];
+  if (!src) return null;
+  const clone = src.clone(true);
+  clone.traverse(c => {
+    if (c.isMesh && c.material) c.material = c.material.clone();
+  });
+  return clone;
+}
+
+// Background preload — loads all models in size order so smallest arrive first.
+// Called from initThreeScene(). Models are cached and ready before the player
+// finishes selecting their station (the 15s pre-battle briefing also helps).
+function _preloadAllModels() {
+  const order = [
+    'romulan_bop','defiant','enterprise_e',          // ~1–2 MB each
+    'jem_hadar_fighter','cardassian_scout',           // ~3–5 MB
+    'jem_hadar_battleship','romulan_warbird',         // ~5–6 MB
+    'vor_cha','galor_class',                          // ~7–12 MB
+    'ktinga','borg_probe',                            // ~23–27 MB — load last
+  ];
+  let i = 0;
+  function next() {
+    if (i >= order.length) return;
+    _loadShipModel(order[i++], next);  // sequential — avoids saturating connection
+  }
+  setTimeout(next, 1500);  // slight delay so scene init finishes first
+}
+
+// ── Hull-damage emissive update helper (works on both model and procedural meshes)
+function _applyHullDamageColour(group, hullPct, isPlayer) {
+  group.traverse(child => {
+    if (!child.isMesh || !child.material) return;
+    if (isPlayer) {
+      child.material.emissive.setRGB(
+        hullPct < 0.35 ? 0.14 + (1 - hullPct) * 0.08 : 0.04,
+        hullPct < 0.35 ? 0.02 : 0.06,
+        hullPct < 0.35 ? 0.02 : 0.16
+      );
+    } else {
+      if (hullPct < 0.30) child.material.emissive.setRGB(0.22 + Math.sin(Date.now()*0.004)*0.08, 0.04, 0.04);
+    }
+  });
+}
+
 // Faction colour palettes — engine glow (deep) vs weapon beams (bright)
 const _FACTION_GLOW_COL  = { Klingon:0xff2200, Romulan:0x00cc44, Cardassian:0xffaa00, Dominion:0x8822ff, Borg:0x00cc66 };
 const _FACTION_BEAM_COL  = { Klingon:0xff4422, Romulan:0x44ff44, Cardassian:0xffaa00, Dominion:0xaa44ff, Borg:0x00ff88 };
@@ -800,6 +982,9 @@ function initThreeScene() {
   particle_system = buildParticleSystem(); THREE_scene.add(particle_system);
 
   THREE_ready = true;
+
+  // Start loading real ship models in the background
+  _preloadAllModels();
 }
 
 // ── Sovereign-class (Enterprise-E) geometry ───────────────────
@@ -925,19 +1110,29 @@ function buildSovereignGeometry() {
 
 function rebuildPlayerMesh() {
   if (!THREE_ready) return;
-  if (mesh_defiant) { THREE_scene.remove(mesh_defiant); }
-  if (G.playerShipKey === 'enterprise_e') {
-    mesh_defiant = buildSovereignGeometry();
-    engine_glow_player.color.setHex(0x4477ff);
-  } else {
-    mesh_defiant = buildDefiantGeometry();
-    engine_glow_player.color.setHex(0x4477ff);
+  if (mesh_defiant) THREE_scene.remove(mesh_defiant);
+
+  const key = G.playerShipKey || 'defiant';
+  engine_glow_player.color.setHex(0x4477ff);
+
+  function _applyPlayerMesh(group) {
+    if (!THREE_ready) return;
+    if (mesh_defiant) THREE_scene.remove(mesh_defiant);
+    mesh_defiant = group;
+    mesh_defiant.position.set(-28, 0, 0);
+    THREE_scene.add(mesh_defiant);
+    shield_player.position.copy(mesh_defiant.position);
+    _cleanupSaucerSep();
   }
-  mesh_defiant.position.set(-28, 0, 0);
-  THREE_scene.add(mesh_defiant);
-  shield_player.position.copy(mesh_defiant.position);
-  // Clean up any lingering saucer sep from previous game
-  _cleanupSaucerSep();
+
+  // Use procedural geometry immediately so scene is never empty
+  _applyPlayerMesh(key === 'enterprise_e' ? buildSovereignGeometry() : buildDefiantGeometry());
+
+  // Replace with real model when loaded (instant if already cached)
+  _loadShipModel(key, (group) => {
+    if (group) _applyPlayerMesh(group);
+    // null → model missing/failed — procedural already in place, nothing to do
+  });
 }
 
 function resizeThreeRenderer() {
@@ -951,11 +1146,26 @@ function resizeThreeRenderer() {
 
 function rebuildEnemyMesh() {
   if (!THREE_ready || !mesh_enemyGroup) return;
-  while (mesh_enemyGroup.children.length) mesh_enemyGroup.remove(mesh_enemyGroup.children[0]);
-  mesh_enemy = buildEnemyGeometry(G.enemyArchetype);
-  mesh_enemyGroup.add(mesh_enemy);
-  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
-  engine_glow_enemy.color.setHex(_FACTION_GLOW_COL[cfg.faction] || 0xff2200);
+
+  const arch = G.enemyArchetype;
+  const cfg  = ENEMY_CONFIGS[arch];
+  engine_glow_enemy.color.setHex(_FACTION_GLOW_COL[cfg?.faction] || 0xff2200);
+
+  function _applyEnemyMesh(group) {
+    if (!THREE_ready || !mesh_enemyGroup) return;
+    while (mesh_enemyGroup.children.length) mesh_enemyGroup.remove(mesh_enemyGroup.children[0]);
+    mesh_enemy = group;
+    mesh_enemyGroup.add(mesh_enemy);
+  }
+
+  // Procedural geometry instantly
+  _applyEnemyMesh(buildEnemyGeometry(arch));
+
+  // Replace with real model when loaded
+  _loadShipModel(arch, (group) => {
+    // Only apply if the archetype hasn't changed since we started loading
+    if (group && G.enemyArchetype === arch) _applyEnemyMesh(group);
+  });
 }
 
 function _cleanupSaucerSep() {
@@ -997,13 +1207,9 @@ function renderSpatialViewCanvas() {
   mesh_defiant.position.z = Math.sin(now*0.25)*0.8*_speedDrift;
   mesh_defiant.rotation.z = Math.sin(now*0.3)*0.03*_speedDrift;
 
-  // Hull damage colouring
+  // Hull damage colouring — works on both loaded models and procedural geometry
   const hullPct = G.player.hull / G.player.maxHull;
-  mesh_defiant.traverse(child => {
-    if (child.isMesh && child.material && child.material.emissive) {
-      child.material.emissive.setRGB(hullPct<0.35?0.12+(1-hullPct)*0.1:0.04, hullPct<0.35?0.02:0.08, hullPct<0.35?0.02:0.16);
-    }
-  });
+  _applyHullDamageColour(mesh_defiant, hullPct, true);
 
   // Engine glow — intensity tied to helm speed setting
   const _helmGlow = { stop:0.2, maneuvering:0.7, half:1.5, full:3.2 }[G.helmSpeed] ?? 1.5;
@@ -1110,10 +1316,8 @@ function renderSpatialViewCanvas() {
     mesh_enemyGroup.traverse(child=>{ if(child.isMesh&&child.material){child.material.transparent=eOp<1;child.material.opacity=THREE.MathUtils.lerp(child.material.opacity??1,eOp,0.10);} });
 
     // Enemy hull damage
-    const eHullPct=G.running&&G.threat.hull?G.threat.hull/G.threat.maxHull:1;
-    if (eHullPct<0.30) {
-      mesh_enemyGroup.traverse(child=>{ if(child.isMesh&&child.material&&child.material.emissive) child.material.emissive.setRGB(0.25+Math.sin(now*4)*0.1,0.04,0.04); });
-    }
+    const eHullPct = G.running && G.threat.hull ? G.threat.hull / G.threat.maxHull : 1;
+    if (eHullPct < 0.30) _applyHullDamageColour(mesh_enemyGroup, eHullPct, false);
 
     // Enemy shield bubble
     shield_enemy.position.copy(mesh_enemyGroup.position); shield_enemy.rotation.y=-now*0.25;
