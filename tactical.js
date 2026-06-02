@@ -273,10 +273,23 @@ function applyDamageToEnemy(dmg, weapon, targetSectorOverride) {
     postLogEvent(`Shield generator hit — all sectors −${Math.round(dmg * 0.35)}.${sNote}`, 'good');
 
   } else {
+    // Subsystem targeting — focused beam, but shields still partially absorb and
+    // hull takes collateral from energy penetrating through the ship structure.
+    const hitSector = targetSectorOverride || G.helmAttackVector || 'fore';
+    const shAbsorb  = Math.min(G.threat.shields[hitSector] || 0, dmg * 0.45);
+    if (shAbsorb > 0) {
+      G.threat.shields[hitSector] = Math.max(0, G.threat.shields[hitSector] - shAbsorb);
+      G.shieldHitFlash.enemy = { sector: hitSector, timer: 300 };
+    }
+    const penetrating = dmg - shAbsorb;
     const sys = G.enemySystems[target];
     if (sys) {
-      sys.health = Math.max(0, sys.health - dmg * 0.7);
-      postLogEvent(`Subsystem [${sys.label}]: ${Math.round(sys.health)}%.${sNote}`, 'good');
+      const sysDmg    = dmg * 0.62;           // focused beam finds subsystem regardless of shields
+      const hullBleed = penetrating * 0.22;   // collateral — higher when shields already down
+      sys.health = Math.max(0, sys.health - sysDmg);
+      if (hullBleed > 0) G.threat.hull = Math.max(0, G.threat.hull - hullBleed);
+      const hullStr = hullBleed > 0.5 ? ` hull −${Math.round(hullBleed)}` : '';
+      postLogEvent(`Subsystem [${sys.label}]: ${Math.round(sys.health)}%${hullStr}.${sNote}`, 'good');
       if (sys.health <= 0) {
         G.score.systemsDestroyed++;
         postLogEvent(`DESTROYED: [${sys.label}]!`, 'crit');
