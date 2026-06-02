@@ -61,7 +61,7 @@ Starfleet's flagship from the TNG films. Larger, tougher, and bristling with pha
 - **Two Game Modes**:
   - **Single Engagement** — pick Normal / Hard / Elite, fight one random enemy from that pool
   - **Campaign Run** — fight all 9 enemies in order from easiest to hardest; score accumulates, ship restores between fights; Borg Probe is the final boss
-- **Authentic LCARS Interface**: Full LCARS styling with canon ships from Klingons, Romulans, Cardassians, Dominion, and Borg
+- **Authentic LCARS Interface**: Full LCARS styling with canon ships from Klingons, Romulans, Cardassians, Dominion, and Borg. 2D schematics feature LCARS-style section headers, inline mini-bars for hull/shields/systems/lock, scan bonus readouts, and adaptive resistance displays
 - **9 Enemy Vessels**: Each with faction-specific AI, weapons, combat phase arcs, and hull milestone events
 - **3D Spatial Battle View**: Three.js WebGL — Defiant and Sovereign-class meshes, authentic Star Trek weapon colours (amber phasers, orange-red photon torpedoes, blue-white quantum torpedoes, green plasma), faction-coloured 3D beam tubes fired from **correct hull hardpoints** (pulse cannons from nacelle flanks, nose emitter from bow, saucer arrays from saucer rim, etc.), enemy beams from faction-accurate positions (Klingon wing tips, Romulan head/boom emitters, Jem'Hadar forward wing cannons, Borg all 6 faces), torpedo impacts with shockwave rings, nacelle exhaust particles (scale with helm speed), burst-salvo shockwave, saucer separation flies independently, Jem'Hadar ramming trajectory indicator
 - **Advanced Combat**:
@@ -71,7 +71,7 @@ Starfleet's flagship from the TNG films. Larger, tougher, and bristling with pha
   - Shield frequency rotation countering enemy weapon types
   - Evasive Pattern Delta, Pattern Alpha, Attack Pattern Omega, Picard Manoeuvre
   - Four deep scan profiles (shields / hull fissures / weapons disrupt / tetryon ECM) — each grants a **permanent frequency lock** bonus that persists until overwritten
-  - Enemy subsystem targeting
+  - Enemy subsystem targeting — focused beam deals 62% system damage + 22% collateral hull bleed through penetrating energy; shields absorb up to 45% first
   - Ablative armour — 6 regenerating layers (Defiant only)
   - Regenerative shielding (Enterprise-E only)
   - **Canon weapon arcs** — all weapons respect Trek-accurate firing arcs across both ships; both torpedo launchers per bay fire simultaneously (quantum first, photon fallback), with fully independent fore/aft capacitors
@@ -229,6 +229,7 @@ All three stations fully automated. Issue orders and override crew decisions.
 15. **Campaign**: Each level restores your ship fully — don't hold back on torpedoes or overload modes
 16. **Deep Scan**: Scan bonuses are permanent frequency locks, not timers — run a scan early and it pays off all fight. Disrupt scan (−50% enemy fire rate) is often the strongest opener
 17. **Fire at Will**: Use the quick Fire Phasers / Fire Torpedoes / Fire All buttons to keep up pressure; the simplified interface fires the best available weapons without hunting for individual array buttons
+18. **Subsystem targeting**: Targeting a specific system still deals hull damage as collateral — roughly 12–22 hull bleed per 100 damage depending on whether attack-vector shields are up. You can't avoid attriting the hull entirely, but focused targeting is still more efficient at destroying systems than general hull fire
 
 ---
 
