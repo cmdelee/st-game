@@ -39,8 +39,8 @@ const _MODEL_ROTATIONS = {
   defiant:              { x:0,           y:Math.PI/2,  z:0 },
   // Long axis Y (span 422), height Z → x:-π/2 makes Z→Y(up), then nose(-Y)→+Z→+X
   enterprise_e:         { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
-  // Procedural — no STL
-  ktinga:               { x:0,           y:0,           z:0 },
+  // Long axis Y (span 107), height Z (24%) → x:-π/2 makes Z→Y(up), y:π/2 faces +X
+  ktinga:               { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
   // Long axis Y (span 14745), height Z → same transform as enterprise
   vor_cha:              { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
   // Long axis X (span 74) already = forward, height Z → x:-π/2 makes Z→Y(up)
@@ -55,7 +55,7 @@ const _MODEL_ROTATIONS = {
   jem_hadar_fighter:    { x:-Math.PI/2,  y:0,           z:0 },
   // OBJ — assume similar orientation to fighter
   jem_hadar_battleship: { x:-Math.PI/2,  y:0,           z:0 },
-  // Procedural — no STL
+  // Real model — perfect 1:1:1 cube (43K tris), symmetric so rotation irrelevant
   borg_probe:           { x:0,           y:0,           z:0 },
 };
 
