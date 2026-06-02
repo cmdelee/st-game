@@ -678,13 +678,16 @@ function computeConduitConduction(dt) {
       sys.stress = Math.max(0, sys.stress - (1.8 * sc));
     }
     // Capacitor charging — reduced by EPS heat; stardrive systems get ×1.15 boost when saucer separated
-    if (sys.cap < 100 || (key === 'torpedoes' && sys.aftCap !== undefined && sys.aftCap < 100)) {
+    if (sys.cap < 100 || (key === 'torpedoes' && (sys.photonCap < 100 || sys.aftCap < 100 || sys.aftPhotonCap < 100))) {
       const _isSaucerSys   = key === 'cannon_pu' || key === 'cannon_pl';
       const stardriveBoost = (G.saucerSepActive && !G.saucerSepReconnecting && !_isSaucerSys) ? 1.15 : 1.0;
       const ls = (sys.allocatedPower * 0.6) * (sys.health / 100) * heatPenalty * stardriveBoost;
-      if (sys.cap < 100) sys.cap = Math.min(100, sys.cap + ls * sc);
-      if (key === 'torpedoes' && sys.aftCap !== undefined && sys.aftCap < 100)
-        sys.aftCap = Math.min(100, sys.aftCap + ls * sc);
+      if (sys.cap < 100)         sys.cap         = Math.min(100, sys.cap         + ls * sc);
+      if (key === 'torpedoes') {
+        if (sys.photonCap    !== undefined && sys.photonCap    < 100) sys.photonCap    = Math.min(100, sys.photonCap    + ls * sc);
+        if (sys.aftCap       !== undefined && sys.aftCap       < 100) sys.aftCap       = Math.min(100, sys.aftCap       + ls * sc);
+        if (sys.aftPhotonCap !== undefined && sys.aftPhotonCap < 100) sys.aftPhotonCap = Math.min(100, sys.aftPhotonCap + ls * sc);
+      }
     }
   });
 
