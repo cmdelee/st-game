@@ -183,7 +183,7 @@ function assignRepairTeam(sysKey, teamIdx) {
   team.remaining  = repairTime;
 
   const teamName = teamIdx === 0 ? "Alpha Team" : "Beta Team";
-  const eta      = Math.ceil(repairTime / 1000 / DIFFICULTY[currentDifficulty].repairSpeedMult);
+  const eta      = Math.ceil(repairTime / 1000 / (DIFFICULTY[currentDifficulty].repairSpeedMult * getCrewEfficiency('engineering')));
   if (wasOn) postLogEvent(`${teamName} redirected from ${wasOn} → ${sys.label}. ETA ${eta}s.`, 'warn');
   else       postLogEvent(`${teamName} dispatched to ${sys.label}. ETA ${eta}s.`, 'good');
   refreshEngineeringPanelGraphics();
@@ -203,7 +203,7 @@ function queueSystemRepair(sysKey) {
   if (G.playerChosenStation !== 'engineering') { return; }
   // Auto-assign to whichever team is free, else team with most progress
   const freeIdx = G.repairTeams.findIndex(t => !t.sysKey);
-  const teamIdx = freeIdx >= 0 ? freeIdx : (G.repairTeams[0].remaining > G.repairTeams[1].remaining ? 1 : 0);
+  const teamIdx = freeIdx >= 0 ? freeIdx : (G.repairTeams[0].remaining < G.repairTeams[1].remaining ? 0 : 1);
   assignRepairTeam(sysKey, teamIdx);
 }
 
@@ -619,12 +619,15 @@ function updateEngUtilityPanel() {
   const as = document.getElementById('lbl-autotac-summary');
   if (as && G.playerChosenStation === 'engineering') {
     const _isEntEng = G.playerShipKey === 'enterprise_e';
-    const healthy = ['cannon_pu','cannon_pl','cannon_su','cannon_sl'].filter(k => !G.systems[k].tripped && G.systems[k].health >= 15).length;
-    const torpsOk = !G.systems.torpedoes.tripped && G.systems.torpedoes.health >= 15 && G.player.torpedoes > 0;
+    const _healthKeys = _isEntEng
+      ? ['cannon_pu','cannon_pl','cannon_su','cannon_sl','nose_beam']
+      : ['cannon_pu','cannon_pl','cannon_su','cannon_sl'];
+    const healthy = _healthKeys.filter(k => !G.systems[k].tripped && G.systems[k].health >= 15).length;
+    const torpsOk = !G.systems.torpedoes.tripped && G.systems.torpedoes.health >= 15 && (G.player.torpedoes > 0 || G.player.photonTorpedoes > 0);
     const teamA   = G.repairTeams[0].sysKey ? `A:${G.repairTeams[0].label.split(' ').slice(-1)[0]}` : 'A:idle';
     const teamB   = G.repairTeams[1].sysKey ? `B:${G.repairTeams[1].label.split(' ').slice(-1)[0]}` : 'B:idle';
     const specStatus = _isEntEng ? (G.saucerSepActive ? '[SEPARATED]' : 'Firing.') : (G.cloaked ? '[CLOAKED]' : 'Firing.');
-    as.textContent = `${healthy}/${_isEntEng ? 5 : 4} arrays · Torps:${torpsOk ? 'RDY' : 'NO'} · ${teamA} · ${teamB} · ${specStatus}`;
+    as.textContent = `${healthy}/${_healthKeys.length} arrays · Torps:${torpsOk ? 'RDY' : 'NO'} · ${teamA} · ${teamB} · ${specStatus}`;
   }
 
   // Ablative armour status (engineering view)
@@ -707,7 +710,7 @@ function computeConduitConduction(dt) {
   // Enemy shield regen
   if (!G.enemyCloaked) {
     const cfg = ENEMY_CONFIGS[G.enemyArchetype];
-    const eSS = G.enemySystems.shields_sys;
+    const eSS = G.enemySystems.shields;
     let eRegen = (eSS ? eSS.health / 100 : 1) * 1.2;
     if (cfg.adaptiveShields) eRegen *= (1 + G.enemyAdaptiveHits * 0.15);
     ['fore','port','starboard','aft'].forEach(s => {

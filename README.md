@@ -63,7 +63,7 @@ Starfleet's flagship from the TNG films. Larger, tougher, and bristling with pha
   - **Campaign Run** — fight all 9 enemies in order from easiest to hardest; score accumulates, ship restores between fights; Borg Probe is the final boss
 - **Authentic LCARS Interface**: Full LCARS styling with canon ships from Klingons, Romulans, Cardassians, Dominion, and Borg
 - **9 Enemy Vessels**: Each with faction-specific AI, weapons, combat phase arcs, and hull milestone events
-- **3D Spatial Battle View**: Three.js WebGL — Defiant and Sovereign-class meshes, authentic Star Trek weapon colours (amber phasers, orange-red photon torpedoes, blue-white quantum torpedoes), faction-coloured 3D beam tubes, torpedo impacts with shockwave rings, nacelle exhaust particles (scale with helm speed), burst-salvo shockwave, saucer separation flies independently, Jem'Hadar ramming trajectory indicator
+- **3D Spatial Battle View**: Three.js WebGL — Defiant and Sovereign-class meshes, authentic Star Trek weapon colours (amber phasers, orange-red photon torpedoes, blue-white quantum torpedoes, green plasma), faction-coloured 3D beam tubes fired from **correct hull hardpoints** (pulse cannons from nacelle flanks, nose emitter from bow, saucer arrays from saucer rim, etc.), enemy beams from faction-accurate positions (Klingon wing tips, Romulan head/boom emitters, Jem'Hadar forward wing cannons, Borg all 6 faces), torpedo impacts with shockwave rings, nacelle exhaust particles (scale with helm speed), burst-salvo shockwave, saucer separation flies independently, Jem'Hadar ramming trajectory indicator
 - **Advanced Combat**:
   - Real-time four-sector shield management with sector reinforcement and equalisation
   - Cloaking device (Defiant) / Saucer Separation (Enterprise-E) with distinct mechanics
@@ -74,7 +74,7 @@ Starfleet's flagship from the TNG films. Larger, tougher, and bristling with pha
   - Enemy subsystem targeting
   - Ablative armour — 6 regenerating layers (Defiant only)
   - Regenerative shielding (Enterprise-E only)
-  - **Canon weapon arcs** — all weapons respect Trek-accurate firing arcs across both ships
+  - **Canon weapon arcs** — all weapons respect Trek-accurate firing arcs across both ships; both torpedo launchers per bay fire simultaneously (quantum first, photon fallback), with fully independent fore/aft capacitors
 - **Engineering Power System**: Zero-sum EPS allocation across 11 systems, thermal buildup, breaker trips, warp core cascade failures, one-click power presets
 - **Battle Realism**: Enemy hull milestones (75/50/25/10%) trigger faction dialogue and automatic reactions — Klingon death salvo, Romulan emergency cloak, Jem'Hadar fury scaling
 - **Dynamic AI**: Klingons close range; Romulans fire plasma immediately on decloak; Borg adapt per-weapon; Jem'Hadar fire faster as they take damage
@@ -137,7 +137,7 @@ Direct weapons fire, manage evasive manoeuvres, operate cloak or saucer sep, and
 
 Both ships share: Alpha Salvo, Shield Frequency Rotation, Evasive Pattern, Emergency Power Dump, Deep Scan Profiles (4), Subsystem Targeting Grid, Emergency Warp.
 
-**Simplified fire interface**: Quick-fire buttons — **Fire Phasers** (all in-arc energy weapons), **Fire Torpedoes** (best available tube), and **Fire All** (full alpha salvo) — let you engage immediately without selecting individual arrays.
+**Simplified fire interface**: Quick-fire buttons — **Fire Phasers** (all in-arc energy weapons), **Fire Torpedoes** (both launchers simultaneously — quantum first, photon fallback), and **Fire All** (full alpha salvo) — let you engage immediately without selecting individual arrays.
 
 ### 🟣 Engineering
 

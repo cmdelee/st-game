@@ -87,7 +87,7 @@ const ENEMY_CONFIGS = {
       // Canon: plasma torpedo — forward-firing but can bear on broadside targets
       // Arc expanded from ['fore'] only to ['fore','port','starboard'] so torpeodcharge
       // state can aim at the weakest player shield sector, not always fore
-      plasma_fwd:  { health:100, label:'Plasma Torpedo Banks', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:110, dmgMax:190, systemTargetKey:'torpedoes', isTorpedo:true, label:'Plasma Torpedo Banks' },
+      plasma_fwd:  { health:100, label:'Plasma Torpedo Banks', isWeapon:true,  firingArc:['fore','port','starboard'], dmgMin:110, dmgMax:190, systemTargetKey:'torpedoes', isTorpedo:true },
       // Canon: Romulan disruptors — this class uses disruptors, not Federation phasers
       disruptors_fwd: { health:100, label:'Forward Disruptors', isWeapon:true, firingArc:['fore','port','starboard'], dmgMin:35, dmgMax:60, systemTargetKey:'disruptors' },
       disruptors_aft: { health:100, label:'Aft Disruptors',     isWeapon:true, firingArc:['aft','port','starboard'],  dmgMin:25, dmgMax:45, systemTargetKey:'disruptors' },
@@ -338,7 +338,7 @@ const MISSION_INTEL = {
     silhouette: '◈',
     threat: 'CRITICAL',
     cards: [
-      { label:'VESSEL CLASS',      text:"Jem'Hadar battle cruiser. 1100 hull. Heavy polaron banks, photon torpedoes.", revealAt:50 },
+      { label:'VESSEL CLASS',      text:"Jem'Hadar battle cruiser. 920 hull. Heavy polaron banks, photon torpedoes.", revealAt:50 },
       { label:'THREAT ASSESSMENT', text:"Elite Dominion vessel. Polaron bypass confirmed. Ramming protocol active below 20% hull — collision damage 380 through ablative.", revealAt:70 },
       { label:'KNOWN WEAKNESS',    text:"Heavier and slower than the fighter. Fore shields are its primary defence — come about to exploit aft quarter. Engine damage slows it significantly.", revealAt:90 },
       { label:'TACTICS',           text:"Hull scan immediately. Rotate shield frequencies against polaron signature. Save ablative armour for the ramming run — it will come.", revealAt:90 },

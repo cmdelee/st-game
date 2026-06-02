@@ -148,7 +148,7 @@ const G = {
     photonTorpedoes:12, maxPhotonTorpedoes:12,
     shields:{ fore:320, port:260, starboard:260, aft:200, maxSectorValue:320 }
   },
-  threat:{ hull:900, maxHull:900 },
+  threat:{ hull:900, maxHull:900, shields:{ fore:0, port:0, starboard:0, aft:0 } },
 
   // Player systems
   systems:{
@@ -285,7 +285,7 @@ function setDifficulty(level) {
 function postLogEvent(msg, tier='info') {
   const ts = new Date().toLocaleTimeString('en-GB',{hour12:false});
   G.historicalLogTracks.push({ts, msg, tier});
-  if (G.historicalLogTracks.length > 600) G.historicalLogTracks = G.historicalLogTracks.slice(-500);
+  if (G.historicalLogTracks.length >= 600) G.historicalLogTracks = G.historicalLogTracks.slice(-500);
   const box = document.getElementById('terminal-transcript-box');
   if (box && box.style.display !== 'none') {
     const cols = {info:'#aabbff', good:'#00cc66', warn:'#ffaa00', crit:'#ff4444'};

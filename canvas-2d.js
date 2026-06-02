@@ -100,7 +100,7 @@ function renderEnemySchematicCanvas() {
   ];
   ctx.lineWidth = 2;
   shArc.forEach(sa => {
-    const val  = G.threat.shields[sa.key]; const maxV = cfg.shields[sa.key]; const pct = val / maxV;
+    const val  = G.threat.shields[sa.key]; const maxV = cfg.shields[sa.key] || 1; const pct = val / maxV;
     ctx.strokeStyle = G.enemyCloaked ? 'rgba(153,102,204,0.2)' : val > maxV*0.5 ? C.green : val > maxV*0.2 ? C.warn : C.red;
     ctx.globalAlpha = 0.3 + pct * 0.6;
     ctx.beginPath(); ctx.arc(cx, cy, 72, sa.s, sa.e); ctx.stroke();
@@ -455,7 +455,7 @@ function _renderEnterpriseESchematic() {
   dRow('Lock effect', '−60% for 15s', '#aabbcc');
 
   ry += 3; dHdr('REGEN RATE');
-  dRow('Shield regen', `+${G.shieldRegenRate.toFixed(1)}/s ×1.4`, C.b);
+  dRow('Shield regen', `+${(G.shieldRegenRate || 0).toFixed(1)}/s ×1.4`, C.b);
   dRow('Torps QM',     `${G.player.torpedoes}/${G.player.maxTorpedoes}`, C.t);
   dRow('Torps PH',     `${G.player.photonTorpedoes}/${G.player.maxPhotonTorpedoes}`, C.b);
   dRow('Tricobalt',    G.tricobalReady ? 'ARMED' : 'EXPENDED', G.tricobalReady ? C.green : C.red);

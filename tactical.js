@@ -13,7 +13,7 @@ function executeEvasivePattern() {
   if (G.systems.engines.health < 20 || G.systems.engines.tripped) { postLogEvent("Impulse engines too damaged for evasive action.", 'crit'); return; }
   G.systems.engines.stress = Math.min(100, G.systems.engines.stress + 25);
   G.evasiveActive   = true;
-  G.evasiveCooldown = G.evasiveDuration;
+  G.evasiveCooldown = G.evasiveCooldownTime;
   postLogEvent("EVASIVE PATTERN DELTA — enemy lock rate −60% for 8s.", 'good');
   postTacticalAdvisory("Executing evasive pattern — hard about on all thrusters.");
   updateEvasiveButton();
@@ -227,12 +227,10 @@ function fireSelectedArray(weaponKey) {
 
   const bonusMult = G.enemyCloakVulnTimer > 0 ? 1.4 : 1.0;
   applyDamageToEnemy(dmg * bonusMult, weapon);
-  if (weapon) {
-    parentSys.stress = Math.min(100, parentSys.stress + weapon.cost * 0.18);
-    G.renderedBeamsVector.push({ type: weapon.isPhoton ? 'photon' : weapon.parentSystem, weaponKey, trackingStartTime: performance.now(), duration: 300 });
-    if (parentSys.isWeapon) G.epsHeat = Math.min(100, G.epsHeat + weapon.cost * 0.12);
-    G.lastPlayerFireTime = performance.now();
-  }
+  parentSys.stress = Math.min(100, parentSys.stress + weapon.cost * 0.18);
+  G.renderedBeamsVector.push({ type: weapon.isPhoton ? 'photon' : weapon.parentSystem, weaponKey, trackingStartTime: performance.now(), duration: 300 });
+  if (parentSys.isWeapon) G.epsHeat = Math.min(100, G.epsHeat + weapon.cost * 0.12);
+  G.lastPlayerFireTime = performance.now();
 }
 
 // ── Apply damage to enemy ─────────────────────────────────────
@@ -527,7 +525,7 @@ function toggleSaucerSeparation() {
     G.saucerSepReconnecting    = true;
     G.saucerSepReconnectTimer  = 6000;   // 6s docking sequence
     postLogEvent("RECONNECT ORDER — saucer section on docking approach. 6s.", 'good');
-    postCrewReport('nog', "Saucer section coming about for docking. Hold steady, Captain.", 'status');
+    postCrewReport('helm', "Saucer section coming about for docking. Hold steady, Captain.", 'status');
     updateSaucerSepButton();
   } else {
     // ── Initiate separation ──
@@ -539,7 +537,7 @@ function toggleSaucerSeparation() {
     postLogEvent("SAUCER SEPARATION — stardrive section independent. Saucer running decoy.", 'good');
     postLogEvent("OFFLINE: Saucer dorsal and ventral arrays (with saucer section). All stardrive weapons nominal.", 'warn');
     postLogEvent("Stardrive agility +15% — lighter hull profile. Enemy lock −60% (dual contact).", 'good');
-    postCrewReport('nog', "Separation complete, Captain. Saucer section clear — stardrive maneuvering at full agility.", 'good');
+    postCrewReport('helm', "Separation complete, Captain. Saucer section clear — stardrive maneuvering at full agility.", 'good');
     updateSaucerSepButton();
   }
 }
@@ -578,7 +576,7 @@ function fireSaucerAutomatic() {
   // Saucer picks the weakest visible shield sector to maximise pressure
   const sectors = ['fore','port','starboard','aft'];
   const target  = sectors.reduce((a, b) => (G.threat.shields[a] || 0) < (G.threat.shields[b] || 0) ? a : b);
-  applyDamageToEnemy(dmg, null, target);
+  applyDamageToEnemy(dmg, { parentSystem:'cannon_pu', isQuantum:false, isPhoton:false, label:'Saucer Phaser Array' }, target);
 
   // Visual: push a dim beam from offset position
   G.renderedBeamsVector.push({ type:'beam', fromSaucer:true, targetSector:target,

@@ -30,9 +30,10 @@ function processAutomatedDelegation(dt) {
     const damaged = Object.keys(G.systems)
       .filter(k => (G.systems[k].health < 70 || G.systems[k].tripped) && !G.repairTeams.some(t => t.sysKey === k))
       .sort((a, b) => G.systems[a].health - G.systems[b].health);
-    G.repairTeams.forEach((team, idx) => {
-      if (!team.sysKey && damaged.length > idx) {
-        const target     = damaged[idx];
+    let _dIdx = 0;
+    G.repairTeams.forEach(team => {
+      if (!team.sysKey && _dIdx < damaged.length) {
+        const target     = damaged[_dIdx++];
         const sys        = G.systems[target];
         const damage     = Math.max(1, 100 - sys.health + (sys.tripped ? 20 : 0));
         const repairTime = Math.max(5000, (damage / 10) * 5000);
@@ -46,14 +47,14 @@ function processAutomatedDelegation(dt) {
       if (G.systems.warp_core.tripped && !G.batteryActive && G.batteryCharge > 20) {
         G.batteryActive = true;
         postLogEvent("O'Brien: Emergency battery online — warp core offline.", 'good');
-        crewReportWarpCoreTrip();
+        if (typeof postCrewReport === 'function') postCrewReport('obrien', "Emergency battery active — maintaining EPS on impulse power.", 'alert');
       }
       if (!G.cloaked && !G.shieldTransferInProgress) {
         const max        = G.player.shields.maxSectorValue;
         const sectors    = ['fore','port','starboard','aft'];
         const critSector = sectors.find(s => G.player.shields[s] < max * 0.15);
         const totalShields = sectors.reduce((sum, s) => sum + G.player.shields[s], 0);
-        if (critSector && totalShields > max * 0.5 && Math.random() < 0.01 * (dt / 1000) * 60) {
+        if (critSector && totalShields > max * 1.5 && Math.random() < 0.01 * (dt / 1000) * 60) {
           rebalanceShieldArrays();
           postLogEvent(`O'Brien: Auto-equalising — ${critSector.toUpperCase()} shields critical.`, 'warn');
         }
@@ -92,7 +93,7 @@ function processAutomatedDelegation(dt) {
 
     // Captain-only Worf autonomous abilities
     if (isCaptain) {
-      if (G.burstFireReady && G.lockProgress >= 55 && !G.cloaked &&
+      if (G.burstFireReady && G.lockProgress >= 55 && !G.cloaked && !G.enemyTractorActive &&
           G.threat.hull / G.threat.maxHull > 0.10 &&
           Math.random() < 0.015 * (dt / 1000) * 60) {
         executeBurstFireSalvo();

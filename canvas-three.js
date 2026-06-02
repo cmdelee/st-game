@@ -1193,7 +1193,11 @@ function rebuildPlayerMesh() {
 
   function _applyPlayerMesh(group) {
     if (!THREE_ready) return;
-    if (mesh_defiant) THREE_scene.remove(mesh_defiant);
+    if (mesh_defiant) {
+      mesh_defiant.traverse(c => { if (c.isMesh) { c.geometry?.dispose(); c.material?.dispose(); } });
+      THREE_scene.remove(mesh_defiant);
+      mesh_defiant = null;
+    }
     mesh_defiant = group;
     mesh_defiant.position.set(-28, 0, 0);
     THREE_scene.add(mesh_defiant);
@@ -1229,6 +1233,7 @@ function rebuildEnemyMesh() {
 
   function _applyEnemyMesh(group) {
     if (!THREE_ready || !mesh_enemyGroup) return;
+    mesh_enemyGroup.children.forEach(c => c.traverse(n => { if (n.isMesh) { n.geometry?.dispose(); n.material?.dispose(); } }));
     while (mesh_enemyGroup.children.length) mesh_enemyGroup.remove(mesh_enemyGroup.children[0]);
     mesh_enemy = group;
     mesh_enemyGroup.add(mesh_enemy);
@@ -1403,7 +1408,7 @@ function renderSpatialViewCanvas() {
       shield_enemy.material.emissive.setRGB(1.0,f*0.3,f*0.1); shield_enemy.material.color.setRGB(1.0,0.3,0.1);
     } else {
       const eShAvg=G.threat.shields?['fore','port','starboard','aft'].reduce((a,s)=>a+(G.threat.shields[s]||0),0)/4:0;
-      shield_enemy.material.opacity=0.04+(G.running&&cfg.shields?eShAvg/cfg.shields.fore:0)*0.07;
+      shield_enemy.material.opacity=0.04+(G.running&&cfg.shields?eShAvg/(cfg.shields.maxSectorValue||cfg.shields.fore||1):0)*0.07;
       shield_enemy.material.emissive.setRGB(0.5,0.1,0.1);
     }
     engine_glow_enemy.position.copy(mesh_enemyGroup.position); engine_glow_enemy.position.x+=10;
@@ -1503,7 +1508,7 @@ function renderSpatialViewCanvas() {
 
     const col = isEnemy
       ? (b.isPlasma ? 0x00ff66 : (_FACTION_BEAM_COL[b.faction || ENEMY_CONFIGS[G.enemyArchetype]?.faction] || 0xff4422))
-      : (bCols[b.type] || 0xffffff);
+      : (bCols[b.weaponKey] || bCols[b.type] || 0xffffff);
     const dur = b.duration / 1000;
 
     // Outer glow tube

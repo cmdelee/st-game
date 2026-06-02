@@ -144,7 +144,7 @@ const _MILESTONE_DATA = {
   75: {
     klingon:    { msg:"TACTICAL: Klingon vessel taking hull damage — watch for increased aggression.", tier:'warn',  crew:'worf', crewMsg:"Klingon hull at seventy-five percent, Captain. Still fully combat-capable." },
     romulan:    { msg:"TACTICAL: Romulan hull breached. Enemy may attempt evasive cloaking.", tier:'warn',          crew:'worf', crewMsg:"Romulan vessel registering hull damage. Expect a cloaking manoeuvre, Captain." },
-    cardassian: { msg:"CARDASSIAN VESSEL: 'Your weapons are noted, Defiant. Cardassia does not yield easily.'", tier:'warn', crew:null },
+    cardassian: { msg:`CARDASSIAN VESSEL: 'Your weapons are noted, ${(G.playerShipConfig||PLAYER_SHIP_CONFIGS.defiant).label}. Cardassia does not yield easily.'`, tier:'warn', crew:null },
     dominion:   { msg:"TACTICAL: Jem'Hadar at 75% hull — no defensive posture. They are accelerating.", tier:'warn', crew:'worf', crewMsg:"Jem'Hadar are taking damage and speeding up, Captain. No signs of retreat." },
     borg:       { msg:"BORG: 'Your offensive capabilities are noted. Adaptation is in progress.'", tier:'warn',     crew:null },
   },
@@ -188,7 +188,7 @@ function checkEnemyHullMilestones() {
         }
       }
       if (threshold === 10 && key === 'klingon') _triggerKlingonDeathSalvo();
-      if (threshold === 25 && key === 'romulan' && !G.enemyCloaked) triggerEnemyCloak(cfg);
+      if (threshold === 25 && key === 'romulan' && !G.enemyCloaked && G.enemyCloakVulnTimer <= 0) triggerEnemyCloak(cfg);
       if (threshold === 25 && key === 'dominion') {
         G.enemyPhaseFireMult = Math.min(G.enemyPhaseFireMult, 0.60);
       }

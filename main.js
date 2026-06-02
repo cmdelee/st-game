@@ -753,7 +753,7 @@ function initiateVesselSimulation(station) {
   // G.running is set true by startCombat() after the pre-battle briefing
 
   // Item 1: Generate stardate and mission context
-  G.stardate = 50000 + Math.floor(Math.random() * 5000) + Math.random().toFixed(1) * 1;
+  G.stardate = 50000 + Math.floor(Math.random() * 5000) + parseFloat(Math.random().toFixed(1));
   const missionContexts = {
     ktinga:               ["K'Tinga battle cruiser challenging the Bajoran corridor.", "Klingon patrol contesting approach to DS9.", "K'Tinga intercepted on disputed border patrol.", "Klingon vessel denying access to Federation outpost."],
     vor_cha:              ["Vor'Cha attack cruiser blocking supply route to Bajor.", "Klingon warship pursuing a damaged freighter.", "Vor'Cha intercepted near Cardassian border.", "Klingon cruiser challenging DS9 defence perimeter."],
@@ -975,8 +975,7 @@ function runMasterBootSequence() {
     synchronizeGlobalInterfaceDisplays();
     handleHighDpiCanvasResizing();
   }, 100);
-
-  requestAnimationFrame(masterSimulationCoreLoop);
+  // Loop is re-entered by startCombat() when combat begins — no need to prime it here
 }
 
 window.addEventListener('DOMContentLoaded', runMasterBootSequence);

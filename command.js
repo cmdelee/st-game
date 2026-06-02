@@ -380,7 +380,7 @@ function capComeAbout()    { _order('come_about',     executeComeAbout,         
 function capPicard()       { _order('picard',         executePicardManoeuver,    'nog', "Picard Manoeuvre — initiating micro-warp jump, Captain!"); }
 function capPatternOmega() { _order('pattern_omega',  executeAttackPatternOmega, 'nog', "Attack Pattern Omega engaged, Captain. All weapons to maximum yield."); }
 function capEvasiveAlpha() { _order('evasive_alpha',  executeEvasivePatternAlpha,'nog', "Evasive Pattern Alpha, aye — maximum evasion for 5 seconds."); }
-function capEmergWarp()    { _order('emerg_warp',     attemptEmergencyWarp,      'worf', "Emergency warp engaged, Captain!"); }
+function capEmergWarp()    { _order('emerg_warp',     attemptEmergencyWarp,      'nog',  "Emergency warp engaged, Captain!"); }
 
 // ── Worf — Hold Fire ──────────────────────────────────────────
 function capHoldFire() {
@@ -525,7 +525,7 @@ function _capDamageControl() {
 
 const _WORF_REPORTS = [
   () => `Targeting lock at ${Math.round(G.lockProgress)}%. Enemy hull at ${Math.round((G.threat.hull / G.threat.maxHull) * 100)}%.`,
-  () => `Fore shields ${Math.round(G.player.shields.fore)}SP. ${G.burstFireReady ? 'Burst salvo standing by.' : 'Burst salvo recharging.'}`,
+  () => `Fore shields ${Math.round(G.player.shields.fore)}SP. ${G.playerShipKey === 'enterprise_e' ? (G.burstFireReady ? 'Concentrated fire ready.' : 'Concentrated fire recharging.') : (G.burstFireReady ? 'Burst salvo standing by.' : 'Burst salvo recharging.')}`,
   () => `Weapons nominal. ${G.player.torpedoes} quantum, ${G.player.photonTorpedoes} photon torpedoes remaining.`,
   () => G.enemyCloaked
     ? "Enemy cloaked, Captain — running passive sweeps. Awaiting decloak window."

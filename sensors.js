@@ -191,7 +191,6 @@ function buildEnemySubsystemTargetGrid() {
 function setEnemyTarget(key, label, arc) {
   G.targetedSubsystemType = key;
   G.lockProgress = Math.max(0, G.lockProgress - 30);
-  G.deepScanProgress = 0;
   document.querySelectorAll('[id^="enemy-tgt-btn-"]').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById(`enemy-tgt-btn-${key}`); if (btn) btn.classList.add('active');
   const t = document.getElementById('txt-current-target'); if (t) t.textContent = label.toUpperCase();
@@ -211,13 +210,13 @@ function toggleActiveSensorSystems() {
     // Compute from base to avoid multiplicative drift on repeated toggles
     const diff = DIFFICULTY[currentDifficulty];
     const base = Math.round(ENEMY_CONFIGS[G.enemyArchetype].fireInterval * diff.enemyFireMult);
-    const withDisrupt = G.permanentScanBonuses.weapon_disrupt ? Math.round(base * 1.30) : base;
+    const withDisrupt = G.permanentScanBonuses?.weapon_disrupt ? Math.round(base * 1.30) : base;
     G.threat.fireInterval = Math.round(withDisrupt * 0.85);
     postLogEvent("Active scanning on — enemy also benefits from better targeting.", 'warn');
   } else {
     const diff = DIFFICULTY[currentDifficulty];
     const base = Math.round(ENEMY_CONFIGS[G.enemyArchetype].fireInterval * diff.enemyFireMult);
-    G.threat.fireInterval = G.permanentScanBonuses.weapon_disrupt ? Math.round(base * 1.30) : base;
+    G.threat.fireInterval = G.permanentScanBonuses?.weapon_disrupt ? Math.round(base * 1.30) : base;
     postLogEvent("Passive tracking restored.", 'info');
   }
 }

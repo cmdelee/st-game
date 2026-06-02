@@ -148,7 +148,7 @@ function synchronizeGlobalInterfaceDisplays() {
   if (rl) {
     if (G.cloaked)                   { rl.textContent = 'OFFLINE';               rl.style.color = 'var(--p)';     }
     else if (G.shieldUnderAttackTimer > 0) { rl.textContent = '⚠ HIT';           rl.style.color = 'var(--red)';  }
-    else                             { rl.textContent = `↑+${G.shieldRegenRate.toFixed(1)}/s`; rl.style.color = 'var(--green)'; }
+    else                             { rl.textContent = `↑+${(G.shieldRegenRate || 0).toFixed(1)}/s`; rl.style.color = 'var(--green)'; }
   }
 
   // Enemy hull + shields (left panel) — sensor accuracy degrades display
@@ -198,7 +198,7 @@ function synchronizeGlobalInterfaceDisplays() {
   // Cloak / Saucer sep power bar (right)
   const _isEntUI = G.playerShipKey === 'enterprise_e';
   const cpb = document.getElementById('bar-cloak-power');
-  if (cpb) cpb.style.width = _isEntUI ? `${G.saucerSepCooldown > 0 ? Math.max(0,(1-G.saucerSepCooldown/50000)*100) : G.saucerSepActive ? 100 : 100}%` : `${G.cloakPowerReserve}%`;
+  if (cpb) cpb.style.width = _isEntUI ? `${G.saucerSepCooldown > 0 ? Math.max(0,(1-G.saucerSepCooldown/60000)*100) : G.saucerSepActive ? 100 : 100}%` : `${G.cloakPowerReserve}%`;
   const cps = document.getElementById('txt-cloak-power-status');
   if (cps) {
     if (_isEntUI) {
@@ -218,7 +218,7 @@ function synchronizeGlobalInterfaceDisplays() {
   if (csb) {
     if (_isEntUI) {
       if (G.saucerSepReconnecting) { csb.style.display='flex'; if(cst)cst.textContent='◯ DOCKING — saucer on approach'; csb.style.color='var(--warn)'; csb.style.borderColor='var(--warn)'; if(cpd)cpd.textContent=`${Math.ceil(G.saucerSepReconnectTimer/1000)}s`; }
-      else if (G.saucerSepActive) { csb.style.display='flex'; if(cst)cst.textContent='◯ SEPARATED — Saucer firing auto (40%) · Stardrive +20% · Lock −66%'; csb.style.color='var(--green)'; csb.style.borderColor='var(--green)'; if(cpd)cpd.textContent=''; }
+      else if (G.saucerSepActive) { csb.style.display='flex'; if(cst)cst.textContent='◯ SEPARATED — Saucer firing auto (40%) · Stardrive +20% · Lock −60%'; csb.style.color='var(--green)'; csb.style.borderColor='var(--green)'; if(cpd)cpd.textContent=''; }
       else csb.style.display='none';
     } else {
       if (G.cloakVulnTimer > 0)    { csb.style.display='flex'; if(cst)cst.textContent='⚡ CLOAK TRANSITION — NO SHIELDS'; csb.style.color='var(--red)'; csb.style.borderColor='var(--red)'; if(cpd)cpd.textContent=''; }
@@ -314,7 +314,7 @@ function synchronizeGlobalInterfaceDisplays() {
     }
   };
   const _primKeys = _isEnt2
-    ? ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose']
+    ? (G.playerShipConfig?.primaryWeaponKeys || PLAYER_SHIP_CONFIGS.enterprise_e.primaryWeaponKeys)
     : ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
   _arcGrey('btn-cannons',    _primKeys, 'cannons');
   _arcGrey('btn-nose',       ['emitter_nose'],         'nose');

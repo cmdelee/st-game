@@ -234,10 +234,10 @@ G.score = { totalDmgDealt, volleysFired, hullBreaches, systemsDestroyed,
 | `cannon_stbd_upper` | Stbd Upper Pulse Cannon | **22** | 20 | fore | cannon_su |
 | `cannon_stbd_lower` | Stbd Lower Pulse Cannon | **22** | 20 | fore, starboard | cannon_sl |
 | `emitter_nose` | Heavy Nose Array Emitter | **65** | 50 | fore only | nose_beam |
-| `torpedo_quantum` | Fwd Quantum Tube | **125** | 85 | fore, port, starboard | torpedoes |
-| `torpedo_photon` | Fwd Photon Tube | 60 | 30 | fore, port, starboard | torpedoes |
-| `torpedo_quantum_aft` | Aft Quantum Tube | **125** | 85 | aft, port, starboard | torpedoes |
-| `torpedo_photon_aft` | Aft Photon Tube | 60 | 30 | aft, port, starboard | torpedoes |
+| `torpedo_quantum` | Fwd Quantum Tube | **125** | 45 | fore, port, starboard | torpedoes |
+| `torpedo_photon` | Fwd Photon Tube | 60 | 15 | fore, port, starboard | torpedoes |
+| `torpedo_quantum_aft` | Aft Quantum Tube | **125** | 45 | aft, port, starboard | torpedoes |
+| `torpedo_photon_aft` | Aft Photon Tube | 60 | 15 | aft, port, starboard | torpedoes |
 
 Defiant arc coverage: FORE = all 4 cannons + nose + fwd torps. AFT = aft torps only.
 
@@ -256,11 +256,11 @@ Nine Type-XII phaser arrays across all hull sections, sharing 5 weapon system ke
 | `cannon_stbd_lower` | Saucer Aft Arrays | 35 | 26 | aft/port/stbd | cannon_sl |
 | `emitter_nose` | Primary Stardrive Emitter | **90** | 65 | fore | nose_beam |
 | `phaser_aft_emitter` | Aft Stardrive Emitter | **55** | 42 | aft/port/stbd | nose_beam |
-| `torpedo_quantum` | Fwd Quantum Tube A | **125** | 85 | fore/port/stbd | torpedoes |
-| `torpedo_quantum_b` | Fwd Quantum Tube B | **125** | 85 | fore/port/stbd | torpedoes |
-| `torpedo_photon` | Fwd Photon Tube | 65 | 30 | fore/port/stbd | torpedoes |
-| `torpedo_quantum_aft` | Aft Quantum Tube | **125** | 85 | aft/port/stbd | torpedoes |
-| `torpedo_photon_aft` | Aft Photon Tube | 65 | 30 | aft/port/stbd | torpedoes |
+| `torpedo_quantum` | Fwd Quantum Tube A | **125** | 45 | fore/port/stbd | torpedoes |
+| `torpedo_quantum_b` | Fwd Quantum Tube B | **125** | 45 | fore/port/stbd | torpedoes |
+| `torpedo_photon` | Fwd Photon Tube | 65 | 15 | fore/port/stbd | torpedoes |
+| `torpedo_quantum_aft` | Aft Quantum Tube | **125** | 45 | aft/port/stbd | torpedoes |
+| `torpedo_photon_aft` | Aft Photon Tube | 65 | 15 | aft/port/stbd | torpedoes |
 
 Enterprise arc coverage: FORE = 7 phaser arrays + fwd torps. AFT = 4 arrays + aft torps. The ship has meaningful firepower on every vector.
 
@@ -268,7 +268,10 @@ Enterprise `primaryWeaponKeys` = all 9 phaser array keys (used for "⚡ All Phas
 
 The capacitor bar grid for Enterprise-E shows 6 system-level bars (one per weapon system, 3-column compact layout) rather than 14 individual weapon bars, since arrays sharing a system always show the same cap%.
 
-**Shared torpedo mechanics (both ships):**
+**Torpedo mechanics:**
+- `fireTorpedoBanks()` fires **both launchers** of the active bay simultaneously (80ms stagger). Quantum first; photon fallback when quantum magazine empty. Enterprise-E uses `torpedo_quantum` + `torpedo_quantum_b` as distinct fwd tubes; other ships fire the same key twice
+- Cap costs are halved (quantum 45, photon 15) so both launchers can fire from a single full charge (2×45=90%)
+- Fwd tubes use `G.systems.torpedoes.cap`; aft tubes use `G.systems.torpedoes.aftCap`. Independent charging/display
 - Quantum ≥60% lock → 85–115% yield. <60% lock → ~55%. Blind-fire (cloaked) → 40%
 - Photon: flat damage, no lock required
 - `isQuantum`/`isPhoton` flags drive all branching — key names are not used
@@ -727,6 +730,47 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 78. `executeConcentratedPhaserFire` did not filter saucer-section weapons from the `ready` array, inflating the logged count when saucer was separated — added `_isSaucerWeapon` check
 79. `processBattery` called `handleWarpCoreTrip()` when battery exhausted while warp core was already tripped, re-applying the EPS cascade stress spike and potentially causing a second set of system trips — replaced with a simple log message
 80. `masterSimulationCoreLoop` re-scheduled itself every frame via `requestAnimationFrame` even when `G.running=false` (setup, post-game), burning CPU/battery continuously — loop now exits immediately when not running; `startCombat()` re-enters the loop when combat begins
+81. Weapon hardpoints added — beams and torpedoes now fire from their actual hull positions: Defiant pulse cannons from nacelle flanks, nose emitter from bow tip, fwd torpedo launcher under bow, aft tube at stern. Enterprise-E: saucer dorsal/ventral/port/stbd/aft arrays at saucer rim, stardrive emitter at deflector, aft emitter at stern
+82. Enemy beam visuals added — `executeThreatCounterVolley` now pushes to `renderedBeamsVector` with `fromEnemy:true`, faction colour, and hardpoint lookup. Plasma beams are green; faction beams use `_FACTION_BEAM_COL`. Enemy torpedoes also spawn flying balls in `inFlightTorpedoes`
+83. Player beam `weaponKey` now flows into `renderedBeamsVector` so exact array (e.g. `phaser_saucer_port`) maps to its hardpoint instead of falling back to parent system only. Beam colour lookup updated to use `weaponKey` before `type` fallback
+84. All torpedo bays now have independent capacitors — `cap` (fwd quantum), `aftCap` (aft quantum/photon) tracked separately so firing one tube does not drain others' bars. Derived from weapon arc at runtime — no config flag needed
+85. `fireTorpedoBanks()` redesigned to fire both launchers per bay simultaneously (80ms stagger) — quantum first, photon fallback. Enterprise-E uses `torpedo_quantum` + `torpedo_quantum_b` as distinct fwd tubes; all other ships fire the same key twice. Torpedo cap costs lowered to 45/15 (quantum/photon) so both launchers fire from a single full charge
+86. `executeEvasivePattern` set `G.evasiveCooldown = G.evasiveDuration` (8s) instead of `G.evasiveCooldownTime` (20s) — evasive CD was effectively 8s instead of the documented 20s
+87. `fireSaucerAutomatic` passed `null` as weapon to `applyDamageToEnemy` — would crash with TypeError on Borg adaptive shield check. Now passes a proper phaser weapon stub
+88. Saucer separation `postCrewReport` hardcoded `'nog'` speaker — wrong name/colour on Enterprise-E (Data is helm officer). Fixed to `'helm'` key
+89. `G.threat.shields` undefined before first game start — `G.threat` now initialised with all four shield sectors at 0 in `state.js` to prevent pre-game null dereference
+90. `G.permanentScanBonuses` accessed without null-safety in `toggleActiveSensorSystems` — changed to optional chaining `?.weapon_disrupt`
+91. `setEnemyTarget` reset `G.deepScanProgress = 0` (wrong field) on subsystem target change, corrupting the in-progress scan bar display — line removed
+92. `G.threat` enemy shield regen used `G.enemySystems.shields_sys` (nonexistent key) — always returned undefined, meaning enemy shield health never scaled enemy regen down. Fixed to `G.enemySystems.shields`
+93. Same `shields_sys` bug in `engineering.js` enemy regen calculation — fixed to `G.enemySystems.shields`
+94. Enemy cloak power drain used `G.cloakPowerDrainRate` (the player's drain rate) — enemy cloak now uses a hardcoded 4%/s constant independent of player config
+95. `G.enemyLockProgress` not decayed while enemy was cloaked — enemy lock now reduces by 2/s during cloak, same logic as player lock decay
+96. `triggerEnemyCloak` at Romulan 25% hull milestone had no guard for enemy already cloaking/in-transition — added `!G.enemyCloaked && G.enemyCloakVulnTimer <= 0` check to prevent double-cloak corruption
+97. `G.enemyPreferredSector.toUpperCase()` crashed on first render frame before first manoeuvre fired — guarded with `|| 'fore'` fallback
+98. `queueSystemRepair` tiebreak comparison was inverted — picked the team with the most work remaining (least done) to redirect, instead of the team nearest completion. Fixed comparison direction
+99. Repair ETA log ignored crew efficiency — displayed time was shorter than actual when engineering crew was wounded. Fixed to include `getCrewEfficiency('engineering')`
+100. Auto-tac summary denominator hardcoded `/5` for Enterprise-E but `nose_beam` was excluded from the healthy count; Defiant showed `/4` correctly. Now uses a dynamic key list including `nose_beam` for both ships
+101. `auto-delegation.js` repair team assignment used team index as damaged-list index — second team got the second-worst system even when both teams were free and first-worst was unrepaired. Fixed with independent `_dIdx` counter
+102. `crewReportWarpCoreTrip()` called when auto-delegation activated emergency battery — wrong event report. Replaced with direct `postCrewReport` battery activation message
+103. Auto-O'Brien shield equalise threshold `totalShields > max * 0.5` was always true (comparing sum of 4 sectors against half of one sector max) — raised to `max * 1.5` (~38% of full pool)
+104. Auto-Worf burst salvo in captain mode missing `!G.enemyTractorActive` guard — burst would be attempted and log-spam when tractor beam was active
+105. `capEmergWarp` attributed to `'worf'` crew instead of `'nog'` — emergency warp is helm manoeuvre, now correctly attributed to Nog/Data
+106. `_WORF_REPORTS[1]` hardcoded "Burst salvo" text on Enterprise-E — now shows "Concentrated fire" when `G.playerShipKey === 'enterprise_e'`
+107. Cardassian hull milestone dialogue hardcoded "Defiant" — now uses `G.playerShipConfig.label` dynamically
+108. `canvas-2d.js` enemy shield arc opacity divided by `cfg.shields[sa.key]` with no zero/undefined guard — `NaN` globalAlpha made canvas transparent for a frame. Fixed with `|| 1` fallback
+109. `canvas-2d.js` Enterprise-E schematic `G.shieldRegenRate.toFixed(1)` had no null guard — inconsistent with Defiant schematic. Fixed with `|| 0` fallback
+110. `ui.js` `G.shieldRegenRate.toFixed(1)` in `synchronizeGlobalInterfaceDisplays` had no null guard — could throw on first frame before `recalculateShieldRegenRate()`. Fixed with `|| 0`
+111. `ui.js` Enterprise-E `_primKeys` arc-grey check hardcoded only 5 weapon keys but `primaryWeaponKeys` has 9 — "×N IN ARC" label never cleared suffix even at full arc coverage. Fixed to use `G.playerShipConfig.primaryWeaponKeys` directly
+112. `ui.js` saucer-sep power bar used `50000` as cooldown divisor but actual CD is `60000ms` — bar showed 100% when 10s remained. Fixed to `60000`
+113. `ui.js` cloak-status-bar text said "Lock −66%" after bug #77 fixed the mechanic to −60% — UI string updated to match
+114. `main.js` `G.stardate` used `Math.random().toFixed(1) * 1` string-to-number coercion — replaced with `parseFloat(Math.random().toFixed(1))`
+115. `main.js` dead `requestAnimationFrame(masterSimulationCoreLoop)` call at boot (bug #80 left this behind) — removed; loop is entered by `startCombat()` only
+116. `canvas-three.js` mesh disposal on `rebuildPlayerMesh` and `rebuildEnemyMesh` — old geometry and materials were removed from scene but never disposed, leaking GPU memory on every ship switch. Now traverses and disposes before removal
+117. `canvas-three.js` enemy shield bubble opacity divided by `cfg.shields.fore` — inconsistent across enemy types with different fore values. Fixed to use `cfg.shields.maxSectorValue || cfg.shields.fore`
+118. `canvas-three.js` beam colour lookup used `bCols[b.type]` — `b.type` is parent system key but `_PLAYER_BEAM_COL` indexes by parent system, while `b.weaponKey` is the exact array key. Fallback chain now tries `weaponKey` first, then `type`
+119. `config.js` duplicate `label` property on `romulan_bop.systems.plasma_fwd` — second value silently overwrote first. Duplicate removed
+120. `config.js` Jem'Hadar battleship intel card stated "1100 hull" but actual `hull` value is 920 — corrected to match config
+121. `helm.js` torpedo status showed "LOW" when quantum was empty but photon torpedoes were still available — condition updated to `torpedoes > 0 || photonTorpedoes > 0`
 
 ---
 

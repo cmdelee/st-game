@@ -17,7 +17,7 @@ function processEnemyCloakDecision(dt) {
   if (G.enemyCloakVulnTimer > 0) { G.enemyCloakVulnTimer = Math.max(0, G.enemyCloakVulnTimer - dt); return; }
 
   if (G.enemyCloaked) {
-    G.enemyCloakPower = Math.max(0, G.enemyCloakPower - G.cloakPowerDrainRate * (dt / 1000));
+    G.enemyCloakPower = Math.max(0, G.enemyCloakPower - 4 * (dt / 1000));  // 4%/s fixed drain (independent of player cloak rate)
     ['fore','port','starboard','aft'].forEach(s => { G.threat.shields[s] = 0; });
     if (G.enemyCloakPower <= 0) { triggerEnemyDecloak(cfg, 'power exhausted'); return; }
     const repDone = G.enemyRepairQueue.length === 0;
@@ -69,7 +69,7 @@ function triggerEnemyDecloak(cfg, reason) {
   setTimeout(() => {
     if (G.dead) return;
     G.enemyCloakVulnTimer = 0;
-    const eSS        = G.enemySystems.shields_sys;
+    const eSS        = G.enemySystems.shields;
     const eRegen     = (eSS ? eSS.health / 100 : 1) * 1.2;
     const cloakSecs  = (performance.now() - G.enemyCloakEngagedAt) / 1000;
     const regenEarned = eRegen * cloakSecs;
@@ -246,6 +246,7 @@ function processEnemyAI(dt) {
   if (G.enemyCloaked) {
     if (G.lockProgress > 15) G.lockProgress = Math.max(0, G.lockProgress * 0.15);
     G.lockProgress = Math.max(0, G.lockProgress - 4 * sc);
+    G.enemyLockProgress = Math.max(0, G.enemyLockProgress - 2 * sc);  // enemy also loses lock while cloaked
     const sl = document.getElementById('lbl-enemy-state-left');
     if (sl) {
       const pw   = Math.round(G.enemyCloakPower);
@@ -383,8 +384,8 @@ function processEnemyAI(dt) {
     const sl  = document.getElementById('lbl-enemy-state-left');
     const rng = cfg.prefersCloseRange ? ` [${G.enemyRangeBracket.toUpperCase()}]` : '';
     const m   = {
-      neutral: `Holding — ${G.enemyPreferredSector.toUpperCase()} exposed${rng}`,
-      angling: `Manoeuvring: ${G.enemyPreferredSector.toUpperCase()}${rng}`,
+      neutral: `Holding — ${(G.enemyPreferredSector || 'fore').toUpperCase()} exposed${rng}`,
+      angling: `Manoeuvring: ${(G.enemyPreferredSector || 'fore').toUpperCase()}${rng}`,
     };
     if (sl) { sl.textContent = m[G.enemyManeuverState] || '—'; sl.style.color = G.enemyManeuverState === 'angling' ? 'var(--warn)' : '#aabbcc'; }
   }
