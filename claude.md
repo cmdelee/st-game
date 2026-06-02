@@ -20,18 +20,18 @@ index.html (HTML shell + script tags)
 | File | Responsibility |
 |---|---|
 | `config.js` | All game constants: `C` colour palette, `DIFFICULTY`, `ENEMY_CONFIGS`, `ARRAYS_DICTIONARY`, `PLAYER_SHIP_CONFIGS` (both ships — stats, weapon arrays, crew, labels), `CREW_STATIONS`, `WARP_CORE`, `ABLATIVE_ARMOUR`, `HELM_SPEED_CONFIG`, `CAMPAIGN_ORDER`; `let currentDifficulty` |
-| `state.js` | `G` game state object; `getWarpOutput()`, `getTotalAllocatedPower()`, `setDifficulty()`, `postLogEvent()` |
+| `state.js` | `G` game state object; `SHIELD_SECTORS` constant; `getStrongestShieldSector()`, `getWeakestShieldSector()`; `getWarpOutput()`, `getTotalAllocatedPower()`, `setDifficulty()`, `postLogEvent()` |
 | `engineering.js` | Warp core trip, emergency battery, ablative armour processing, shield regen rate calculation, repair queue (2 independent teams), engineering matrix UI, power allocation (`tuneBusAllocation`), power presets (`applyPowerPreset`), EPS conduit conduction + thermal buildup, system degradation thresholds, shield manipulation |
 | `crew.js` | Crew casualties (`inflictCrewCasualty`), efficiency modifiers (`getCrewEfficiency`, `getMedicalEfficiency`, `getHelmEvasiveModifier`), `updateCrewStatusDisplay`, `attemptEmergencyWarp`, `updateWarpAvailability`, `postTacticalAdvisory` |
 | `sensors.js` | Deep scan system (`startDeepScan`, `processDeepScan`, `_SCAN_RESULTS`, `checkBorgScanExpiry`), active sensor toggle, enemy subsystem target grid (`buildEnemySubsystemTargetGrid`, `setEnemyTarget`); scan results grant permanent bonuses (shields/fissures/disrupt/tetryon) until Borg expiry check |
-| `tactical.js` | Player weapons: burst-fire/concentrated phaser fire, shield freq rotation, evasive, `fireSelectedArray`, `fireEnergyWeapons`, `fireTorpedoBanks`, `fireAllWeapons`, `applyDamageToEnemy`, overload modes; Defiant: `firePulseCannons`, `toggleCloakingDevice`; Enterprise-E: `fireAllPhaserArrays`, `toggleSaucerSeparation`, `fireSaucerAutomatic`, `executeConcentratedPhaserFire`, `executeMaxPhaserOutput`, `executeTricobalWarhead` |
+| `tactical.js` | Player weapons: burst-fire/concentrated phaser fire, shield freq rotation, evasive, `fireSelectedArray`, `fireEnergyWeapons`, `fireTorpedoBanks`, `fireAllWeapons`, `applyDamageToEnemy` (subsystem hits: 45% shield absorb → 62% sys + 22% hull bleed), overload modes; Defiant: `firePulseCannons`, `toggleCloakingDevice`; Enterprise-E: `fireAllPhaserArrays`, `toggleSaucerSeparation`, `fireSaucerAutomatic`, `executeConcentratedPhaserFire`, `executeMaxPhaserOutput`, `executeTricobalWarhead` |
 | `helm.js` | Helm timer processing (`processHelmTimers`), speed control (`setHelmSpeed`), attack vector (`setHelmAttackVector`), engagement range (`setPlayerRangeBracket`), attack run, come about, Picard Manoeuvre, Attack Pattern Omega, Evasive Pattern Alpha, helm panel UI (`updateHelmPanel`) |
 | `encounter-phases.js` | Faction encounter phase arcs (`initEncounterPhases`, `processEncounterPhase`, `_applyPhase`); hull milestone events at 75/50/25/10% (`checkEnemyHullMilestones`, `_MILESTONE_DATA`); Klingon death salvo (`_triggerKlingonDeathSalvo`); `_getFactionKey` helper |
 | `enemy-ai.js` | Enemy cloaking AI (`processEnemyCloakDecision`, `triggerEnemyCloak/Decloak`), sensor ghosts (`processEnemySensorGhosts`), mechanics timers (`processNewMechanicsTimers`), Jem'Hadar ramming (`initiateRammingRun`, `executeRammingImpact`), enemy AI loop (`processEnemyAI`), enemy fire (`executeThreatCounterVolley`) |
 | `auto-delegation.js` | Computer management of uncrewed stations (`processAutomatedDelegation`): auto-engineering relay resets + repair dispatch, auto-tactical fire cycle, captain-mode Worf/O'Brien/Nog autonomous behaviours |
 | `command.js` | Captain's Chair: `postCrewReport`, `_renderCrewComms` (uses `_crewLabel`/`_crewColour` getters — ship-aware); `_CAP_CD` cooldowns; 40+ order functions; manoeuvre ticker; ship-specific periodic reports (`_WORF_REPORTS`, `_OBRIEN_REPORTS`/`_LAFORGE_REPORTS`, `_NOG_REPORTS`/`_DATA_REPORTS`); `initCaptainStation()` |
 | `canvas-three.js` | Three.js 3D spatial battle view; `buildDefiantGeometry()` + `buildSovereignGeometry()` + `rebuildPlayerMesh()` — swaps player mesh on ship select; `buildSaucerSepGeometry()` — independent saucer section; 3D beam tubes, burst shockwave rings, torpedo impact spheres, nacelle exhaust particles, ramming trajectory indicator; `_FACTION_GLOW_COL` / `_FACTION_BEAM_COL` colour maps |
-| `canvas-2d.js` | Enemy schematic; hull schematic (`_renderDefiantSchematic` / `_renderEnterpriseESchematic` — branches on `G.playerShipKey`); power distribution canvas |
+| `canvas-2d.js` | Enemy schematic, hull schematic (`_renderDefiantSchematic` / `_renderEnterpriseESchematic`), power distribution canvas. Shared `_lcarsHdr(ctx,t,x,y,w,col)` / `_row(ctx,lbl,val,pct,col,…)` / `_trow` helpers. All panels use LCARS-style filled section headers, inline mini-bars for hull/shields/systems/ordnance/lock, background grid, scan bonus readout, lock reticle arc, node glow radials. |
 | `ui.js` | Deck switching (`toggleActiveDeck` — handles tactical/engineering/helm/captain), global UI sync (`synchronizeGlobalInterfaceDisplays`), scoring with hull integrity bonus (`calculateFinalScore`), end-game (`concludeSimulationRun`) |
 | `main.js` | Game loop; simulation init (`initiateVesselSimulation`); boot; ship selection (`selectPlayerShip`, `rebuildWeaponFireMatrix`, `_rebuildCapBarGrid`, `_updateSpecialAbilityButtons`); campaign mode; `returnToSetup()` |
 
@@ -426,6 +426,16 @@ Each enemy archetype has 2–4 entries in `_SCAN_RESULTS`; possible bonus types:
 
 Borg scans expire when `borgEscalationLevel` increases (`checkBorgScanExpiry`); Borg scan cooldown is 10s vs 60s for all others.
 
+### Subsystem targeting — collateral hull damage
+When `G.targetedSubsystemType` is a system key (not `'hull'` or `'shields'`), `applyDamageToEnemy` applies a three-way damage split:
+1. **Shields** on the attack vector absorb up to 45% of the shot (partial bypass — focused beam, not full absorption like hull-targeting mode)
+2. **Subsystem** takes 62% of total damage regardless of shield state (beam concentrates on the target system)
+3. **Hull** bleeds 22% of penetrating damage (collateral from energy passing through ship structure — higher when shields are already down: ~22 vs ~12)
+
+Log line shows both: `Subsystem [Disruptor Array]: 74% hull −12.`
+
+This prevents grinding subsystems with zero hull risk while still rewarding focused targeting over hull shots.
+
 ### Borg per-weapon adaptation
 - `G.enemyAdaptiveResist[weaponKey]` tracks 0–0.65 resistance per weapon
 - Builds **+0.024 per hit (28 hits to cap)** — reduced from 0.04 because the Defiant's weapons were specifically engineered to cycle frequency against Borg adaptation (*The Search*); damage multiplied by `(1 - resist)`
@@ -771,6 +781,10 @@ diffMult       = 1.0 / 1.4 / 2.0            (normal/hard/elite)
 119. `config.js` duplicate `label` property on `romulan_bop.systems.plasma_fwd` — second value silently overwrote first. Duplicate removed
 120. `config.js` Jem'Hadar battleship intel card stated "1100 hull" but actual `hull` value is 920 — corrected to match config
 121. `helm.js` torpedo status showed "LOW" when quantum was empty but photon torpedoes were still available — condition updated to `torpedoes > 0 || photonTorpedoes > 0`
+122. `SHIELD_SECTORS` constant + `getStrongestShieldSector()` / `getWeakestShieldSector()` added to `state.js`; 22 literal `['fore','port','starboard','aft'].forEach/reduce` instances across 7 files replaced with the shared constant/helpers
+123. `_getFactionKey` in `encounter-phases.js` simplified from 6-line if-chain to `(cfg.faction||'').toLowerCase()||null`; `toggleActiveSensorSystems` fire interval computation deduped (8 lines → 3); `_SYS_ABBREV` map extracted to module-level constant in `ui.js` eliminating duplicate inline maps; `_cleanupPostBattleOverlays()` helper deduplicates post-battle cleanup in `ui.js` and `main.js`; `THREE.Vector3` camera lookAt reused across frames; player/enemy mesh traversal gated — skipped when ship is fully opaque (60fps win); `processNewMechanicsTimers` 4 copy-paste cooldown blocks replaced with data-table loop; dead `scanType` parameter removed from `_capScan`; `_capDamageControl` crew name via `_crewLabel('obrien')` instead of ship-key branch; `processAutomatedDelegation` relay-reset loop early-exits when no systems are tripped; `_setManoeuvreBtn` helper replaces 6 copy-paste helm button state blocks (48 lines → 8)
+124. 2D canvas readout panels redesigned — LCARS-style filled section headers, inline mini-bars for hull/shields/systems/ordnance/lock across all three canvases; enemy panel gains lock reticle arc with corner brackets, scan bonus readout, adaptive resistance bars per-weapon, node glow radials, hull damage pulse; hull schematics gain EPS heat bar, torpedo counts, regen rate row, background grid, title border box; power distribution gains gradient bar fills, cap% indicator strip, EPS heat meter, styled headroom footer; shared `_lcarsHdr`/`_row`/`_trow` helpers replace per-function `dRow`/`dHdr` duplication
+125. Subsystem targeting now deals collateral hull damage — shields absorb up to 45%, subsystem takes 62%, hull bleeds 22% of penetrating energy; log line shows both hits: `Subsystem [X]: 74% hull −12.` Prevents ignoring hull entirely while grinding subsystems
 
 ---
 
@@ -890,3 +904,25 @@ header                 — brand + accent line + stardate + mission context
 | `.captain-orders-grid` | Button grid (7-col Worf, 4-col O'Brien, 8-col Nog) |
 | `.comms-line / .comms-speaker / .comms-text` | Individual crew report line |
 | `.comms-alert / .comms-good` | Alert (orange text) / good (green text) report variants |
+
+---
+
+## Deferred improvements (identified, not yet applied)
+
+Identified during the June 2026 simplification review. Tick off as completed.
+
+### Performance
+- [ ] **DOM element caching** — `synchronizeGlobalInterfaceDisplays`, `refreshEngineeringPanelGraphics`, `updateHelmPanel`, `_updateCaptainOrderButtons`, `processEnemyAI` all call `getElementById` / `querySelector` on every frame. Cache all hot-path element refs at game start into a `_EL` map; invalidate only on deck switch. Estimated: ~60 DOM queries/frame eliminated.
+- [ ] **`getWarpOutput` / `getTotalAllocatedPower` computed 3× per frame** — called independently from `synchronizeGlobalInterfaceDisplays`, `updateHelmPanel`, and `updateEngUtilityPanel` in the same tick. Compute once at top of `masterSimulationCoreLoop` and pass down.
+- [ ] **`recalculateShieldRegenRate` DOM write every frame** — rate only changes when power/health changes; add dirty flag, skip DOM update when value unchanged.
+- [ ] **Button update throttling** — `updateEvasiveButton`, `updateShieldFreqButton`, `_updateDeepScanButton` update DOM 60×/s for values that change once per second. Only update when `Math.ceil(timer/1000)` differs from the previous frame.
+
+### Simplification
+- [ ] **`processHelmTimers` data-table** — 5 copy-paste active/cooldown timer blocks (attack run, come-about, Picard, Omega, Alpha). Each `onExpire` is different so needs care; extract shared tick logic into `_tickManoeuvre(activeKey, timerKey, cdKey, onExpire)` helper.
+- [ ] **`_capTargetSystem` / `capTgtWeaponsAny` consolidation** — two functions share 80% of logic; extend `_capTargetSystem` to accept an array of hint strings so `capTgtWeaponsAny` calls it instead of duplicating the match loop.
+- [ ] **`firePulseCannons` / `fireAllPhaserArrays` one-liner wrappers** — both are single-line delegates to `fireEnergyWeapons()`; remove wrappers and call `fireEnergyWeapons()` directly at the two call sites in `auto-delegation.js`.
+
+### Architecture
+- [ ] **`G.threat.fireInterval` as derived value** — currently mutated independently by `initiateVesselSimulation`, `_commitDeepScan`, `toggleActiveSensorSystems`, `checkBorgScanExpiry`, and `processEnemyAI`. A `getEffectiveFireInterval()` computed from base × difficulty × modifier flags would eliminate all mutation sites and prevent multiplicative drift (root cause of bug #70).
+- [ ] **`initiateVesselSimulation` module reset pattern** — 220-line monolith directly zeros 50+ G fields from all modules. Each module should expose an `initForBattle()` / `reset()` function owning its own state; `initiateVesselSimulation` calls them. Root cause of bugs #34, #36, #60, #61 (missing resets found only when stale state caused visible bugs).
+- [ ] **Enemy regen in `computeConduitConduction`** — enemy shield regen logic lives inside the player EPS conduit tick function. Move to `processEnemyAI` where all other enemy state updates live. Root cause of bugs #92, #93 (`shields_sys` key error went undetected because it was in the wrong file).
