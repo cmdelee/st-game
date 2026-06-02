@@ -37,8 +37,8 @@ const _MODEL_CONFIG = {
 const _MODEL_ROTATIONS = {
   // Long axis Z, Y-up native → rotate Z to +X
   defiant:              { x:0,            y:Math.PI/2,   z:0 },
-  // Y-up native STL; nose at −X in STL → y:π flips to +X; preserves upright
-  enterprise_e:         { x:0,            y:Math.PI,     z:0 },
+  // Z-up STL; x:-π/2 maps Z→+Y (dorsal up); y:π maps nose −X→+X
+  enterprise_e:         { x:-Math.PI/2,   y:Math.PI,     z:0 },
   // Y-up native STL; nose empirically requires y:π to face +X
   ktinga:               { x:0,            y:Math.PI,     z:0 },
   // Y-up native STL; nose at +Z facing −X in STL → y:−π/2 maps to +X
