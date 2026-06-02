@@ -1,0 +1,15 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+*.suo
+*.user
+
+# Node (if ever added)
+node_modules/
+
+# Model files are intentionally committed so GitHub Pages can serve them.
+# GLB/OBJ files live in /models/ and are tracked normally.
