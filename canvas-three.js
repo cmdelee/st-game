@@ -35,7 +35,7 @@ const _MODEL_CONFIG = {
 // Common fixes: y:Math.PI (180° flip), z:Math.PI/2 (roll upright), x:Math.PI/2 (pitch up)
 const _MODEL_ROTATIONS = {
   defiant:              { x:0,           y:0,        z:0 },
-  enterprise_e:         { x:0,           y:0,        z:0 },
+  enterprise_e:         { x:-Math.PI/2,  y:0,        z:0 },
   ktinga:               { x:0,           y:0,        z:0 },
   vor_cha:              { x:0,           y:0,        z:0 },
   romulan_bop:          { x:0,           y:0,        z:0 },
