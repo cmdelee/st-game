@@ -30,21 +30,33 @@ const _MODEL_CONFIG = {
   borg_probe:           { file:'models/borg_probe.stl',           format:'stl', targetSize:16 },
 };
 
-// Per-ship rotation tuning — adjust if a model loads in the wrong direction.
-// Ships should face +X (nose pointing toward positive X axis).
-// Common fixes: y:Math.PI (180° flip), z:Math.PI/2 (roll upright), x:Math.PI/2 (pitch up)
+// Per-ship rotation — derived from actual STL bounding-box analysis.
+// Each model's dominant (longest) axis and height axis are known;
+// rotations align the ship so nose→+X and height→+Y for Three.js.
+// Flip y by Math.PI if a ship appears to face backward.
 const _MODEL_ROTATIONS = {
-  defiant:              { x:0,           y:0,        z:0 },
-  enterprise_e:         { x:-Math.PI/2,  y:Math.PI/2, z:0 },
-  ktinga:               { x:0,           y:0,        z:0 },
-  vor_cha:              { x:0,           y:0,        z:0 },
-  romulan_bop:          { x:0,           y:0,        z:0 },
-  romulan_warbird:      { x:0,           y:0,        z:0 },
-  cardassian_scout:     { x:0,           y:0,        z:0 },
-  galor_class:          { x:0,           y:0,        z:0 },
-  jem_hadar_fighter:    { x:0,           y:0,        z:0 },
-  jem_hadar_battleship: { x:0,           y:0,        z:0 },
-  borg_probe:           { x:0,           y:0,        z:0 },
+  // Long axis Z (span 307), height Y already = Three.js up → rotate Z to X
+  defiant:              { x:0,           y:Math.PI/2,  z:0 },
+  // Long axis Y (span 422), height Z → x:-π/2 makes Z→Y(up), then nose(-Y)→+Z→+X
+  enterprise_e:         { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
+  // Procedural — no STL
+  ktinga:               { x:0,           y:0,           z:0 },
+  // Long axis Y (span 14745), height Z → same transform as enterprise
+  vor_cha:              { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
+  // Long axis X (span 74) already = forward, height Z → x:-π/2 makes Z→Y(up)
+  romulan_bop:          { x:-Math.PI/2,  y:0,           z:0 },
+  // Long axis Y (span 2813), height Z → same transform as enterprise
+  romulan_warbird:      { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
+  // Long axis Y (span 25), height Z → same as enterprise; very flat model
+  cardassian_scout:     { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
+  // Long axis Y (span 240), height Z → same transform
+  galor_class:          { x:-Math.PI/2,  y:Math.PI/2,  z:0 },
+  // Long axis X (span 35) already = forward, height Z → x:-π/2
+  jem_hadar_fighter:    { x:-Math.PI/2,  y:0,           z:0 },
+  // OBJ — assume similar orientation to fighter
+  jem_hadar_battleship: { x:-Math.PI/2,  y:0,           z:0 },
+  // Procedural — no STL
+  borg_probe:           { x:0,           y:0,           z:0 },
 };
 
 // Faction PBR materials — applied to single-colour STL geometry
@@ -98,7 +110,7 @@ function _loadShipModel(key, callback) {
       const triCount = geoOrGroup.index
         ? geoOrGroup.index.count / 3
         : (geoOrGroup.attributes.position?.count || 0) / 3;
-      if (triCount > 100000) {
+      if (triCount > 50000) {
         console.warn(`[Models] ${key}: ${Math.round(triCount).toLocaleString()} triangles — too heavy for web, using procedural`);
         callback(null);
         return;
