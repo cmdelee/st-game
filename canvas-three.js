@@ -94,6 +94,15 @@ function _loadShipModel(key, callback) {
     let mesh;
     if (geoOrGroup.isBufferGeometry) {
       // STL → raw BufferGeometry
+      // Safety cap: 3D print models can have 500K+ triangles — skip anything over 100K
+      const triCount = geoOrGroup.index
+        ? geoOrGroup.index.count / 3
+        : (geoOrGroup.attributes.position?.count || 0) / 3;
+      if (triCount > 100000) {
+        console.warn(`[Models] ${key}: ${Math.round(triCount).toLocaleString()} triangles — too heavy for web, using procedural`);
+        callback(null);
+        return;
+      }
       geoOrGroup.computeVertexNormals();
       mesh = new THREE.Mesh(geoOrGroup, _makeShipMaterial(matKey));
     } else {
