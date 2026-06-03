@@ -1,5 +1,7 @@
 # Starship Battle Simulator — Developer Reference
 
+> **Git workflow:** commit and push directly to `main` after testing — do **not** create feature branches for changes here.
+
 ## Project overview
 
 Single-page Star Trek tactical combat simulator. The player selects a vessel (**USS Defiant NX-74205** or **USS Enterprise NCC-1701-E**) and a command station (**Tactical**, **Engineering**, **Helm**, or **Captain's Chair**); the unchosen stations are delegated to the computer. All game logic lives across **20 JS files** served from the same directory (plus an optional `smoketest.js` test harness) — no build step, no bundler.
