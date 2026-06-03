@@ -74,14 +74,21 @@ function renderSpatialViewCanvas() {
     mesh_defiant.position.z + _orbitR * Math.sin(_camOrbitAngle * 0.18)
   );
   THREE_camera.position.lerp(desiredCam, G.attackRunActive ? 0.06 : 0.03);
+  // Track the midpoint of the engagement in all three axes so both ships stay
+  // framed as they climb, dive and slip laterally through 3D space.
   THREE_camera.lookAt(_camLookAtTarget.set(
-    mesh_enemyGroup.position.x*0.45 + mesh_defiant.position.x*0.55, 0, 0
+    mesh_enemyGroup.position.x*0.45 + mesh_defiant.position.x*0.55,
+    (mesh_enemyGroup.position.y + mesh_defiant.position.y) * 0.5,
+    (mesh_enemyGroup.position.z + mesh_defiant.position.z) * 0.5
   ));
 
-  // Defiant drift — amplitude scales with helm speed
+  // Defiant drift — space has no fixed plane, so the ship climbs, dives and
+  // slips laterally as well as pitching. Amplitude scales with helm speed.
   const _speedDrift = { stop:0.2, maneuvering:0.5, half:1.0, full:1.8 }[G.helmSpeed] ?? 1.0;
-  mesh_defiant.position.y = Math.sin(now*0.4)*0.6*_speedDrift;
-  mesh_defiant.position.z = Math.sin(now*0.25)*0.8*_speedDrift;
+  mesh_defiant.position.y = (Math.sin(now*0.4)*0.6 + Math.sin(now*0.17+0.9)*1.4) * _speedDrift;
+  mesh_defiant.position.z = (Math.sin(now*0.25)*0.8 + Math.sin(now*0.11+0.3)*1.6) * _speedDrift;
+  // Pitch into the vertical motion (climb/dive attitude)
+  mesh_defiant.rotation.x = Math.cos(now*0.17+0.9)*1.4*0.17*_speedDrift*0.4;
   // Yaw the ship to present the chosen attack-vector sector toward the enemy.
   // The hull physically turns, so the exposed side faces incoming fire — you
   // can't be hit on the aft while presenting your bow.
@@ -173,10 +180,12 @@ function renderSpatialViewCanvas() {
     const _pDist = G.playerRangeBracket==='close'?22:G.playerRangeBracket==='medium'?38:55;
     const rangeDist = Math.min(_eDist, _pDist);
     mesh_enemyGroup.position.x = THREE.MathUtils.lerp(mesh_enemyGroup.position.x, mesh_defiant.position.x+rangeDist, 0.025);
-    const _baseY = Math.sin(now*0.35+1.2)*2.8;
-    // Lateral orbit — the enemy weaves across the player's arc instead of sitting
-    // dead ahead. Faster, wider weave when closing to combat range.
+    // 3D orbit — the enemy weaves across the player's arc AND climbs/dives
+    // through it (no fixed plane in space). Wider, faster when closing range.
+    // Lateral (Z) and vertical (Y) use different frequencies → Lissajous path.
     const _orbitAmp = G.enemyRangeBracket==='close'?16:G.enemyRangeBracket==='medium'?11:7;
+    const _vertAmp  = G.enemyRangeBracket==='close'?11:G.enemyRangeBracket==='medium'?8:5;
+    const _baseY = Math.sin(now*0.35+1.2)*2.8 + Math.sin(now*0.16+0.4)*_vertAmp;
     const _baseZ = Math.sin(now*0.22+0.7)*2.2 + Math.sin(now*0.13)*_orbitAmp;
 
     if (G.enemyManeuverState==='angling') {
@@ -184,18 +193,22 @@ function renderSpatialViewCanvas() {
       const zOff={port:9, starboard:-9, fore:0, aft:0}[G.enemyPreferredSector]||0;
       mesh_enemyGroup.rotation.y=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.y,Math.PI+roll*0.6,0.06);
       mesh_enemyGroup.rotation.z=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.z,roll*0.5,0.06);
+      mesh_enemyGroup.rotation.x=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.x,0,0.05);
       mesh_enemyGroup.position.y=THREE.MathUtils.lerp(mesh_enemyGroup.position.y, _baseY, 0.04);
       mesh_enemyGroup.position.z=THREE.MathUtils.lerp(mesh_enemyGroup.position.z, _baseZ+zOff, 0.04);
     } else if (G.enemyManeuverState==='torpedocharge') {
       mesh_enemyGroup.rotation.z=Math.sin(now*12)*0.12;
+      mesh_enemyGroup.rotation.x=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.x,0,0.05);
       mesh_enemyGroup.position.x=THREE.MathUtils.lerp(mesh_enemyGroup.position.x, mesh_defiant.position.x+rangeDist*0.7, 0.035);
       mesh_enemyGroup.position.y=THREE.MathUtils.lerp(mesh_enemyGroup.position.y, _baseY, 0.05);
       mesh_enemyGroup.position.z=THREE.MathUtils.lerp(mesh_enemyGroup.position.z, _baseZ, 0.05);
     } else {
       mesh_enemyGroup.rotation.y=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.y,Math.PI,0.04);
-      // Bank into the lateral weave (roll proportional to z-velocity)
-      const _latVel = Math.cos(now*0.13)*_orbitAmp*0.13;
+      // Bank into the lateral weave (roll) and pitch into the climb/dive
+      const _latVel  = Math.cos(now*0.13)*_orbitAmp*0.13;
+      const _vertVel = Math.cos(now*0.16+0.4)*_vertAmp*0.16;
       mesh_enemyGroup.rotation.z=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.z, _latVel*0.06, 0.04);
+      mesh_enemyGroup.rotation.x=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.x, _vertVel*0.05, 0.04);
       mesh_enemyGroup.position.y=THREE.MathUtils.lerp(mesh_enemyGroup.position.y, _baseY, 0.03);
       mesh_enemyGroup.position.z=THREE.MathUtils.lerp(mesh_enemyGroup.position.z, _baseZ, 0.03);
     }
