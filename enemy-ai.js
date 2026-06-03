@@ -202,19 +202,41 @@ function initiateRammingRun(cfg) {
   if (G.enemyRammingRun) return;
   G.enemyRammingRun   = true;
   G.enemyRammingTimer = 4000;
-  postLogEvent(`ALERT: ${cfg.label} HAS TURNED TO RAM! EVASIVE ACTION!`, 'crit');
-  postTacticalAdvisory("Jem'Hadar on suicide run — all power to fore shields now!");
+  postLogEvent(`ALERT: ${cfg.label} HAS TURNED TO RAM! EVASIVE ACTION — 4s to impact!`, 'crit');
+  postTacticalAdvisory("Suicide run inbound — Picard Manoeuvre or evasive pattern to dodge, or go full impulse!");
   crewReportEnemyRamming();
 }
 
 function executeRammingImpact() {
   if (G.dead) return;
-  const cfg      = ENEMY_CONFIGS[G.enemyArchetype];
+  const cfg     = ENEMY_CONFIGS[G.enemyArchetype];
+  const _pLabel = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).label;
+
+  // Evasive manoeuvring can slip the suicide run. Picard's micro-warp jump is a
+  // guaranteed escape; an active evasive pattern is highly effective; a hard
+  // come-about or full impulse gives a fighting chance. A successful dodge means
+  // the enemy overshoots — it survives and must break off and line up again,
+  // so timing your helm against the 4s countdown genuinely matters.
+  let dodge = 0;
+  if (G.picardManoeuverActive)                      dodge = 1.0;
+  else if (G.evasiveActive || G.evasiveAlphaActive) dodge = 0.85;
+  else if (G.comeAboutActive)                       dodge = 0.50;
+  else if (G.helmSpeed === 'full')                  dodge = 0.35;
+
+  if (Math.random() < dodge) {
+    postLogEvent(`EVASIVE SUCCESS — ${_pLabel} slipped the ramming run! ${cfg.label} overshot and is coming about.`, 'good');
+    postTacticalAdvisory("Ramming run evaded — they overshot us!");
+    if (typeof crewReportRammingEvaded === 'function') crewReportRammingEvaded();
+    // Enemy overshoots — tracking collapses, brief recovery before it re-commits
+    G.enemyLockProgress  = 0;
+    G.enemyManeuverState = 'neutral';
+    return;
+  }
+
   const ramDmg   = cfg.ramDamage || 300;
   const residual = applyAblativeArmour(ramDmg);
   G.player.hull  = Math.max(0, G.player.hull - residual);
   G.threat.hull  = 0;
-  const _pLabel = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).label;
   postLogEvent(`COLLISION! ${cfg.label} rammed ${_pLabel}. Armour absorbed ${Math.round(ramDmg - residual)}. Hull −${Math.round(residual)}.`, 'crit');
   inflictCrewCasualty(); inflictCrewCasualty();
   if (G.player.hull <= 0) {

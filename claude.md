@@ -481,6 +481,10 @@ This prevents grinding subsystems with zero hull risk while still rewarding focu
 - Random check (0.008/frame) when hull < 20%
 - 4s countdown on canvas with trajectory line + RAMMING RUN text
 - `cfg.ramDamage` (280/380) through ablative; destroys enemy ship on impact
+- **Evasive counter (`executeRammingImpact`):** the run is dodgeable — Picard Manoeuvre = guaranteed escape (1.0), an active evasive pattern (Delta `evasiveActive` / Alpha `evasiveAlphaActive`) = 0.85, hard come-about = 0.50, full impulse alone = 0.35, otherwise it connects. On a dodge the enemy **overshoots and survives** (lock collapses, `enemyManeuverState='neutral'`) — you avoid the 280/380 hit but must still finish it conventionally. The 3D trajectory line turns **green** while you're in a dodging posture (red otherwise). `crewReportRammingEvaded()` reports it on the Captain's chair.
+
+### Manoeuvre choreography (3D view, canvas-three-render.js)
+Helm orders read visibly on the hull, on top of the attack-vector yaw/bank: **come-about** spins the hull through a full sweep (all sectors exposed); **evasive Delta/Alpha** corkscrew-jink (fast roll + pitch + lateral slip); **Pattern Omega** holds a nose-down attack attitude; **Picard Manoeuvre** renders the micro-warp jump as a flickering double-image plus two cyan warp streaks and a camera shake on activation (opacity restored on the falling edge, tracked by `_picardPrev`).
 
 ### Cloaking (player)
 - 1200ms vulnerability window on engage AND disengage

@@ -21,6 +21,7 @@ function _angleWrap(d) { d = (d + Math.PI) % (2 * Math.PI); if (d < 0) d += 2 * 
 // ── Hull damage spark pool ────────────────────────────────────
 let _hullSparks = [];            // { mesh, vel, life, maxLife }
 let _hullSparkTimer = 0;         // accumulator — emit sparks at intervals
+let _picardPrev = false;         // rising/falling-edge tracking for Picard Manoeuvre
 
 function _emitHullSparks(origin, count, col) {
   for (let i = 0; i < count; i++) {
@@ -97,6 +98,45 @@ function renderSpatialViewCanvas() {
   mesh_defiant.rotation.y += _yStep;
   // Bank into the turn, plus idle roll
   mesh_defiant.rotation.z = Math.sin(now*0.3)*0.03*_speedDrift - _yStep * 6;
+
+  // ── Manoeuvre choreography — make helm orders visibly read on the hull ──
+  if (G.comeAboutActive) {
+    // Hard 180° sweep — spin the hull through the rotation, all sectors exposed
+    mesh_defiant.rotation.y += dt * (Math.PI * 2 / 3);
+    mesh_defiant.rotation.z = Math.sin(now * 6) * 0.25;
+  }
+  if (G.evasiveActive || G.evasiveAlphaActive) {
+    // Jinking barrel-roll — fast, hard, unpredictable corkscrew
+    mesh_defiant.rotation.z += Math.sin(now * 9) * 0.40;
+    mesh_defiant.rotation.x += Math.sin(now * 7 + 1) * 0.20;
+    mesh_defiant.position.y += Math.sin(now * 8) * 2.4;
+    mesh_defiant.position.z += Math.cos(now * 6.5) * 2.8;
+  }
+  if (G.attackPatternOmegaActive) {
+    // Aggressive nose-down attack attitude
+    mesh_defiant.rotation.x += Math.sin(now * 4) * 0.08 - 0.07;
+  }
+  // Picard Manoeuvre — micro-warp jump renders as a flickering double-image
+  if (G.picardManoeuverActive) {
+    const flick = Math.sin(now * 40) > 0 ? 1.0 : 0.22;
+    mesh_defiant.traverse(c => { if (c.isMesh && c.material) { c.material.transparent = true; c.material.opacity = flick; } });
+    if (!_picardPrev) {
+      // Rising edge — warp streaks "appearing in two places" + shake
+      _camShake = Math.min(3.5, _camShake + 2.0);
+      const p = mesh_defiant.position;
+      [-6, +6].forEach(zoff => {
+        const a = p.clone().add(new THREE.Vector3(-11, 0, zoff));
+        const b = p.clone().add(new THREE.Vector3(+15, 0, zoff));
+        const streak = _makeTubeMesh(a, b, 0.5, 0x66ccff, 0.85);
+        if (streak) { streak._bornAt = now; streak._duration = 0.5; streak._isGlow = false; THREE_scene.add(streak); beam_lines.push(streak); }
+      });
+      spawnThreeParticles(p.x, p.y, p.z, 0.5, 0.8, 1.0, 30);
+    }
+  } else if (_picardPrev) {
+    // Falling edge — restore opacity
+    mesh_defiant.traverse(c => { if (c.isMesh && c.material) { c.material.opacity = 1; c.material.transparent = false; } });
+  }
+  _picardPrev = G.picardManoeuverActive;
 
   // Hull damage colouring — works on both loaded models and procedural geometry
   const hullPct = G.player.hull / G.player.maxHull;
@@ -266,6 +306,10 @@ function renderSpatialViewCanvas() {
     pos.setXYZ(0, mesh_enemyGroup.position.x, mesh_enemyGroup.position.y, mesh_enemyGroup.position.z);
     pos.setXYZ(1, mesh_defiant.position.x, mesh_defiant.position.y, mesh_defiant.position.z);
     pos.needsUpdate = true;
+    // Green when we're in an evasive posture that can dodge the run; red otherwise
+    const _dodging = G.picardManoeuverActive || G.evasiveActive || G.evasiveAlphaActive
+                  || G.comeAboutActive || G.helmSpeed === 'full';
+    ramming_line.material.color.setHex(_dodging ? 0x33ff66 : 0xff1100);
     ramming_line.material.opacity = 0.45 + Math.sin(now * 14) * 0.45;
     // Particle bursts along the approach vector
     if (Math.random() < 0.4) {

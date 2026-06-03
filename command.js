@@ -644,6 +644,11 @@ function crewReportEnemyRamming() {
   postCrewReport('nog', "Captain — enemy on a ramming trajectory! Evasive action recommended NOW!", 'alert');
 }
 
+function crewReportRammingEvaded() {
+  if (G.playerChosenStation !== 'captain') return;
+  postCrewReport('nog', "We slipped them, Captain — they overshot and are coming about!", 'good');
+}
+
 function crewReportKlingonClosing() {
   if (G.playerChosenStation !== 'captain') return;
   postCrewReport('worf', "Captain, enemy closing to combat range. Disruptor damage will increase significantly.", 'alert');
