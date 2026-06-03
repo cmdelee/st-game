@@ -1,6 +1,95 @@
 'use strict';
 
 // ============================================================
+// DOM ELEMENT CACHE — built at game start, re-built on ship select
+// Eliminates ~60 getElementById calls per frame from hot paths.
+// Only caches elements that are always in the DOM (never rebuilt).
+// ============================================================
+const _EL = {};
+
+function _buildELCache() {
+  const ids = [
+    // Left panel
+    'lbl-left-eps','lbl-left-alert','lbl-ai-archetype',
+    'bar-threat-hull-left','txt-threat-hull-left',
+    'bar-enemy-lock-left','txt-enemy-lock-left',
+    'bar-enem-sh-fore','txt-enem-sh-fore',
+    'bar-enem-sh-port','txt-enem-sh-port',
+    'bar-enem-sh-starboard','txt-enem-sh-starboard',
+    'bar-enem-sh-aft','txt-enem-sh-aft',
+    'lbl-enemy-phase-left','lbl-enemy-state-left','lbl-cloak-left',
+    'bar-sensor-lock-left','txt-sensor-lock-left',
+    // Right telemetry tower
+    'bar-player-hull','txt-player-hull',
+    'bar-player-torps','txt-player-torps',
+    'bar-player-photons','txt-player-photons',
+    'bar-shield-fore','txt-shield-fore',
+    'bar-shield-port','txt-shield-port',
+    'bar-shield-starboard','txt-shield-starboard',
+    'bar-shield-aft','txt-shield-aft',
+    'lbl-shield-regen','lbl-automation-status',
+    'bar-warp-output','txt-warp-used','txt-warp-max',
+    'lbl-cloak-footer','bar-cloak-power','txt-cloak-power-status',
+    // Tactical deck
+    'weapon-health-strip','sys-health-display',
+    'ablative-armour-strip',
+    'cloak-status-bar','cloak-status-text','cloak-power-drain',
+    'txt-current-target','txt-firing-arc',
+    'scan-results-display','bar-scan-analysis',
+    'lbl-warp-avail',
+    'btn-cannons','btn-nose','btn-quantum','btn-photon','btn-quantum-aft','btn-photon-aft','btn-alpha',
+    // Engineering utility panel
+    'bar-battery-charge','txt-battery-charge','lbl-battery-status',
+    'lbl-eng-cloak-title','lbl-cloak-eng-status','btn-cloak-eng',
+    'txt-shield-regen-rate',
+    'lbl-repair-queue','lbl-autotac-summary',
+    // Helm deck
+    'btn-helm-speed-stop','btn-helm-speed-maneuvering','btn-helm-speed-half','btn-helm-speed-full',
+    'btn-helm-vector-fore','btn-helm-vector-port','btn-helm-vector-starboard','btn-helm-vector-aft',
+    'btn-helm-range-long','btn-helm-range-medium','btn-helm-range-close',
+    'btn-helm-attack-run','btn-helm-come-about','btn-helm-picard',
+    'btn-helm-omega','btn-helm-evasive-alpha','btn-evasive-helm','btn-helm-cloak',
+    'lbl-helm-range-status','lbl-helm-autotac','lbl-helm-autoeng',
+    // Captain deck
+    'cap-hull-bar','cap-hull-val',
+    'cap-tac-lock-bar','cap-tac-lock','cap-tac-enemy-bar','cap-tac-enemy-hull','cap-tac-shld-bar','cap-tac-fore-shld',
+    'cap-eng-power-bar','cap-eng-power','cap-eng-regen','cap-eng-repair',
+    'cap-helm-speed','cap-helm-range','cap-helm-vector','cap-helm-maneuver',
+    'cap-panel-tac-header','cap-panel-eng-header','cap-panel-helm-header',
+    'cap-panel-eng-orders-header',
+    // Mobile
+    'mob-lock','mob-enemy-hull','mob-hull','mob-fore-shld','mob-phase',
+    // Header
+    'lbl-stardate','lbl-mission-context',
+    // Enemy subsystem grid
+    'enemy-subsystem-target-grid',
+  ];
+  ids.forEach(id => { _EL[id] = document.getElementById(id); });
+}
+
+// Re-cache the cap-bar elements after _rebuildCapBarGrid() rebuilds them
+function _rebuildCapBarCache() {
+  ['cpu','cpl','csu','csl','emn','tff','tph','tqa','tpa','scp','scs','phs','pae','tfb'].forEach(k => {
+    _EL[`bar-cap-${k}`] = document.getElementById(`bar-cap-${k}`);
+    _EL[`txt-cap-${k}`] = document.getElementById(`txt-cap-${k}`);
+  });
+}
+
+// Re-cache engineering matrix rows after rebuildEngineeringMatrixInterface()
+function _rebuildEngCache() {
+  Object.keys(G.systems).forEach(key => {
+    ['eng-lbl-mw','eng-slider-bar','eng-lbl-stress','eng-lbl-health','eng-lbl-repair','eng-row'].forEach(prefix => {
+      const id = `${prefix}-${key}`;
+      _EL[id] = document.getElementById(id);
+    });
+  });
+  // Also cache cap-ord buttons for captain panel
+  if (typeof _CAP_CD !== 'undefined') {
+    Object.keys(_CAP_CD).forEach(k => { _EL[`cap-ord-${k}`] = document.getElementById(`cap-ord-${k}`); });
+  }
+}
+
+// ============================================================
 // DECK SWITCHING
 // ============================================================
 // ============================================================
@@ -77,7 +166,7 @@ function toggleActiveDeck(key) {
     document.querySelectorAll('.monitor-frame').forEach(f => f.classList.remove('active-monitor'));
     document.querySelectorAll('.view-tactical').forEach(f => f.classList.add('active-monitor'));
   }
-  if (key === 'engineering') rebuildEngineeringMatrixInterface();
+  if (key === 'engineering') { rebuildEngineeringMatrixInterface(); _rebuildEngCache(); }
   updateCloakButton();
   updateEngUtilityPanel();
   handleHighDpiCanvasResizing();
@@ -101,18 +190,19 @@ const _SYS_ABBREV = {
 // GLOBAL UI SYNC — called every frame
 // ============================================================
 function synchronizeGlobalInterfaceDisplays() {
+  const _g = id => _EL[id] || document.getElementById(id); // cache-first lookup
   _updateMobileStatusBar();
   const warpOut = getWarpOutput();
   const total   = getTotalAllocatedPower();
 
   // Left panel EPS
-  const le = document.getElementById('lbl-left-eps'); if (le) le.textContent = `${total} / ${warpOut} MW`;
+  const le = _g('lbl-left-eps'); if (le) le.textContent = `${total} / ${warpOut} MW`;
 
   // Alert condition — item 9: threat-based not just hull%
-  const al = document.getElementById('lbl-left-alert');
+  const al = _g('lbl-left-alert');
   if (al) {
     const hp             = G.player.hull / G.player.maxHull;
-    const shieldBreached = ['fore','port','starboard','aft'].some(s => G.player.shields[s] <= 0);
+    const shieldBreached = SHIELD_SECTORS.some(s => G.player.shields[s] <= 0);
     const torpedoInbound = G.enemyManeuverState === 'torpedocharge';
     const critHull       = hp < 0.2;
     const incomingTorp   = G.inFlightTorpedoes.some(t => t.fromEnemy);
@@ -126,17 +216,17 @@ function synchronizeGlobalInterfaceDisplays() {
   }
 
   // Player hull & torpedoes
-  const ph = document.getElementById('bar-player-hull'); if (ph) ph.style.width = `${(G.player.hull / G.player.maxHull) * 100}%`;
-  const pt = document.getElementById('txt-player-hull'); if (pt) pt.textContent = `${Math.ceil(G.player.hull)}`;
-  const pTB = document.getElementById('bar-player-torps'); if (pTB) pTB.style.width = `${(G.player.torpedoes / G.player.maxTorpedoes) * 100}%`;
-  const pTT = document.getElementById('txt-player-torps'); if (pTT) pTT.textContent = G.player.torpedoes;
-  const pPB = document.getElementById('bar-player-photons'); if (pPB) pPB.style.width = `${(G.player.photonTorpedoes / G.player.maxPhotonTorpedoes) * 100}%`;
-  const pPT = document.getElementById('txt-player-photons'); if (pPT) pPT.textContent = G.player.photonTorpedoes;
+  const ph = _g('bar-player-hull'); if (ph) ph.style.width = `${(G.player.hull / G.player.maxHull) * 100}%`;
+  const pt = _g('txt-player-hull'); if (pt) pt.textContent = `${Math.ceil(G.player.hull)}`;
+  const pTB = _g('bar-player-torps'); if (pTB) pTB.style.width = `${(G.player.torpedoes / G.player.maxTorpedoes) * 100}%`;
+  const pTT = _g('txt-player-torps'); if (pTT) pTT.textContent = G.player.torpedoes;
+  const pPB = _g('bar-player-photons'); if (pPB) pPB.style.width = `${(G.player.photonTorpedoes / G.player.maxPhotonTorpedoes) * 100}%`;
+  const pPT = _g('txt-player-photons'); if (pPT) pPT.textContent = G.player.photonTorpedoes;
 
   // Player shield bars + incoming hit flash
   const _hitSector = G.shieldHitFlash.player.timer > 0 ? G.shieldHitFlash.player.sector : null;
   SHIELD_SECTORS.forEach(s => {
-    const bar = document.getElementById(`bar-shield-${s}`);
+    const bar = _g(`bar-shield-${s}`);
     if (bar) {
       const pct = G.cloaked ? 0 : (G.player.shields[s] / G.player.shields.maxSectorValue) * 100;
       bar.style.width = `${pct}%`;
@@ -152,11 +242,11 @@ function synchronizeGlobalInterfaceDisplays() {
         }
       }
     }
-    const txt = document.getElementById(`txt-shield-${s}`); if (txt) txt.textContent = G.cloaked ? 'CLK' : Math.ceil(G.player.shields[s]);
+    const txt = _g(`txt-shield-${s}`); if (txt) txt.textContent = G.cloaked ? 'CLK' : Math.ceil(G.player.shields[s]);
   });
 
   // Shield regen label
-  const rl = document.getElementById('lbl-shield-regen');
+  const rl = _g('lbl-shield-regen');
   if (rl) {
     if (G.cloaked)                   { rl.textContent = 'OFFLINE';               rl.style.color = 'var(--p)';     }
     else if (G.shieldUnderAttackTimer > 0) { rl.textContent = '⚠ HIT';           rl.style.color = 'var(--red)';  }
@@ -167,8 +257,8 @@ function synchronizeGlobalInterfaceDisplays() {
   const sH            = G.systems.sensors.health;
   const sensorAccurate = sH >= 70;
   const sensorDegraded = sH < 40;
-  const tHB = document.getElementById('bar-threat-hull-left'); if (tHB) tHB.style.width = `${(G.threat.hull / G.threat.maxHull) * 100}%`;
-  const tHT = document.getElementById('txt-threat-hull-left');
+  const tHB = _g('bar-threat-hull-left'); if (tHB) tHB.style.width = `${(G.threat.hull / G.threat.maxHull) * 100}%`;
+  const tHT = _g('txt-threat-hull-left');
   if (tHT) {
     if (sensorDegraded)      tHT.textContent = '???';
     else if (!sensorAccurate) tHT.textContent = `~${Math.ceil(G.threat.hull / 50) * 50}`;
@@ -178,7 +268,7 @@ function synchronizeGlobalInterfaceDisplays() {
   // Enemy shield sector bars (left panel) — only when game is running (shields initialised)
   if (G.running && G.threat.shields) {
     SHIELD_SECTORS.forEach(s => {
-      const bar = document.getElementById(`bar-enem-sh-${s}`); const txt = document.getElementById(`txt-enem-sh-${s}`);
+      const bar = _g(`bar-enem-sh-${s}`); const txt = _g(`txt-enem-sh-${s}`);
       if (!bar || !txt) return;
       if (G.enemyCloaked) { bar.style.width = '0%'; txt.textContent = 'CLK'; bar.style.color = C.p; return; }
       const cfg  = ENEMY_CONFIGS[G.enemyArchetype]; const maxV = cfg.shields[s] || 200;
@@ -189,12 +279,12 @@ function synchronizeGlobalInterfaceDisplays() {
   }
 
   // Our sensor lock
-  const slb = document.getElementById('bar-sensor-lock-left');
+  const slb = _g('bar-sensor-lock-left');
   if (slb) { slb.style.width = `${G.lockProgress}%`; slb.style.color = G.lockProgress < 5 ? C.red : G.lockProgress < 50 ? C.warn : C.green; }
-  const slt = document.getElementById('txt-sensor-lock-left'); if (slt) slt.textContent = `${Math.round(G.lockProgress)}%`;
+  const slt = _g('txt-sensor-lock-left'); if (slt) slt.textContent = `${Math.round(G.lockProgress)}%`;
 
   // Cloak status (left panel)
-  const cl = document.getElementById('lbl-cloak-left');
+  const cl = _g('lbl-cloak-left');
   if (cl) {
     if (G.cloaked)               { cl.style.display = 'block'; cl.textContent = `◉ CLOAKED P:${Math.round(G.cloakPowerReserve)}%`; cl.style.color = 'var(--p)'; }
     else if (G.cloakVulnTimer > 0) { cl.style.display = 'block'; cl.textContent = '⚡ TRANSITION';  cl.style.color = 'var(--warn)'; }
@@ -203,15 +293,15 @@ function synchronizeGlobalInterfaceDisplays() {
   }
 
   // Warp core output panel (right)
-  const wb = document.getElementById('bar-warp-output'); if (wb) wb.style.width = `${(total / WARP_CORE.maxOutput) * 100}%`;
-  const wu = document.getElementById('txt-warp-used');   if (wu) wu.textContent = total;
-  const wm = document.getElementById('txt-warp-max');    if (wm) { wm.textContent = warpOut; wm.style.color = G.systems.warp_core.tripped ? C.red : warpOut < 60 ? C.warn : C.o; }
+  const wb = _g('bar-warp-output'); if (wb) wb.style.width = `${(total / WARP_CORE.maxOutput) * 100}%`;
+  const wu = _g('txt-warp-used');   if (wu) wu.textContent = total;
+  const wm = _g('txt-warp-max');    if (wm) { wm.textContent = warpOut; wm.style.color = G.systems.warp_core.tripped ? C.red : warpOut < 60 ? C.warn : C.o; }
 
   // Cloak / Saucer sep power bar (right)
   const _isEntUI = G.playerShipKey === 'enterprise_e';
-  const cpb = document.getElementById('bar-cloak-power');
+  const cpb = _g('bar-cloak-power');
   if (cpb) cpb.style.width = _isEntUI ? `${G.saucerSepCooldown > 0 ? Math.max(0,(1-G.saucerSepCooldown/60000)*100) : G.saucerSepActive ? 100 : 100}%` : `${G.cloakPowerReserve}%`;
-  const cps = document.getElementById('txt-cloak-power-status');
+  const cps = _g('txt-cloak-power-status');
   if (cps) {
     if (_isEntUI) {
       if (G.saucerSepReconnecting)     cps.textContent = `Docking: ${Math.ceil(G.saucerSepReconnectTimer/1000)}s`;
@@ -226,7 +316,7 @@ function synchronizeGlobalInterfaceDisplays() {
   }
 
   // Cloak / Saucer sep status bar (tactical panel)
-  const csb = document.getElementById('cloak-status-bar'); const cst = document.getElementById('cloak-status-text'); const cpd = document.getElementById('cloak-power-drain');
+  const csb = _g('cloak-status-bar'); const cst = _g('cloak-status-text'); const cpd = _g('cloak-power-drain');
   if (csb) {
     if (_isEntUI) {
       if (G.saucerSepReconnecting) { csb.style.display='flex'; if(cst)cst.textContent='◯ DOCKING — saucer on approach'; csb.style.color='var(--warn)'; csb.style.borderColor='var(--warn)'; if(cpd)cpd.textContent=`${Math.ceil(G.saucerSepReconnectTimer/1000)}s`; }
@@ -246,12 +336,12 @@ function synchronizeGlobalInterfaceDisplays() {
     const wd  = _aw[wk]; const sys = G.systems[wd.parentSystem];
     const _isAft = !!(wd.arc?.includes('aft') && !wd.arc?.includes('fore'));
     const cap = sys.tripped ? 0 : (_isAft && sys.aftCap !== undefined ? sys.aftCap : sys.cap);
-    const b   = document.getElementById(`bar-cap-${wd.tag}`);
+    const b   = _g(`bar-cap-${wd.tag}`);
     if (b) { b.style.width = `${cap}%`; b.style.color = sys.tripped ? C.red : cap > 50 ? C.b : C.warn; }
-    const t = document.getElementById(`txt-cap-${wd.tag}`);
+    const t = _g(`txt-cap-${wd.tag}`);
     if (t) t.textContent = sys.tripped ? 'OFFLINE' : `${Math.round(cap)}%`;
   });
-  const abDiv = document.getElementById('ablative-armour-strip');
+  const abDiv = _g('ablative-armour-strip');
   if (abDiv && G.playerShipConfig && G.playerShipConfig.hasAblativeArmour) {
     const ab = G.ablative;
     const col = ab.layers > 3 ? C.green : ab.layers > 1 ? C.warn : C.red;
@@ -264,7 +354,7 @@ function synchronizeGlobalInterfaceDisplays() {
   }
 
   // Weapon health strip
-  const ws = document.getElementById('weapon-health-strip');
+  const ws = _g('weapon-health-strip');
   if (ws) {
     const _ab = _SYS_ABBREV[G.playerShipKey] || _SYS_ABBREV.defiant;
     const wk = ['cannon_pu','cannon_pl','cannon_su','cannon_sl','nose_beam','torpedoes','cloak_dev','warp_core'].map(k => ({k, l:_ab[k]}));
@@ -282,7 +372,7 @@ function synchronizeGlobalInterfaceDisplays() {
   }
 
   // System health compact (right panel)
-  const sh = document.getElementById('sys-health-display');
+  const sh = _g('sys-health-display');
   if (sh) {
     const aks = ['cannon_pu','cannon_pl','cannon_su','cannon_sl','nose_beam','torpedoes','cloak_dev','warp_core','shields','sensors','engines'];
     sh.innerHTML = aks.map(key => {
@@ -305,7 +395,7 @@ function synchronizeGlobalInterfaceDisplays() {
   const _aw2 = G.activeWeaponArrays || ARRAYS_DICTIONARY;
   const _isEnt2 = G.playerShipKey === 'enterprise_e';
   const _arcGrey = (id, weaponKeys, label) => {
-    const btn = document.getElementById(id); if (!btn) return;
+    const btn = _g(id); if (!btn) return;
     const anyInArc = weaponKeys.some(k => _aw2[k] && _aw2[k].arc.includes(_vec));
     const inArcCount = weaponKeys.filter(k => _aw2[k] && _aw2[k].arc.includes(_vec)).length;
     if (!anyInArc) {
@@ -335,12 +425,12 @@ function synchronizeGlobalInterfaceDisplays() {
     ? ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose']
     : ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
   const bfArcCount = bfPrimKeys.filter(k => _aw2[k] && _aw2[k].arc.includes(_vec)).length;
-  const bfArcBtn = document.getElementById('btn-burst-fire');
+  const bfArcBtn = _g('btn-burst-fire');
   if (bfArcBtn && bfArcCount === 0) { bfArcBtn.style.opacity = '0.35'; bfArcBtn.style.pointerEvents = 'none'; }
   else if (bfArcBtn) { bfArcBtn.style.opacity = ''; bfArcBtn.style.pointerEvents = ''; }
 
   // Burst / Concentrated fire button state
-  const bfBtn = document.getElementById('btn-burst-fire');
+  const bfBtn = bfArcBtn; // same element
   if (bfBtn) {
     const _burstLabel = _isEnt2 ? 'CONCENTRATED FIRE' : 'BURST SALVO — 4-CANNON BARRAGE';
     if (!G.burstFireReady) {

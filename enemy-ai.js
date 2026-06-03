@@ -62,7 +62,7 @@ function triggerEnemyDecloak(cfg, reason) {
         postLogEvent("ROMULAN PLASMA TORPEDO — FIRED ON DECLOAK! BRACE!", 'crit');
         // Set timer past threshold so the main loop fires on next tick;
         // do NOT call executeThreatCounterVolley() directly or it fires twice
-        G.threatCycleTimer = G.threat.fireInterval + 1;
+        G.threatCycleTimer = getEffectiveFireInterval() + 1;
       }
     }, 800);
   }
@@ -259,8 +259,7 @@ function processEnemyAI(dt) {
       G.weaponsDisrupted = false;
       G.scanBonus = null;
       crewReportWeaponsOnline();
-      G.threat.fireInterval = Math.round(cfg.fireInterval * diff.enemyFireMult);
-      if (G.activeScanningProfile) G.threat.fireInterval = Math.round(G.threat.fireInterval * 0.85);
+      // Fire interval auto-recalculated via getEffectiveFireInterval()
       postLogEvent("Enemy weapons subroutines restored.", 'warn');
       const bl = document.getElementById('lbl-scan-bonus');
       if (bl) { bl.textContent = 'No Profile'; bl.style.cssText = 'background:rgba(255,170,0,0.1);color:var(--warn);border:1px solid var(--warn);font-size:9px'; }

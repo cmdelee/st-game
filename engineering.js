@@ -4,6 +4,7 @@
 // WARP CORE TRIP
 // ============================================================
 function handleWarpCoreTrip() {
+  _invalidatePowerCache();
   postLogEvent("WARP CORE OFFLINE — switching to impulse power. All systems reduced!", 'crit');
   crewReportWarpCoreTrip();
   const impulseMax = WARP_CORE.impulseOutput;
@@ -45,6 +46,7 @@ function handleWarpCoreTrip() {
 // EMERGENCY BATTERY
 // ============================================================
 function activateEmergencyBattery() {
+  _invalidatePowerCache();
   if (G.playerChosenStation !== 'engineering' && G.playerChosenStation !== 'captain') { postLogEvent("Battery control requires Engineering station.", 'warn'); return; }
   if (G.batteryCharge < 10) { postLogEvent("Emergency battery depleted.", 'crit'); return; }
   if (!G.systems.warp_core.tripped && G.systems.warp_core.health > 20) {
@@ -279,6 +281,7 @@ function processRepairQueues(dt) {
 // ============================================================
 function rebuildEngineeringMatrixInterface() {
   const mount = document.getElementById('engineering-matrix-rows'); if (!mount) return;
+  // Re-prime eng row cache after innerHTML rebuild (called from _rebuildEngCache after this returns)
   mount.innerHTML = '';
   const groups = [
     { label:'⚡ Power Core', keys:['warp_core'], color:'var(--o)' },
@@ -422,6 +425,7 @@ function refreshEngineeringPanelGraphics() {
 // ============================================================
 function tuneBusAllocation(key, amount) {
   if (G.playerChosenStation === 'tactical') { postLogEvent("Power locked to automation.", 'warn'); return; }
+  _invalidatePowerCache();
   const sys = G.systems[key]; if (!sys) return;
   const projected     = sys.allocatedPower + amount;
   const warpOut       = getWarpOutput();
@@ -460,6 +464,7 @@ const POWER_PRESETS = {
 
 function applyPowerPreset(name) {
   if (G.playerChosenStation === 'tactical') { postLogEvent('Power locked to automation.', 'warn'); return; }
+  _invalidatePowerCache();
   const preset = POWER_PRESETS[name]; if (!preset) return;
   const warpOut = getWarpOutput();
   const total   = Object.values(preset.alloc).reduce((s, v) => s + v, 0);

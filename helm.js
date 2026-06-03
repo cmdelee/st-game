@@ -224,9 +224,10 @@ function executeComeAbout() {
 // HELM — PANEL UI UPDATE
 // ============================================================
 function updateHelmPanel() {
+  const _g = id => (typeof _EL !== 'undefined' && _EL[id]) || document.getElementById(id);
   // Speed buttons — white glow on active
   ['stop','maneuvering','half','full'].forEach(s => {
-    const btn = document.getElementById(`btn-helm-speed-${s}`); if (!btn) return;
+    const btn = _g(`btn-helm-speed-${s}`); if (!btn) return;
     if (G.helmSpeed === s) {
       btn.style.background = '#fff'; btn.style.color = '#000'; btn.style.boxShadow = '0 0 10px rgba(255,255,255,0.5)';
     } else {
@@ -236,7 +237,7 @@ function updateHelmPanel() {
 
   // Vector buttons — live shield HP + white/blue glow on active
   SHIELD_SECTORS.forEach(s => {
-    const btn = document.getElementById(`btn-helm-vector-${s}`); if (!btn) return;
+    const btn = _g(`btn-helm-vector-${s}`); if (!btn) return;
     const hp    = G.running ? Math.ceil(G.player.shields[s]) : '—';
     const pct   = G.running ? (G.player.shields[s] / G.player.shields.maxSectorValue) * 100 : 100;
     const hpCol = pct > 66 ? '#00ff88' : pct > 33 ? '#ffaa00' : '#ff4444';
@@ -253,7 +254,7 @@ function updateHelmPanel() {
 
   // Range buttons — white/orange glow on active
   ['long','medium','close'].forEach(r => {
-    const btn = document.getElementById(`btn-helm-range-${r}`); if (!btn) return;
+    const btn = _g(`btn-helm-range-${r}`); if (!btn) return;
     if (G.playerRangeBracket === r && !G.attackRunActive) {
       btn.style.background = '#fff'; btn.style.color = '#000'; btn.style.boxShadow = '0 0 10px rgba(255,153,0,0.6)';
     } else if (G.attackRunActive && r === 'close') {
@@ -265,7 +266,7 @@ function updateHelmPanel() {
 
   // Manoeuvre buttons — active/cooldown/ready state
   function _setManoeuvreBtn(id, active, timer, cd, labels, activeCol) {
-    const btn = document.getElementById(id); if (!btn) return;
+    const btn = _g(id); if (!btn) return;
     if (active)  { btn.textContent=`${labels[0]} ${Math.ceil(timer/1000)}s`; btn.style.background=activeCol; btn.style.color=activeCol==='#fff'?'#000':'#fff'; btn.style.boxShadow=`0 0 12px ${activeCol}88`; }
     else if (cd) { btn.textContent=`${labels[1]} ${Math.ceil(cd/1000)}s`;    btn.style.background='var(--dim2)'; btn.style.color='#556677'; btn.style.boxShadow=''; }
     else         { btn.textContent=labels[2];                                 btn.style.background=''; btn.style.color=''; btn.style.boxShadow=''; }
@@ -291,7 +292,7 @@ function updateHelmPanel() {
   }
 
   // Auto-tactical summary
-  const at = document.getElementById('lbl-helm-autotac');
+  const at = _g('lbl-helm-autotac');
   if (at) {
     const _isEnt    = G.playerShipKey === 'enterprise_e';
     const _wpnKeys  = (_isEnt ? G.playerShipConfig?.primaryWeaponKeys : null) || ['cannon_pu','cannon_pl','cannon_su','cannon_sl'];
@@ -304,7 +305,7 @@ function updateHelmPanel() {
   }
 
   // Auto-engineering summary
-  const ae = document.getElementById('lbl-helm-autoeng');
+  const ae = _g('lbl-helm-autoeng');
   if (ae) {
     const teamA  = G.repairTeams[0].sysKey ? `<b style="color:#ffaa00;">A→${G.repairTeams[0].label.split(' ').slice(-1)[0]}</b>` : '<span style="color:#556677;">A:idle</span>';
     const teamB  = G.repairTeams[1].sysKey ? `<b style="color:#ffaa00;">B→${G.repairTeams[1].label.split(' ').slice(-1)[0]}</b>` : '<span style="color:#556677;">B:idle</span>';

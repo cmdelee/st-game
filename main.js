@@ -80,6 +80,7 @@ function selectPlayerShip(key) {
   if (desc) desc.textContent = cfg.description;
 
   rebuildWeaponFireMatrix();
+  if (typeof _rebuildCapBarCache === 'function') _rebuildCapBarCache();
 }
 
 // Rebuild the tactical deck weapon fire and overload button grids based on active ship.
@@ -124,6 +125,7 @@ function rebuildWeaponFireMatrix() {
 
   // Rebuild capacitor bar grid layout for active ship
   _rebuildCapBarGrid();
+  if (typeof _rebuildCapBarCache === 'function') _rebuildCapBarCache();
   // Update capacitor bar labels to match active weapon dictionary
   _updateCapacitorBarLabels();
   // Update helm cloak/saucer sep button
@@ -562,7 +564,7 @@ function masterSimulationCoreLoop(ts) {
   const _jemFury = (_cfg && _cfg.faction === 'Dominion')
     ? Math.max(0.50, 1.0 - (1.0 - G.threat.hull / G.threat.maxHull) * 0.55)
     : 1.0;
-  const fi = G.threat.fireInterval * (G.enemyPhaseFireMult || 1.0) * (G.weaponsDisrupted ? 2 : 1) * _jemFury;
+  const fi = getEffectiveFireInterval() * (G.enemyPhaseFireMult || 1.0) * (G.weaponsDisrupted ? 2 : 1) * _jemFury;
   if (G.threatCycleTimer > fi) { G.threatCycleTimer = 0; executeThreatCounterVolley(); }
 
 
@@ -621,7 +623,7 @@ function initiateVesselSimulation(station) {
   G.threat.maxHull      = G.threat.hull;
   G.threat.shields      = Object.assign({}, cfg.shields);
   G.threat.recoveryCoefficient = cfg.recoveryCoefficient;
-  G.threat.fireInterval = Math.round(cfg.fireInterval * diff.enemyFireMult);
+  // G.threat.fireInterval removed — use getEffectiveFireInterval() (derived from config × difficulty × modifiers)
   G.threat.lockRate     = cfg.lockRate * diff.enemyLockMult;
   const shipCfg = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
   G.player.hull         = Math.round(shipCfg.hull * diff.playerHullMult);
@@ -849,6 +851,8 @@ function initiateVesselSimulation(station) {
 
   toggleActiveDeck(station);
   rebuildWeaponFireMatrix();     // ship-specific weapon buttons + capacitor labels
+  _buildELCache();               // prime DOM element cache for hot paths
+  _rebuildCapBarCache();         // cache newly-built cap bar elements
   _updateSpecialAbilityButtons(); // helm/captain cloak↔saucer-sep labels
   buildEnemySubsystemTargetGrid();
   updateCrewStatusDisplay();

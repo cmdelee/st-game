@@ -264,15 +264,36 @@ function getWeakestShieldSector() {
   return SHIELD_SECTORS.reduce((b, s) => G.player.shields[s] < G.player.shields[b] ? s : b, 'fore');
 }
 
-// ── Warp output (accounts for tripped/battery state) ─────────
-function getWarpOutput() {
+// ── Frame-level power cache ───────────────────────────────────
+// Recomputed at most once per RAF frame (keyed by G.lastFrameTimestamp).
+// Invalidated explicitly on any power change so user-input paths stay accurate.
+let _powerCacheKey  = -1;
+let _warpOutCache   = 0;
+let _totalPowCache  = 0;
+
+function _invalidatePowerCache() { _powerCacheKey = -1; }
+
+function _refreshPowerCache() {
+  if (_powerCacheKey === G.lastFrameTimestamp && _powerCacheKey !== -1) return;
   const wc = G.systems.warp_core;
-  if (wc.tripped) return G.batteryActive ? WARP_CORE.impulseOutput : 0;
-  return Math.round(WARP_CORE.maxOutput * (wc.health / 100));
+  _warpOutCache  = wc.tripped ? (G.batteryActive ? WARP_CORE.impulseOutput : 0) : Math.round(WARP_CORE.maxOutput * (wc.health / 100));
+  _totalPowCache = Object.values(G.systems).reduce((t, s) => t + s.allocatedPower, 0);
+  _powerCacheKey = G.lastFrameTimestamp;
 }
 
-function getTotalAllocatedPower() {
-  return Object.values(G.systems).reduce((t, s) => t + s.allocatedPower, 0);
+function getWarpOutput()          { _refreshPowerCache(); return _warpOutCache; }
+function getTotalAllocatedPower() { _refreshPowerCache(); return _totalPowCache; }
+
+// ── Effective enemy fire interval (derived — never mutate G.threat.fireInterval directly) ──
+// Combines base rate × difficulty × permanent scan bonuses × active scanner.
+function getEffectiveFireInterval() {
+  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
+  if (!cfg || !G.running) return 3000;
+  const diff = DIFFICULTY[currentDifficulty];
+  let iv = Math.round(cfg.fireInterval * diff.enemyFireMult);
+  if (G.permanentScanBonuses?.weapon_disrupt) iv = Math.round(iv * 1.30);
+  if (G.activeScanningProfile)               iv = Math.round(iv * 0.85);
+  return iv;
 }
 
 // ── Difficulty selector ───────────────────────────────────────

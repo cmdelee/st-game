@@ -150,8 +150,9 @@ function _canOrder(key) { return (G.captainOrderCooldowns[key] || 0) <= 0; }
 function _startCD(key)  { G.captainOrderCooldowns[key] = _CAP_CD[key] || 0; }
 
 function _updateCaptainOrderButtons() {
+  const _g = id => (typeof _EL !== 'undefined' && _EL[id]) || document.getElementById(id);
   Object.keys(_CAP_CD).forEach(key => {
-    const btn = document.getElementById('cap-ord-' + key);
+    const btn = _g('cap-ord-' + key);
     if (!btn) return;
     const ready = _canOrder(key);
     btn.disabled      = !ready;
@@ -164,7 +165,7 @@ function _updateCaptainOrderButtons() {
     if (target) target.textContent = ready ? lbl : lbl + ' (' + Math.ceil(cd / 1000) + 's)';
   });
   // Fire at Will toggle — separate visual state (no cooldown)
-  const fawBtn = document.getElementById('cap-ord-fire_at_will');
+  const fawBtn = _g('cap-ord-fire_at_will');
   if (fawBtn) {
     fawBtn.style.background = G.fireAtWill ? 'var(--red)'  : '';
     fawBtn.style.color      = G.fireAtWill ? '#fff'        : '';
