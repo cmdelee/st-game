@@ -69,7 +69,7 @@ function triggerEnemyDecloak(cfg, reason) {
   setTimeout(() => {
     if (G.dead) return;
     G.enemyCloakVulnTimer = 0;
-    const eSS        = G.enemySystems.shields;
+    const eSS        = G.enemySystems.shields_sys;
     const eRegen     = (eSS ? eSS.health / 100 : 1) * 1.2;
     const cloakSecs  = (performance.now() - G.enemyCloakEngagedAt) / 1000;
     const regenEarned = eRegen * cloakSecs;

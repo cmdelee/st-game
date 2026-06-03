@@ -715,7 +715,7 @@ function computeConduitConduction(dt) {
   // Enemy shield regen
   if (!G.enemyCloaked) {
     const cfg = ENEMY_CONFIGS[G.enemyArchetype];
-    const eSS = G.enemySystems.shields;
+    const eSS = G.enemySystems.shields_sys;
     let eRegen = (eSS ? eSS.health / 100 : 1) * 1.2;
     if (cfg.adaptiveShields) eRegen *= (1 + G.enemyAdaptiveHits * 0.15);
     SHIELD_SECTORS.forEach(s => {

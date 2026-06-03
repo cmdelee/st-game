@@ -70,7 +70,7 @@ Starfleet's flagship from the TNG films. Larger, tougher, and bristling with pha
   - Burst salvos, alpha salvo, and ship-specific overload weapon modes
   - Shield frequency rotation countering enemy weapon types
   - Evasive Pattern Delta, Pattern Alpha, Attack Pattern Omega, Picard Manoeuvre
-  - Four deep scan profiles (shields / hull fissures / weapons disrupt / tetryon ECM) — each grants a **permanent frequency lock** bonus that persists until overwritten
+  - Single comprehensive deep scan — reveals **all** of the current enemy's frequency bonuses at once (shield freq / hull weakness / sensor blind / weapon disrupt) as **permanent frequency locks** that persist until overwritten (or until the Borg adapt)
   - Enemy subsystem targeting — focused beam deals 62% system damage + 22% collateral hull bleed through penetrating energy; shields absorb up to 45% first
   - Ablative armour — 6 regenerating layers (Defiant only)
   - Regenerative shielding (Enterprise-E only)
@@ -135,7 +135,7 @@ Direct weapons fire, manage evasive manoeuvres, operate cloak or saucer sep, and
 | ⚡ Max Phaser Output | — | All phasers +60%, 30s CD |
 | ☢ Tricobalt Warhead | — | 300yd, no lock, 40% hull bleed-through, 1 per engagement |
 
-Both ships share: Alpha Salvo, Shield Frequency Rotation, Evasive Pattern, Emergency Power Dump, Deep Scan Profiles (4), Subsystem Targeting Grid, Emergency Warp.
+Both ships share: Alpha Salvo, Shield Frequency Rotation, Evasive Pattern, Emergency Power Dump, Deep Scan (single comprehensive scan), Subsystem Targeting Grid, Emergency Warp.
 
 **Simplified fire interface**: Quick-fire buttons — **Fire Phasers** (all in-arc energy weapons), **Fire Torpedoes** (both launchers simultaneously — quantum first, photon fallback), and **Fire All** (full alpha salvo) — let you engage immediately without selecting individual arrays.
 
@@ -180,7 +180,7 @@ All three stations fully automated. Issue orders and override crew decisions.
 
 | Crew | Orders |
 |---|---|
-| **Worf** | Fire Cannons/Quantum/Photon/Burst/Alpha, Rotate Freq, Cloak, Hold Fire, Target subsystems (7), Sensor scans (4), Evasive |
+| **Worf** | Fire Cannons/Quantum/Photon/Burst/Alpha, Rotate Freq, Cloak, Hold Fire, Target subsystems (7), Deep Scan, Evasive |
 | **O'Brien** | Equalise Shields, Boost Regen, Battery, Repair Weapons/Systems/Cloak, Flush EPS, Damage Control |
 | **Nog** | Vectors (4), Speed (3), Range (3), Attack Run, Come About, Picard, Omega, Evasive Alpha, Auto Shield Track, Silent Running, Emergency Thrusters, Emergency Warp |
 
