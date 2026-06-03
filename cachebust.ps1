@@ -18,7 +18,11 @@ param([switch]$Check)
 $ErrorActionPreference = 'Stop'
 $root  = $PSScriptRoot
 $index = Join-Path $root 'index.html'
-$html  = Get-Content $index -Raw
+# Read as UTF-8 explicitly. Without this, PowerShell 5.1's Get-Content defaults
+# to the Windows ANSI codepage (1252) and silently mojibakes multi-byte UTF-8
+# (emoji, em-dashes, arrows) on read; the subsequent UTF-8 Set-Content then bakes
+# the corruption into the file on every run.
+$html  = Get-Content $index -Raw -Encoding utf8
 
 $pattern = 'src="(?<file>[\w./-]+\.(?:js|css))(?:\?v=[^"]*)?"'
 $stale   = @()
