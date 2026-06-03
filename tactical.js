@@ -363,9 +363,6 @@ function fireAllWeapons() {
   fireTorpedoBanks();
 }
 
-// ── Keep for internal / delegation use ───────────────────────
-function firePulseCannons() { fireEnergyWeapons(); }
-
 // ── Defiant exclusive: Maximum Pulse Burst ────────────────────
 // All 4 pulse cannons fire 3 rapid volleys with +80% yield,
 // ignoring arc restrictions. Once per engagement. High EPS cost.
@@ -402,7 +399,6 @@ function executeMaximumPulseBurst() {
     delay += 300; // gap between volleys
   }
 }
-function fireAllPhaserArrays() { fireEnergyWeapons(); }
 
 // Alpha salvo — all in-arc energy weapons + one torpedo (strict single-tube, arc-correct)
 function executeAlphaSalvoFire() {

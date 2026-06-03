@@ -218,7 +218,7 @@ function capDeepScan()     { _order('deep_scan',    startDeepScan,      'worf', 
 function capEvasive()      { _order('evasive',      executeEvasivePattern, 'worf', "Evasive Pattern Delta, aye."); }
 
 // ── Legacy wrappers (still called from captain auto-delegation, keep them) ───
-function capFireCannons()  { _order('fire_cannons',  firePulseCannons,                           'worf', "All cannons firing, Captain."); }
+function capFireCannons()  { _order('fire_cannons',  fireEnergyWeapons,                          'worf', "All cannons firing, Captain."); }
 function capFireQuantum()  { _order('fire_quantum',  () => fireSelectedArray('torpedo_quantum'), 'worf', "Quantum torpedo away, sir."); }
 function capFirePhoton()   { _order('fire_photon',   () => fireSelectedArray('torpedo_photon'),  'worf', "Photon torpedo launched, Captain."); }
 function capFireBurst()    { capBurst(); }
@@ -260,24 +260,25 @@ function _updateCloakButtonLabel() {
 // Each order tells Worf to shift targeting to a specific enemy system.
 // Uses the live enemy systems from G.enemySystems to find the best match.
 
-function _capTargetSystem(cdKey, sysKeyHint, fallbackLabel) {
-  // Find the matching live enemy system key
+// Find and lock the best matching live enemy system. `hint` may be a single
+// category string or an array of them (e.g. all weapon categories). Among
+// matches it prefers the healthiest live system; 'hull'/'shields' are handled
+// as special non-system targets when a single string hint is given.
+function _capTargetSystem(cdKey, hint, fallbackLabel) {
   const cfg = ENEMY_CONFIGS[G.enemyArchetype];
   if (!cfg) return;
-  // sysKeyHint is a category string we match against systemTargetKey or the key name
+  const hints = Array.isArray(hint) ? hint : [hint];
   let matchKey = null, matchLabel = fallbackLabel;
   Object.keys(G.enemySystems).forEach(k => {
     const s = G.enemySystems[k];
-    if (s.systemTargetKey === sysKeyHint || k.includes(sysKeyHint)) {
-      if (!matchKey || s.health > G.enemySystems[matchKey].health) { // prefer healthier one
-        matchKey = k; matchLabel = s.label;
-      }
+    if (hints.some(h => s.systemTargetKey === h || k.includes(h)) && s.health > 0) {
+      if (!matchKey || s.health > G.enemySystems[matchKey].health) { matchKey = k; matchLabel = s.label; }
     }
   });
-  // Special non-weapon targets
-  if (!matchKey) {
-    if (sysKeyHint === 'hull')    { matchKey = 'hull';    matchLabel = 'Hull'; }
-    if (sysKeyHint === 'shields') { matchKey = 'shields'; matchLabel = 'Shield Generators'; }
+  // Special non-weapon targets (single-hint only)
+  if (!matchKey && !Array.isArray(hint)) {
+    if (hint === 'hull')    { matchKey = 'hull';    matchLabel = 'Hull'; }
+    if (hint === 'shields') { matchKey = 'shields'; matchLabel = 'Shield Generators'; }
   }
   if (!matchKey) { postCrewReport('worf', `No ${fallbackLabel} systems detected on enemy vessel, Captain.`, 'alert'); return; }
   if (!_canOrder(cdKey)) return;
@@ -289,32 +290,11 @@ function _capTargetSystem(cdKey, sysKeyHint, fallbackLabel) {
 
 function capTgtHull()      { _capTargetSystem('tgt_hull',     'hull',       'Hull'); }
 function capTgtShields()   { _capTargetSystem('tgt_shields',  'shields',    'Shield Generators'); }
-function capTgtWeapons()   { capTgtWeaponsAny(); }   // delegates to multi-key search covering all factions
+function capTgtWeapons()   { _capTargetSystem('tgt_weapons',  ['disruptors','phasers','polaron','torpedoes'], 'Weapons'); }
 function capTgtEngines()   { _capTargetSystem('tgt_engines',  'engines',    'Impulse Engines'); }
 function capTgtCloak()     { _capTargetSystem('tgt_cloak',    'cloak',      'Cloaking Device'); }
 function capTgtSensors()   { _capTargetSystem('tgt_sensors',  'sensors',    'Sensor Array'); }
 function capTgtWarpCore()  { _capTargetSystem('tgt_warpcore', 'warp',       'Warp Core'); }
-
-// Weapon category targeting helper (tries multiple systemTargetKeys)
-function capTgtWeaponsAny() {
-  if (!_canOrder('tgt_weapons')) return;
-  const cfg = ENEMY_CONFIGS[G.enemyArchetype]; if (!cfg) return;
-  const weaponSysKeys = ['disruptors','phasers','polaron','torpedoes'];
-  let best = null, bestLabel = 'Weapons';
-  weaponSysKeys.forEach(hint => {
-    Object.keys(G.enemySystems).forEach(k => {
-      const s = G.enemySystems[k];
-      if ((s.systemTargetKey === hint || k.includes(hint)) && s.health > 0) {
-        if (!best) { best = k; bestLabel = s.label; }
-      }
-    });
-  });
-  if (!best) { postCrewReport('worf', "All enemy weapon systems appear offline, Captain.", 'alert'); return; }
-  _startCD('tgt_weapons');
-  postCrewReport('worf', `Targeting enemy ${bestLabel}, Captain.`, 'status');
-  setTimeout(() => { try { setEnemyTarget(best, bestLabel, 'All'); } catch(e) {} }, 350);
-  _updateCaptainOrderButtons();
-}
 
 // ── WORF — Sensor Scans ───────────────────────────────────────
 // All four legacy scan orders now delegate to the deep scan system.

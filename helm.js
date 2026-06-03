@@ -3,77 +3,34 @@
 // ============================================================
 // HELM — TIMER PROCESSING (called from processNewMechanicsTimers)
 // ============================================================
+// Shared active/cooldown tick for a helm manoeuvre. `onExpire` runs once when the
+// active window ends (it owns any deferred cooldown assignment, e.g. Omega).
+function _tickManoeuvre(dt, m) {
+  if (G[m.active]) {
+    G[m.timer] = Math.max(0, G[m.timer] - dt);
+    if (G[m.timer] <= 0) { G[m.active] = false; m.onExpire(); }
+    if (G.activePanel === 'helm') updateHelmPanel();
+  } else if (G[m.cd] > 0) {
+    G[m.cd] = Math.max(0, G[m.cd] - dt);
+    if (G[m.cd] <= 0 && G.activePanel === 'helm') updateHelmPanel();
+  }
+}
+
+const _HELM_MANOEUVRES = [
+  { active:'attackRunActive', timer:'attackRunTimer', cd:'attackRunCooldown',
+    onExpire() { G.playerRangeBracket = 'medium'; postLogEvent("Attack run complete — range returned to medium. CD 20s.", 'good'); crewReportAttackRunComplete(); } },
+  { active:'picardManoeuverActive', timer:'picardManoeuverTimer', cd:'picardManoeuverCooldown',
+    onExpire() { postLogEvent("Picard Manoeuvre window closed — enemy targeting restored.", 'warn'); } },
+  { active:'attackPatternOmegaActive', timer:'attackPatternOmegaTimer', cd:'attackPatternOmegaCooldown',
+    onExpire() { G.attackPatternOmegaCooldown = 45000; postLogEvent("Attack Pattern Omega complete — defensive posture restored.", 'good'); } },
+  { active:'evasiveAlphaActive', timer:'evasiveAlphaTimer', cd:'evasiveAlphaCooldown',
+    onExpire() { postLogEvent("Evasive Pattern Alpha complete.", 'info'); } },
+  { active:'comeAboutActive', timer:'comeAboutTimer', cd:'comeAboutCooldown',
+    onExpire() { const s = getStrongestShieldSector(); G.helmAttackVector = s; postLogEvent(`Come-about complete — ${s.toUpperCase()} shields presented (${Math.round(G.player.shields[s])}MW).`, 'good'); crewReportComeAboutComplete(s); } },
+];
+
 function processHelmTimers(dt) {
-  // Attack run active timer
-  if (G.attackRunActive) {
-    G.attackRunTimer = Math.max(0, G.attackRunTimer - dt);
-    if (G.attackRunTimer <= 0) {
-      G.attackRunActive = false;
-      G.playerRangeBracket = 'medium'; // return to neutral range after run
-      postLogEvent("Attack run complete — range returned to medium. CD 20s.", 'good');
-      crewReportAttackRunComplete();
-    }
-    if (G.activePanel === 'helm') updateHelmPanel();
-  } else if (G.attackRunCooldown > 0) {
-    G.attackRunCooldown = Math.max(0, G.attackRunCooldown - dt);
-    if (G.attackRunCooldown <= 0 && G.activePanel === 'helm') updateHelmPanel();
-  }
-
-  // Picard Manoeuvre window
-  if (G.picardManoeuverActive) {
-    G.picardManoeuverTimer = Math.max(0, G.picardManoeuverTimer - dt);
-    if (G.picardManoeuverTimer <= 0) {
-      G.picardManoeuverActive = false;
-      postLogEvent("Picard Manoeuvre window closed — enemy targeting restored.", 'warn');
-    }
-    if (G.activePanel === 'helm') updateHelmPanel();
-  } else if (G.picardManoeuverCooldown > 0) {
-    G.picardManoeuverCooldown = Math.max(0, G.picardManoeuverCooldown - dt);
-    if (G.picardManoeuverCooldown <= 0 && G.activePanel === 'helm') updateHelmPanel();
-  }
-
-  // Attack Pattern Omega
-  if (G.attackPatternOmegaActive) {
-    G.attackPatternOmegaTimer = Math.max(0, G.attackPatternOmegaTimer - dt);
-    if (G.attackPatternOmegaTimer <= 0) {
-      G.attackPatternOmegaActive    = false;
-      G.attackPatternOmegaCooldown  = 45000;
-      postLogEvent("Attack Pattern Omega complete — defensive posture restored.", 'good');
-    }
-    if (G.activePanel === 'helm') updateHelmPanel();
-  } else if (G.attackPatternOmegaCooldown > 0) {
-    G.attackPatternOmegaCooldown = Math.max(0, G.attackPatternOmegaCooldown - dt);
-    if (G.attackPatternOmegaCooldown <= 0 && G.activePanel === 'helm') updateHelmPanel();
-  }
-
-  // Evasive Pattern Alpha
-  if (G.evasiveAlphaActive) {
-    G.evasiveAlphaTimer = Math.max(0, G.evasiveAlphaTimer - dt);
-    if (G.evasiveAlphaTimer <= 0) {
-      G.evasiveAlphaActive = false;
-      postLogEvent("Evasive Pattern Alpha complete.", 'info');
-    }
-    if (G.activePanel === 'helm') updateHelmPanel();
-  } else if (G.evasiveAlphaCooldown > 0) {
-    G.evasiveAlphaCooldown = Math.max(0, G.evasiveAlphaCooldown - dt);
-    if (G.evasiveAlphaCooldown <= 0 && G.activePanel === 'helm') updateHelmPanel();
-  }
-
-  // Come about rotation timer
-  if (G.comeAboutActive) {
-    G.comeAboutTimer = Math.max(0, G.comeAboutTimer - dt);
-    if (G.comeAboutTimer <= 0) {
-      G.comeAboutActive   = false;
-      const strongest = getStrongestShieldSector();
-      G.helmAttackVector = strongest;
-      postLogEvent(`Come-about complete — ${strongest.toUpperCase()} shields presented (${Math.round(G.player.shields[strongest])}MW).`, 'good');
-      crewReportComeAboutComplete(strongest);
-    }
-    if (G.activePanel === 'helm') updateHelmPanel();
-  } else if (G.comeAboutCooldown > 0) {
-    G.comeAboutCooldown = Math.max(0, G.comeAboutCooldown - dt);
-    if (G.comeAboutCooldown <= 0 && G.activePanel === 'helm') updateHelmPanel();
-  }
+  _HELM_MANOEUVRES.forEach(m => _tickManoeuvre(dt, m));
 }
 
 // ============================================================

@@ -17,7 +17,7 @@ index.html (HTML shell + script tags)
 
 > **Classic-script scoping note:** these are plain `<script>` files (no modules). Top-level `function`/`var` become `window` properties; top-level `let`/`const` live in a shared global lexical environment accessible across all files. `canvas-three-geometry.js` reads colour/offset consts (`_FACTION_*`, `_NAC_OFFSET`, …) and `canvas-three-render.js` reads `let`-declared render state (`THREE_scene`, `mesh_defiant`, `beam_lines`, shield/glow/particle handles, …) — both defined in `canvas-three.js`, so **canvas-three.js must load first**. `setup.js`/`campaign.js`/`briefing.js` only *call* functions (resolved at runtime), so their order is flexible as long as they load before the first call.
 
-> **Cache-busting:** every local `<script src>` carries a `?v=<sha1>` content hash. Run `./cachebust.ps1` before committing to refresh hashes for changed files (`./cachebust.ps1 -Check` exits non-zero if any are stale). Changed files get a new URL (browsers refetch); unchanged files keep theirs (stay cached). This replaced the old manual `?v=N` bumps.
+> **Cache-busting:** every local `<script src>` carries a `?v=<sha1>` content hash. Run `./cachebust.ps1` before committing to refresh hashes for changed files (`./cachebust.ps1 -Check` exits non-zero if any are stale). Changed files get a new URL (browsers refetch); unchanged files keep theirs (stay cached). This replaced the old manual `?v=N` bumps. A checked-in pre-commit hook (`.githooks/pre-commit`) runs the `-Check` and blocks the commit if hashes are stale — enable once per clone with `git config core.hooksPath .githooks`.
 
 ---
 
@@ -30,7 +30,7 @@ index.html (HTML shell + script tags)
 | `engineering.js` | Warp core trip, emergency battery, ablative armour processing, shield regen rate calculation, repair queue (2 independent teams), engineering matrix UI, power allocation (`tuneBusAllocation`), power presets (`applyPowerPreset`), EPS conduit conduction + thermal buildup, system degradation thresholds, shield manipulation |
 | `crew.js` | Crew casualties (`inflictCrewCasualty`), efficiency modifiers (`getCrewEfficiency`, `getMedicalEfficiency`, `getHelmEvasiveModifier`), `updateCrewStatusDisplay`, `attemptEmergencyWarp`, `updateWarpAvailability`, `postTacticalAdvisory` |
 | `sensors.js` | Deep scan system (`startDeepScan`, `processDeepScan`, `_SCAN_RESULTS`, `checkBorgScanExpiry`), active sensor toggle, enemy subsystem target grid (`buildEnemySubsystemTargetGrid`, `setEnemyTarget`); scan results grant permanent bonuses (shields/fissures/disrupt/tetryon) until Borg expiry check |
-| `tactical.js` | Player weapons: burst-fire/concentrated phaser fire, shield freq rotation, evasive, `fireSelectedArray`, `fireEnergyWeapons`, `fireTorpedoBanks`, `fireAllWeapons`, `applyDamageToEnemy` (subsystem hits: 45% shield absorb → 62% sys + 22% hull bleed), overload modes; Defiant: `firePulseCannons`, `toggleCloakingDevice`; Enterprise-E: `fireAllPhaserArrays`, `toggleSaucerSeparation`, `fireSaucerAutomatic`, `executeConcentratedPhaserFire`, `executeMaxPhaserOutput`, `executeTricobalWarhead` |
+| `tactical.js` | Player weapons: burst-fire/concentrated phaser fire, shield freq rotation, evasive, `fireSelectedArray`, `fireEnergyWeapons`, `fireTorpedoBanks`, `fireAllWeapons`, `applyDamageToEnemy` (subsystem hits: 45% shield absorb → 62% sys + 22% hull bleed), overload modes; Defiant: `executeMaximumPulseBurst`, `toggleCloakingDevice`; Enterprise-E: `toggleSaucerSeparation`, `fireSaucerAutomatic`, `executeConcentratedPhaserFire`, `executeMaxPhaserOutput`, `executeTricobalWarhead`. (All energy fire routes through `fireEnergyWeapons()`.) |
 | `helm.js` | Helm timer processing (`processHelmTimers`), speed control (`setHelmSpeed`), attack vector (`setHelmAttackVector`), engagement range (`setPlayerRangeBracket`), attack run, come about, Picard Manoeuvre, Attack Pattern Omega, Evasive Pattern Alpha, helm panel UI (`updateHelmPanel`) |
 | `encounter-phases.js` | Faction encounter phase arcs (`initEncounterPhases`, `processEncounterPhase`, `_applyPhase`); hull milestone events at 75/50/25/10% (`checkEnemyHullMilestones`, `_MILESTONE_DATA`); Klingon death salvo (`_triggerKlingonDeathSalvo`); `_getFactionKey` helper |
 | `enemy-ai.js` | Enemy cloaking AI (`processEnemyCloakDecision`, `triggerEnemyCloak/Decloak`), sensor ghosts (`processEnemySensorGhosts`), mechanics timers (`processNewMechanicsTimers`), Jem'Hadar ramming (`initiateRammingRun`, `executeRammingImpact`), enemy AI loop (`processEnemyAI`), enemy fire (`executeThreatCounterVolley`) |
@@ -276,7 +276,7 @@ Nine Type-XII phaser arrays across all hull sections, sharing 5 weapon system ke
 
 Enterprise arc coverage: FORE = 7 phaser arrays + fwd torps. AFT = 4 arrays + aft torps. The ship has meaningful firepower on every vector.
 
-Enterprise `primaryWeaponKeys` = all 9 phaser array keys (used for "⚡ All Phaser Arrays ×N" arc counter and `fireAllPhaserArrays()`).
+Enterprise `primaryWeaponKeys` = all 9 phaser array keys (used for the "⚡ All Phaser Arrays ×N" arc counter; the fire button calls `fireEnergyWeapons()`).
 
 The capacitor bar grid for Enterprise-E shows 6 system-level bars (one per weapon system, 3-column compact layout) rather than 14 individual weapon bars, since arrays sharing a system always show the same cap%.
 
@@ -809,7 +809,7 @@ Weapon buttons dim (`opacity:0.35; pointer-events:none`) when the weapon's arc d
 
 | Button | Function | Constraint |
 |---|---|---|
-| ⚡ Pulse Cannons ×N | `firePulseCannons()` | In-arc cannons only; cap charged |
+| ⚡ Pulse Cannons ×N | `fireEnergyWeapons()` | In-arc cannons only; cap charged |
 | Nose Beam | `fireSelectedArray('emitter_nose')` | Fore arc only; cap charged |
 | Fwd Quantum Torpedo | `fireSelectedArray('torpedo_quantum')` | Fore/port/stbd arc; ≥5% lock; torps > 0 |
 | Fwd Photon Torpedo | `fireSelectedArray('torpedo_photon')` | Fore/port/stbd arc; no lock required |
@@ -931,9 +931,9 @@ Identified during the June 2026 simplification review. Tick off as completed.
 - [ ] **Button update throttling** — `updateEvasiveButton`, `updateShieldFreqButton`, `_updateDeepScanButton` update DOM 60×/s for values that change once per second. Only update when `Math.ceil(timer/1000)` differs from the previous frame.
 
 ### Simplification
-- [ ] **`processHelmTimers` data-table** — 5 copy-paste active/cooldown timer blocks (attack run, come-about, Picard, Omega, Alpha). Each `onExpire` is different so needs care; extract shared tick logic into `_tickManoeuvre(activeKey, timerKey, cdKey, onExpire)` helper.
-- [ ] **`_capTargetSystem` / `capTgtWeaponsAny` consolidation** — two functions share 80% of logic; extend `_capTargetSystem` to accept an array of hint strings so `capTgtWeaponsAny` calls it instead of duplicating the match loop.
-- [ ] **`firePulseCannons` / `fireAllPhaserArrays` one-liner wrappers** — both are single-line delegates to `fireEnergyWeapons()`; remove wrappers and call `fireEnergyWeapons()` directly at the two call sites in `auto-delegation.js`.
+- [x] **`processHelmTimers` data-table** — done. `_HELM_MANOEUVRES` table + shared `_tickManoeuvre(dt, m)` helper (helm.js) replace the 5 copy-paste active/cooldown blocks; each entry's `onExpire` owns its deferred cooldown (e.g. Omega).
+- [x] **`_capTargetSystem` / `capTgtWeaponsAny` consolidation** — done. `_capTargetSystem` now accepts a single hint *or* an array; `capTgtWeapons` passes `['disruptors','phasers','polaron','torpedoes']`. `capTgtWeaponsAny` removed. Match now requires `health > 0` (won't target a destroyed subsystem).
+- [x] **`firePulseCannons` / `fireAllPhaserArrays` one-liner wrappers** — done. Removed; `capFireCannons` (command.js) calls `fireEnergyWeapons()` directly. (`fireAllPhaserArrays` had no remaining callers; auto-delegation already used `fireEnergyWeapons`.)
 
 ### Architecture
 - [x] **`G.threat.fireInterval` as derived value** — done. `getEffectiveFireInterval()` (state.js) computes base × difficulty × `weapon_disrupt` × active-scanner each frame; `G.threat.fireInterval` is no longer mutated (the field is gone — only the derived getter is used).
