@@ -497,8 +497,8 @@ function concludeSimulationRun(victory, msg, escaped) {
   if (G.campaignMode) { concludeCampaignLevel(victory, escaped); return; }
   G.dead = true; G.running = false;
   const overlay = document.getElementById('overlay'); overlay.style.display = 'flex';
-  // Hide ALL setup / selection UI — only the battle report and one button should show
-  ['setup-controls-anchor','campaign-diff-section','campaign-run-section','ship-select-section']
+  // Hide ALL wizard steps — only the battle report and action button should show
+  ['setup-step-mode','setup-step-configure','setup-step-single','setup-step-campaign']
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
   const title = document.getElementById('modal-title');
   if (title) {
@@ -602,6 +602,10 @@ function concludeSimulationRun(victory, msg, escaped) {
       </button>
     `;
   }
+
+  // Scroll modal to show the score (wizard steps are now hidden above it)
+  const _modalBox = document.querySelector('.modal-frame-box');
+  if (_modalBox) setTimeout(() => { _modalBox.scrollTop = 0; }, 50);
 
   _cleanupPostBattleOverlays();
 }
