@@ -9,6 +9,15 @@
 // load first. Geometry builders + scene init live in canvas-three.js.
 // ============================================================
 
+// ── Ship facing ──────────────────────────────────────────────
+// Player faces +X (enemy lies at +X); port = +Z, starboard = -Z.
+// To present a given sector toward the enemy we yaw the ship so that
+// sector's outward normal points at +X. fore=nose, aft=stern, port=+Z, stbd=-Z.
+const _VECTOR_YAW = { fore: 0, aft: Math.PI, port: Math.PI / 2, starboard: -Math.PI / 2 };
+
+// Shortest signed angular distance from a to b, wrapped to (-π, π].
+function _angleWrap(d) { d = (d + Math.PI) % (2 * Math.PI); if (d < 0) d += 2 * Math.PI; return d - Math.PI; }
+
 // ── Hull damage spark pool ────────────────────────────────────
 let _hullSparks = [];            // { mesh, vel, life, maxLife }
 let _hullSparkTimer = 0;         // accumulator — emit sparks at intervals
@@ -73,7 +82,14 @@ function renderSpatialViewCanvas() {
   const _speedDrift = { stop:0.2, maneuvering:0.5, half:1.0, full:1.8 }[G.helmSpeed] ?? 1.0;
   mesh_defiant.position.y = Math.sin(now*0.4)*0.6*_speedDrift;
   mesh_defiant.position.z = Math.sin(now*0.25)*0.8*_speedDrift;
-  mesh_defiant.rotation.z = Math.sin(now*0.3)*0.03*_speedDrift;
+  // Yaw the ship to present the chosen attack-vector sector toward the enemy.
+  // The hull physically turns, so the exposed side faces incoming fire — you
+  // can't be hit on the aft while presenting your bow.
+  const _vecYaw = _VECTOR_YAW[G.helmAttackVector] ?? 0;
+  const _yStep  = _angleWrap(_vecYaw - mesh_defiant.rotation.y) * 0.05;
+  mesh_defiant.rotation.y += _yStep;
+  // Bank into the turn, plus idle roll
+  mesh_defiant.rotation.z = Math.sin(now*0.3)*0.03*_speedDrift - _yStep * 6;
 
   // Hull damage colouring — works on both loaded models and procedural geometry
   const hullPct = G.player.hull / G.player.maxHull;
@@ -83,7 +99,8 @@ function renderSpatialViewCanvas() {
   const _helmGlow = { stop:0.2, maneuvering:0.7, half:1.5, full:3.2 }[G.helmSpeed] ?? 1.5;
   engine_glow_player.intensity = G.cloaked ? 0.1 : _helmGlow + Math.sin(now*3)*0.4*(G.systems.engines.health/100);
   const _nac = _NAC_OFFSET[G.playerShipKey] || _NAC_OFFSET.defiant;
-  engine_glow_player.position.set(mesh_defiant.position.x + _nac.x, mesh_defiant.position.y + _nac.y, mesh_defiant.position.z);
+  const _nacV = new THREE.Vector3(_nac.x, _nac.y, 0).applyQuaternion(mesh_defiant.quaternion);
+  engine_glow_player.position.copy(mesh_defiant.position).add(_nacV);
   engine_glow_enemy.intensity  = G.enemyCloaked ? 0.1 : 1.8+Math.sin(now*2.8)*0.9;
 
   // ── Engine exhaust particles from nacelles ───────────────────
@@ -91,16 +108,17 @@ function renderSpatialViewCanvas() {
     const _exhaustRate = { stop:0, maneuvering:0.12, half:0.28, full:0.55 }[G.helmSpeed] ?? 0.28;
     if (Math.random() < _exhaustRate) {
       const isEnt = G.playerShipKey === 'enterprise_e';
-      const exX = mesh_defiant.position.x + (isEnt ? -9.3 : -3.1);
-      const exY = mesh_defiant.position.y + (isEnt ? -2.4 : 0.0);
+      const exX = isEnt ? -9.3 : -3.1;
+      const exY = isEnt ? -2.4 : 0.0;
       const nacZ = isEnt ? 3.8 : 2.6;  // Defiant: outer nacelle pair spacing
       [-nacZ, nacZ].forEach(z => {
-        spawnThreeParticles(
+        // Local nacelle offset rotated by the ship's facing, then placed in world space
+        const v = new THREE.Vector3(
           exX + (Math.random()-0.5)*0.6,
           exY + (Math.random()-0.5)*0.3,
-          mesh_defiant.position.z + z + (Math.random()-0.5)*0.5,
-          0.25, 0.48, 1.0, 1
-        );
+          z + (Math.random()-0.5)*0.5
+        ).applyQuaternion(mesh_defiant.quaternion).add(mesh_defiant.position);
+        spawnThreeParticles(v.x, v.y, v.z, 0.25, 0.48, 1.0, 1);
       });
     }
   }
@@ -156,7 +174,10 @@ function renderSpatialViewCanvas() {
     const rangeDist = Math.min(_eDist, _pDist);
     mesh_enemyGroup.position.x = THREE.MathUtils.lerp(mesh_enemyGroup.position.x, mesh_defiant.position.x+rangeDist, 0.025);
     const _baseY = Math.sin(now*0.35+1.2)*2.8;
-    const _baseZ = Math.sin(now*0.22+0.7)*2.2;
+    // Lateral orbit — the enemy weaves across the player's arc instead of sitting
+    // dead ahead. Faster, wider weave when closing to combat range.
+    const _orbitAmp = G.enemyRangeBracket==='close'?16:G.enemyRangeBracket==='medium'?11:7;
+    const _baseZ = Math.sin(now*0.22+0.7)*2.2 + Math.sin(now*0.13)*_orbitAmp;
 
     if (G.enemyManeuverState==='angling') {
       const roll={fore:0,aft:Math.PI*0.15,port:0.25,starboard:-0.25}[G.enemyPreferredSector]||0;
@@ -172,7 +193,9 @@ function renderSpatialViewCanvas() {
       mesh_enemyGroup.position.z=THREE.MathUtils.lerp(mesh_enemyGroup.position.z, _baseZ, 0.05);
     } else {
       mesh_enemyGroup.rotation.y=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.y,Math.PI,0.04);
-      mesh_enemyGroup.rotation.z=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.z,0,0.04);
+      // Bank into the lateral weave (roll proportional to z-velocity)
+      const _latVel = Math.cos(now*0.13)*_orbitAmp*0.13;
+      mesh_enemyGroup.rotation.z=THREE.MathUtils.lerp(mesh_enemyGroup.rotation.z, _latVel*0.06, 0.04);
       mesh_enemyGroup.position.y=THREE.MathUtils.lerp(mesh_enemyGroup.position.y, _baseY, 0.03);
       mesh_enemyGroup.position.z=THREE.MathUtils.lerp(mesh_enemyGroup.position.z, _baseZ, 0.03);
     }
@@ -276,19 +299,21 @@ function renderSpatialViewCanvas() {
     if (isEnemy) {
       const pts = _ENEMY_HP[G.enemyArchetype] || [ [-5,0,0] ];
       const off = pts[Math.floor(Math.random() * pts.length)];
-      fromV = mesh_enemyGroup.position.clone().add(new THREE.Vector3(off[0], off[1], off[2]));
-      // Target: player hull biased toward the attacked sector
+      fromV = mesh_enemyGroup.position.clone().add(
+        new THREE.Vector3(off[0], off[1], off[2]).applyQuaternion(mesh_enemyGroup.quaternion));
+      // Target: player hull biased toward the attacked sector, rotated by player facing
       const sOff = _PLAYER_SECTOR_HIT[b.targetSector] || [0,0,0];
       toV = mesh_defiant.position.clone().add(new THREE.Vector3(
         sOff[0] + (Math.random()-0.5)*1.5,
         sOff[1] + (Math.random()-0.5)*1.2,
         sOff[2] + (Math.random()-0.5)*1.5
-      ));
+      ).applyQuaternion(mesh_defiant.quaternion));
     } else {
       const shipHp = _PLAYER_HP[G.playerShipKey] || _PLAYER_HP.defiant;
       const wk = b.weaponKey || b.type;
       const off = shipHp[wk] || shipHp[b.type] || [+5, 0, 0];
-      fromV = mesh_defiant.position.clone().add(new THREE.Vector3(off[0], off[1], off[2]));
+      fromV = mesh_defiant.position.clone().add(
+        new THREE.Vector3(off[0], off[1], off[2]).applyQuaternion(mesh_defiant.quaternion));
       // Target: enemy hull with small random scatter
       toV = mesh_enemyGroup.position.clone().add(new THREE.Vector3(
         (Math.random()-0.5)*3 - 3,
@@ -346,14 +371,16 @@ function renderSpatialViewCanvas() {
       // Enemy torpedo: fire from forward-facing weapons bay
       const pts = _ENEMY_HP[G.enemyArchetype] || [ [-5,0,0] ];
       const off = pts[0];  // use primary forward hardpoint for torpedoes
-      fromV = mesh_enemyGroup.position.clone().add(new THREE.Vector3(off[0], off[1], off[2]));
+      fromV = mesh_enemyGroup.position.clone().add(
+        new THREE.Vector3(off[0], off[1], off[2]).applyQuaternion(mesh_enemyGroup.quaternion));
       toV   = mesh_defiant.position.clone();
     } else {
       // Player torpedo: fire from correct tube
       const shipHp = _PLAYER_HP[G.playerShipKey] || _PLAYER_HP.defiant;
       const wk = t.isAft ? (t.isPhoton ? 'torpedo_photon_aft' : 'torpedo_quantum_aft') : (t.isPhoton ? 'photon' : 'torpedoes');
       const off = shipHp[wk] || [+6.5, -0.7, 0];
-      fromV = mesh_defiant.position.clone().add(new THREE.Vector3(off[0], off[1], off[2]));
+      fromV = mesh_defiant.position.clone().add(
+        new THREE.Vector3(off[0], off[1], off[2]).applyQuaternion(mesh_defiant.quaternion));
       toV   = mesh_enemyGroup.position.clone();
     }
     // Enemy: plasma=green, other=red. Player quantum: blue-white. Player photon: orange-red.
