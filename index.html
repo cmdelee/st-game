@@ -105,77 +105,280 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
+     INSTRUCTIONS OVERLAY
+════════════════════════════════════════════════════════════ -->
+<div id="instructions-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,2,10,0.97);z-index:1500;overflow-y:auto;padding:20px 12px;">
+  <div style="max-width:820px;margin:0 auto;">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--o);">
+      <div style="font-family:'Antonio';font-size:20px;color:var(--o);letter-spacing:3px;">HOW TO PLAY — TACTICAL REFERENCE</div>
+      <button class="pill-action-btn" style="padding:6px 16px;font-size:11px;background:var(--dim2);color:#aabbcc;" onclick="hideInstructions()">← BACK TO SETUP</button>
+    </div>
+
+    <!-- Two-column layout -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+
+      <!-- LEFT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <!-- Overview -->
+        <div style="background:#060c18;border:1px solid var(--o);border-radius:6px;padding:10px;">
+          <div style="font-family:'Antonio';color:var(--o);font-size:12px;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid rgba(255,153,0,0.2);padding-bottom:4px;">OVERVIEW</div>
+          <div style="font-size:10px;color:#aabbcc;line-height:1.7;">
+            Real-time 1v1 starship combat. Choose a vessel, pick one station to command — the computer auto-runs the rest. Fight until the enemy is destroyed, you escape via emergency warp, or your hull reaches zero.
+            <br><br>
+            <span style="color:var(--green);">Victory</span> = enemy hull → 0 &nbsp;|&nbsp; <span style="color:var(--warn);">Escape</span> = emergency warp at ≤35% hull &nbsp;|&nbsp; <span style="color:var(--red);">Defeat</span> = your hull → 0
+          </div>
+        </div>
+
+        <!-- Ships -->
+        <div style="background:#060c18;border:1px solid var(--b);border-radius:6px;padding:10px;">
+          <div style="font-family:'Antonio';color:var(--b);font-size:12px;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid rgba(68,119,255,0.2);padding-bottom:4px;">VESSELS</div>
+          <div style="font-size:10px;color:#aabbcc;line-height:1.7;">
+            <span style="color:var(--o);font-family:'Antonio';">USS DEFIANT NX-74205</span> — Defiant-class escort<br>
+            Hull: 500 · Fore shield: 320 · Quantum torps: 18 · Photon: 12<br>
+            <span style="color:var(--green);">Special:</span> Ablative armour (6 layers) + Cloaking device<br>
+            <span style="color:var(--green);">Weapons:</span> 4× pulse cannons, nose emitter (65yd), fwd+aft tubes<br>
+            <span style="color:var(--green);">Burst:</span> 4-cannon salvo · <span style="color:var(--green);">Overloads:</span> Cannon Overcharge, Unstable Torpedo<br>
+            <br>
+            <span style="color:var(--b);font-family:'Antonio';">USS ENTERPRISE NCC-1701-E</span> — Sovereign-class<br>
+            Hull: 750 · Fore shield: 500 · Quantum torps: 24 · Photon: 30<br>
+            <span style="color:var(--green);">Special:</span> Regenerative shielding (×1.4) + Saucer Separation<br>
+            <span style="color:var(--green);">Weapons:</span> 9× Type-XII phaser arrays, stardrive emitter (90yd), 2× fwd quantum tubes + aft<br>
+            <span style="color:var(--green);">Burst:</span> Concentrated Phaser Fire · <span style="color:var(--green);">Overloads:</span> Max Phaser Output (+60%), Tricobalt Warhead (1/game)
+          </div>
+        </div>
+
+        <!-- Stations -->
+        <div style="background:#060c18;border:1px solid var(--p);border-radius:6px;padding:10px;">
+          <div style="font-family:'Antonio';color:var(--p);font-size:12px;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid rgba(153,102,204,0.2);padding-bottom:4px;">STATIONS</div>
+          <div style="font-size:10px;color:#aabbcc;line-height:1.7;">
+            <span style="color:var(--o);font-family:'Antonio';">TACTICAL</span> — You fire weapons &amp; manage shields. Engineering auto-runs.<br>
+            Best for: action-focused play, precise targeting, cloak timing.<br><br>
+
+            <span style="color:var(--p);font-family:'Antonio';">ENGINEERING</span> — You route power &amp; dispatch repairs. Tactical auto-fires every 2.4s.<br>
+            Best for: resource management, keeping systems alive under sustained fire.<br><br>
+
+            <span style="color:var(--t);font-family:'Antonio';">HELM</span> — You control speed, attack vector, range &amp; manoeuvres. Both tactical &amp; engineering run on auto.<br>
+            Best for: strategic positioning, evasive play, setting up manoeuvre combos.<br><br>
+
+            <span style="color:var(--warn);font-family:'Antonio';">CAPTAIN'S CHAIR ⭐</span> — All three stations fully automated. You issue orders via crew: Worf (weapons), O'Brien/La Forge (engineering), Nog/Data (helm). 40+ order buttons.<br>
+            Best for: experienced players who want tactical command without hands-on systems.
+          </div>
+        </div>
+
+        <!-- Weapons -->
+        <div style="background:#060c18;border:1px solid var(--warn);border-radius:6px;padding:10px;">
+          <div style="font-family:'Antonio';color:var(--warn);font-size:12px;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid rgba(255,170,0,0.2);padding-bottom:4px;">WEAPONS &amp; ARCS</div>
+          <div style="font-size:10px;color:#aabbcc;line-height:1.7;">
+            All weapons have <span style="color:var(--green);">firing arcs</span> — buttons grey out when the arc doesn't cover your attack vector.<br><br>
+            <span style="color:var(--green);">Energy weapons</span> (cannons/phasers): Charge from EPS power. Higher power = faster recharge. Damage scales with targeting lock %.<br><br>
+            <span style="color:var(--t);">Quantum torpedoes</span>: Binary — ≥60% lock = full yield, &lt;60% = ~55%. Both launchers per bay fire simultaneously.<br><br>
+            <span style="color:var(--b);">Photon torpedoes</span>: Flat damage, no lock required. Reliable at any time.<br><br>
+            <span style="color:var(--warn);">Range modifiers</span>: Torpedoes +15% at long / −10% close. Cannons +20% close / −10% long.<br><br>
+            <span style="color:var(--red);">⚠ Overload modes</span> add large damage bonuses but risk breaker trips or misfire. Use them in decisive windows.
+          </div>
+        </div>
+
+      </div><!-- /left column -->
+
+      <!-- RIGHT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <!-- Shields & Combat -->
+        <div style="background:#060c18;border:1px solid var(--green);border-radius:6px;padding:10px;">
+          <div style="font-family:'Antonio';color:var(--green);font-size:12px;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid rgba(0,204,102,0.2);padding-bottom:4px;">SHIELDS &amp; COMBAT</div>
+          <div style="font-size:10px;color:#aabbcc;line-height:1.7;">
+            Four shield sectors: <span style="color:#fff;">Fore / Port / Starboard / Aft</span>. Each absorbs hits independently.<br><br>
+            <span style="color:var(--green);">Attack Vector</span> — sets which shield sector the enemy is most likely (65%) to hit. Point your strongest sector at the enemy.<br><br>
+            <span style="color:var(--green);">Reinforce</span> — pumps energy from other sectors into one. Good before a Klingon charge or Romulan decloak.<br><br>
+            <span style="color:var(--green);">Equalise</span> — spreads shields evenly across all sectors (2s delay, shields dip to 80%).<br><br>
+            <span style="color:var(--green);">Regen</span> — shields recover automatically over time. Regen pauses for 3s after any hit. Higher shield power allocation → faster regen.<br><br>
+            <span style="color:var(--warn);">Lock %</span> — your targeting lock builds over time. Higher lock = more energy weapon damage. Torpedoes need ≥60% for full yield.
+          </div>
+        </div>
+
+        <!-- Advanced mechanics -->
+        <div style="background:#060c18;border:1px solid var(--t);border-radius:6px;padding:10px;">
+          <div style="font-family:'Antonio';color:var(--t);font-size:12px;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid rgba(68,204,153,0.2);padding-bottom:4px;">ADVANCED MECHANICS</div>
+          <div style="font-size:10px;color:#aabbcc;line-height:1.7;">
+            <span style="color:var(--t);">Deep Scan</span> — reveals permanent frequency bonuses: shield freq (−25% dmg), hull fissure (+20% yield), sensor blind (−40% enemy lock), weapons disrupt (+30% fire interval). Run early — bonuses persist all fight.<br><br>
+            <span style="color:var(--t);">Subsystem Targeting</span> — focus on a specific enemy system. Deals 62% system damage + collateral hull bleed (~12–22 hull). Destroying cloak forces decloak. Destroying weapons cuts their fire.<br><br>
+            <span style="color:var(--p);">Cloaking (Defiant)</span> — 1200ms vulnerability window on engage/disengage. Shields accumulate regen credit while cloaked — decloak restores them. 25s cooldown, 4%/s power drain.<br><br>
+            <span style="color:var(--green);">Saucer Sep (Enterprise)</span> — toggle mechanic: stays separated until you order reconnect. Enemy lock −60%. Stardrive weapons +20% yield. 60s cooldown after docking.<br><br>
+            <span style="color:var(--warn);">EPS Heat</span> — sustained rapid fire heats conduits. Above 70% reduces capacitor recharge up to 30%. Cools passively at 8/s.<br><br>
+            <span style="color:var(--green);">Ablative Armour (Defiant)</span> — 6 layers, each absorbs 60% of a hull hit. Auto-regenerates after 45s per layer.
+          </div>
+        </div>
+
+        <!-- Enemy Roster -->
+        <div style="background:#060c18;border:1px solid var(--red);border-radius:6px;padding:10px;">
+          <div style="font-family:'Antonio';color:var(--red);font-size:12px;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid rgba(255,51,51,0.2);padding-bottom:4px;">ENEMY ROSTER</div>
+          <div style="font-size:10px;color:#aabbcc;line-height:1.6;">
+            <span style="color:#ff9966;">Jem'Hadar</span> — Polaron bypass (30% of damage skips shields). Gets <em>faster</em> as it takes damage. Rams at &lt;20% hull (4s warning).<br>
+            <span style="color:#aabbcc;">Cardassian</span> — Fast lock rate, constant harassment fire.<br>
+            <span style="color:#99cc99;">Romulan BoP/Warbird</span> — Cloak + sensor ghosts. Fires plasma torpedo <em>immediately</em> on decloak. Cloaks again at 25% hull.<br>
+            <span style="color:#cc9966;">Klingon K'Tinga/Vor'Cha</span> — Closes to brawl range (+40% disruptor damage close). Death salvo at 10% hull.<br>
+            <span style="color:var(--red);font-weight:bold;">Borg Probe</span> — Adapts per weapon type (+2.4%/hit, cap 65%). Rotate weapons constantly. Use Tricobalt (no adaptation). Tractor beam.<br>
+          </div>
+        </div>
+
+        <!-- Tips -->
+        <div style="background:#060c18;border:1px solid #334455;border-radius:6px;padding:10px;">
+          <div style="font-family:'Antonio';color:#aabbcc;font-size:12px;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid #334455;padding-bottom:4px;">KEY TIPS</div>
+          <div style="font-size:10px;color:#aabbcc;line-height:1.7;">
+            🔭 <span style="color:var(--green);">Scan early</span> — run Deep Scan in the first 10s. Disrupt scan (+30% fire interval) is often the strongest opener.<br>
+            🛡 <span style="color:var(--green);">Attack vector</span> — always point your strongest shield at the enemy. Fore is usually best (highest capacity).<br>
+            ⚡ <span style="color:var(--green);">Burst/Concentrated fire</span> — use at ≥20% lock to overwhelm shield regen before it recovers.<br>
+            📍 <span style="color:var(--green);">Klingons</span> — stay long range. Their disruptors gain +40% at close quarters.<br>
+            👻 <span style="color:var(--green);">Romulan ghosts</span> — hold fire when ghosts appear. Wait for the real decloak, then punish the 1.5s vulnerability window.<br>
+            🔴 <span style="color:var(--green);">Jem'Hadar ram</span> — pump fore shields and activate Evasive Pattern when you see the ramming countdown.<br>
+            🤖 <span style="color:var(--green);">Borg</span> — never fire the same weapon twice in a row. Rotate: cannons → nose → torpedoes → cannons. Save Tricobalt — it ignores adaptation.<br>
+            ⚡ <span style="color:var(--green);">Last Stand</span> — below 20% hull, the crew acts automatically: full impulse, shield boost. Use this window for overloads.
+          </div>
+        </div>
+
+      </div><!-- /right column -->
+    </div><!-- /grid -->
+
+    <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid var(--dim2);">
+      <button class="pill-action-btn" style="padding:10px 32px;font-size:13px;font-family:'Antonio';letter-spacing:2px;" onclick="hideInstructions()">← RETURN TO SETUP</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
      STARTUP OVERLAY / MODAL
 ════════════════════════════════════════════════════════════ -->
 <div id="overlay" style="display:none;">
   <div class="modal-frame-box">
-    <div id="modal-title">STATION DELEGATION ARCHITECTURE</div>
-    <p id="modal-desc" style="color:#7799dd; font-size:13px; margin-top:8px;">
-      Select your operational assignment. The alternative deck matrix will automatically delegate tasks to computer subroutines.
+
+    <!-- Title row + HOW TO PLAY -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div id="modal-title" style="font-family:'Antonio';font-size:15px;color:var(--o);letter-spacing:2px;">STATION DELEGATION ARCHITECTURE</div>
+      <button class="pill-action-btn" style="font-size:10px;padding:4px 10px;background:var(--dim2);color:#aabbcc;white-space:nowrap;" onclick="showInstructions()">? HOW TO PLAY</button>
+    </div>
+    <p id="modal-desc" style="color:#6688aa;font-size:11px;margin:0 0 10px;text-align:center;">
+      Select mission type, vessel, and operational assignment.
     </p>
 
-    <!-- ── VESSEL SELECTION ── -->
-    <div id="ship-select-section" style="margin-bottom:10px;">
-      <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:6px;">— SELECT YOUR VESSEL —</div>
-      <div style="display:flex; gap:10px; justify-content:center; margin-bottom:6px;">
-        <button id="ship-btn-defiant" class="pill-action-btn" style="font-size:11px; padding:8px 14px; background:var(--o); color:#000; flex:1;" onclick="selectPlayerShip('defiant')">
-          ⬟ USS DEFIANT NX-74205<br><span style="font-size:9px;">Defiant-class · Ablative armor · Cloak · Pulse cannons</span>
+    <!-- ══ STEP 1: MISSION TYPE ══ -->
+    <div id="setup-step-mode">
+      <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:8px;">— SELECT MISSION TYPE —</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+        <button class="pill-action-btn" style="padding:14px 10px;background:var(--b);color:#fff;font-size:13px;font-family:'Antonio';letter-spacing:1px;line-height:1.4;" onclick="_setupGoMode('single')">
+          ⚔ SINGLE ENGAGEMENT
+          <div style="font-size:9px;color:#aaddff;margin-top:5px;font-weight:normal;font-family:'Roboto Mono';">Pick difficulty · One fight · Any enemy</div>
         </button>
-        <button id="ship-btn-enterprise_e" class="pill-action-btn" style="font-size:11px; padding:8px 14px; background:var(--dim2); color:#aabbcc; flex:1;" onclick="selectPlayerShip('enterprise_e')">
-          ◈ USS ENTERPRISE NCC-1701-E<br><span style="font-size:9px;">Sovereign-class · Regen shields · Type-XII arrays · Saucer Sep</span>
+        <button class="pill-action-btn" style="padding:14px 10px;background:var(--o);color:#000;font-size:13px;font-family:'Antonio';letter-spacing:1px;line-height:1.4;" onclick="_setupGoMode('campaign')">
+          🏆 CAMPAIGN RUN
+          <div style="font-size:9px;color:#442200;margin-top:5px;font-weight:normal;font-family:'Roboto Mono';">9 fights · Fixed order · Score tallied</div>
         </button>
       </div>
-      <div id="ship-desc" style="font-size:10px; color:#7799dd; text-align:center; min-height:16px;">Heavily armed escort. Ablative armor, cloaking device, devastating pulse cannon burst salvo.</div>
-    </div>
-
-    <!-- ── SINGLE ENGAGEMENT ── -->
-    <div id="campaign-diff-section">
-      <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:8px;">— SINGLE ENGAGEMENT —</div>
-      <div style="display:flex; gap:12px; justify-content:center; margin-bottom:10px;">
-        <button class="pill-action-btn" id="diff-btn-normal" style="font-size:11px; padding:6px 14px; background:var(--green); color:#000;" onclick="setDifficulty('normal')">● NORMAL</button>
-        <button class="pill-action-btn" id="diff-btn-hard"   style="font-size:11px; padding:6px 14px; background:var(--dim2);  color:#aabbcc;" onclick="setDifficulty('hard')">◎ HARD</button>
-        <button class="pill-action-btn" id="diff-btn-elite"  style="font-size:11px; padding:6px 14px; background:var(--dim2);  color:#aabbcc;" onclick="setDifficulty('elite')">◆ ELITE (BORG)</button>
-      </div>
-      <div id="diff-desc" style="font-size:11px; color:#7799dd; margin-bottom:10px; min-height:28px; text-align:center;">Standard engagement. Enemy fires at hull sectors only.</div>
-    </div>
-
-    <!-- Station buttons (single engagement) -->
-    <div class="setup-buttons-flex" id="setup-controls-anchor">
-      <button class="pill-action-btn" style="width:155px; padding:10px; background:var(--o);"            onclick="initiateVesselSimulation('tactical')">COMMAND TACTICAL</button>
-      <button class="pill-action-btn" style="width:155px; padding:10px; background:var(--p);"            onclick="initiateVesselSimulation('engineering')">CONTROL ENGINEERING</button>
-      <button class="pill-action-btn" style="width:155px; padding:10px; background:var(--t);"            onclick="initiateVesselSimulation('helm')">FLY HELM</button>
-      <button class="pill-action-btn" style="width:155px; padding:10px; background:var(--warn);color:#000;" onclick="initiateVesselSimulation('captain')">⭐ CAPTAIN'S CHAIR</button>
-    </div>
-
-    <!-- ── CAMPAIGN RUN ── -->
-    <div id="campaign-run-section" style="margin-top:14px;border-top:1px solid var(--dim2);padding-top:12px;">
-      <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:6px;">— CAMPAIGN RUN — 9 ENGAGEMENTS —</div>
-      <div style="font-size:10px;color:#6688aa;text-align:center;margin-bottom:8px;">Fighter → Scout → BoP → Galor → Battleship → K'Tinga → Vor'Cha → Warbird → <span style="color:var(--red);">BORG</span></div>
-      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-        <button class="pill-action-btn" style="padding:8px 14px;background:var(--o);color:#000;"       onclick="startCampaign('tactical')">⚡ TACTICAL</button>
-        <button class="pill-action-btn" style="padding:8px 14px;background:var(--p);"                  onclick="startCampaign('engineering')">⚡ ENGINEERING</button>
-        <button class="pill-action-btn" style="padding:8px 14px;background:var(--t);"                  onclick="startCampaign('helm')">⚡ HELM</button>
-        <button class="pill-action-btn" style="padding:8px 14px;background:var(--warn);color:#000;"    onclick="startCampaign('captain')">⭐ CAPTAIN</button>
+      <div style="font-size:9px;color:#334455;text-align:center;margin-top:2px;">
+        Campaign: Fighter → Scout → BoP → Galor → Battleship → K'Tinga → Vor'Cha → Warbird → <span style="color:var(--red);">BORG</span>
       </div>
     </div>
 
-    <!-- Campaign level summary (shown between campaign fights) -->
+    <!-- ══ STEP 2: VESSEL + STATION ══ -->
+    <div id="setup-step-configure" style="display:none;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <button class="pill-action-btn" style="font-size:10px;padding:4px 10px;background:var(--dim2);color:#aabbcc;" onclick="_setupBack('mode')">← BACK</button>
+        <div id="setup-mode-badge" style="font-family:'Antonio';font-size:10px;color:var(--o);letter-spacing:1px;"></div>
+      </div>
+
+      <!-- Ship selection — IDs preserved for selectPlayerShip() -->
+      <div id="ship-select-section" style="margin-bottom:10px;">
+        <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:6px;">— SELECT YOUR VESSEL —</div>
+        <div style="display:flex;gap:10px;justify-content:center;margin-bottom:6px;">
+          <button id="ship-btn-defiant" class="pill-action-btn" style="font-size:11px;padding:8px 14px;background:var(--o);color:#000;flex:1;" onclick="selectPlayerShip('defiant')">
+            ⬟ USS DEFIANT NX-74205<br><span style="font-size:9px;">Defiant-class · Ablative armor · Cloak · Pulse cannons</span>
+          </button>
+          <button id="ship-btn-enterprise_e" class="pill-action-btn" style="font-size:11px;padding:8px 14px;background:var(--dim2);color:#aabbcc;flex:1;" onclick="selectPlayerShip('enterprise_e')">
+            ◈ USS ENTERPRISE NCC-1701-E<br><span style="font-size:9px;">Sovereign-class · Regen shields · Type-XII arrays · Saucer Sep</span>
+          </button>
+        </div>
+        <div id="ship-desc" style="font-size:10px;color:#7799dd;text-align:center;min-height:16px;">Heavily armed escort. Ablative armor, cloaking device, devastating pulse cannon burst salvo.</div>
+      </div>
+
+      <!-- Station selection -->
+      <div id="setup-controls-anchor">
+        <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:8px;">— SELECT YOUR STATION —</div>
+        <div class="setup-buttons-flex">
+          <button class="pill-action-btn" style="width:155px;padding:10px;background:var(--o);"             onclick="_setupPickStation('tactical')">COMMAND TACTICAL</button>
+          <button class="pill-action-btn" style="width:155px;padding:10px;background:var(--p);"             onclick="_setupPickStation('engineering')">CONTROL ENGINEERING</button>
+          <button class="pill-action-btn" style="width:155px;padding:10px;background:var(--t);"             onclick="_setupPickStation('helm')">FLY HELM</button>
+          <button class="pill-action-btn" style="width:155px;padding:10px;background:var(--warn);color:#000;" onclick="_setupPickStation('captain')">⭐ CAPTAIN'S CHAIR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ STEP 3a: SINGLE — DIFFICULTY + ENGAGE ══ -->
+    <div id="setup-step-single" style="display:none;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <button class="pill-action-btn" style="font-size:10px;padding:4px 10px;background:var(--dim2);color:#aabbcc;" onclick="_setupBack('configure')">← BACK</button>
+        <div id="setup-single-badge" style="font-family:'Antonio';font-size:10px;color:var(--o);letter-spacing:1px;"></div>
+      </div>
+
+      <div id="campaign-diff-section">
+        <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:8px;">— SELECT DIFFICULTY —</div>
+        <div style="display:flex;gap:12px;justify-content:center;margin-bottom:10px;">
+          <button class="pill-action-btn" id="diff-btn-normal" style="font-size:11px;padding:8px 18px;background:var(--green);color:#000;" onclick="setDifficulty('normal')">● NORMAL</button>
+          <button class="pill-action-btn" id="diff-btn-hard"   style="font-size:11px;padding:8px 18px;background:var(--dim2);color:#aabbcc;" onclick="setDifficulty('hard')">◎ HARD</button>
+          <button class="pill-action-btn" id="diff-btn-elite"  style="font-size:11px;padding:8px 18px;background:var(--dim2);color:#aabbcc;" onclick="setDifficulty('elite')">◆ ELITE (BORG)</button>
+        </div>
+        <div id="diff-desc" style="font-size:11px;color:#7799dd;margin-bottom:14px;min-height:32px;text-align:center;">Standard engagement. Five enemy types. Hull-sector targeting only. Balanced for all players.</div>
+      </div>
+
+      <button class="pill-action-btn red-btn" style="width:100%;padding:14px;font-size:15px;font-family:'Antonio';letter-spacing:2px;"
+        onclick="initiateVesselSimulation(window._wizardStation)">
+        ⚡ BATTLE STATIONS — ENGAGE
+      </button>
+    </div>
+
+    <!-- ══ STEP 3b: CAMPAIGN — CONFIRM + LAUNCH ══ -->
+    <div id="setup-step-campaign" style="display:none;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <button class="pill-action-btn" style="font-size:10px;padding:4px 10px;background:var(--dim2);color:#aabbcc;" onclick="_setupBack('configure')">← BACK</button>
+        <div id="setup-campaign-badge" style="font-family:'Antonio';font-size:10px;color:var(--o);letter-spacing:1px;"></div>
+      </div>
+
+      <div id="campaign-run-section">
+        <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:6px;">— CAMPAIGN — 9 ENGAGEMENTS —</div>
+        <div style="font-size:9px;color:#445566;text-align:center;margin-bottom:8px;">Levels 1–3: Normal &nbsp;·&nbsp; Levels 4–8: Hard &nbsp;·&nbsp; <span style="color:var(--red);">Level 9: Elite (Borg)</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:12px;font-size:9px;color:#aabbcc;">
+          <div style="background:#060c18;border:1px solid #1a3060;padding:4px 6px;border-radius:3px;">L1 Jem'Hadar Fighter</div>
+          <div style="background:#060c18;border:1px solid #1a3060;padding:4px 6px;border-radius:3px;">L2 Cardassian Scout</div>
+          <div style="background:#060c18;border:1px solid #1a3060;padding:4px 6px;border-radius:3px;">L3 Romulan Bird-of-Prey</div>
+          <div style="background:#060c18;border:1px solid #223300;padding:4px 6px;border-radius:3px;">L4 Galor Warship</div>
+          <div style="background:#060c18;border:1px solid #223300;padding:4px 6px;border-radius:3px;">L5 Jem'Hadar Battleship</div>
+          <div style="background:#060c18;border:1px solid #223300;padding:4px 6px;border-radius:3px;">L6 K'Tinga Battle Cruiser</div>
+          <div style="background:#060c18;border:1px solid #223300;padding:4px 6px;border-radius:3px;">L7 Vor'Cha Attack Cruiser</div>
+          <div style="background:#060c18;border:1px solid #223300;padding:4px 6px;border-radius:3px;">L8 D'Deridex Warbird</div>
+          <div style="background:#060c18;border:1px solid #550000;padding:4px 6px;border-radius:3px;color:var(--red);">L9 ⚠ BORG PROBE</div>
+        </div>
+      </div>
+
+      <button class="pill-action-btn" style="width:100%;padding:14px;font-size:15px;font-family:'Antonio';letter-spacing:2px;background:var(--o);color:#000;"
+        onclick="startCampaign(window._wizardStation)">
+        ⭐ BEGIN CAMPAIGN
+      </button>
+    </div>
+
+    <!-- ── POST-BATTLE SECTIONS (hidden during setup) ── -->
     <div id="campaign-level-summary" style="display:none;margin:10px 0;padding:10px;background:#060c18;border:1px solid var(--o);border-radius:8px;text-align:left;max-height:260px;overflow-y:auto;"></div>
-
-    <!-- Campaign action buttons (Next Engagement / Abandon) -->
     <div id="campaign-action-btns" style="display:none;"></div>
 
-    <!-- End-game score display (single fight only) -->
-    <div id="score-display" style="display:none; margin:12px 0; padding:12px; background:#060c18; border:1px solid var(--b); border-radius:8px; text-align:left;">
-      <div style="font-family:'Antonio'; color:var(--o); font-size:16px; margin-bottom:8px; text-align:center;">BATTLE ASSESSMENT</div>
-      <div id="score-breakdown" style="font-size:11px; color:#aabbcc; line-height:1.8;"></div>
-      <div style="font-family:'Antonio'; font-size:22px; color:var(--green); text-align:center; margin-top:8px;" id="score-total">SCORE: 0</div>
+    <div id="score-display" style="display:none;margin:12px 0;padding:12px;background:#060c18;border:1px solid var(--b);border-radius:8px;text-align:left;">
+      <div style="font-family:'Antonio';color:var(--o);font-size:16px;margin-bottom:8px;text-align:center;">BATTLE ASSESSMENT</div>
+      <div id="score-breakdown" style="font-size:11px;color:#aabbcc;line-height:1.8;"></div>
+      <div style="font-family:'Antonio';font-size:22px;color:var(--green);text-align:center;margin-top:8px;" id="score-total">SCORE: 0</div>
     </div>
 
     <div id="terminal-transcript-box" style="display:none;"></div>
-
-    <!-- End-game action button — populated by concludeSimulationRun, cleared by returnToSetup -->
     <div id="end-game-actions" style="display:none;"></div>
+
   </div>
 </div>
 
@@ -841,7 +1044,7 @@
 <script src="canvas-three.js?v=11"></script>
 <script src="canvas-2d.js?v=11"></script>
 <script src="ui.js?v=15"></script>
-<script src="main.js?v=16"></script>
+<script src="main.js?v=17"></script>
 
 </body>
 </html>

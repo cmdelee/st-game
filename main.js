@@ -1,6 +1,64 @@
 'use strict';
 
 // ============================================================
+// SETUP WIZARD STATE
+// _wizardMode: 'single' | 'campaign'
+// _wizardStation: 'tactical' | 'engineering' | 'helm' | 'captain'
+// ============================================================
+window._wizardMode    = 'single';
+window._wizardStation = 'tactical';
+
+const _STATION_LABELS = { tactical:'TACTICAL', engineering:'ENGINEERING', helm:'HELM', captain:"CAPTAIN'S CHAIR" };
+
+function showInstructions() {
+  const el = document.getElementById('instructions-overlay');
+  if (el) el.style.display = 'block';
+}
+
+function hideInstructions() {
+  const el = document.getElementById('instructions-overlay');
+  if (el) el.style.display = 'none';
+}
+
+function _setupGoMode(mode) {
+  window._wizardMode = mode;
+  document.getElementById('setup-step-mode').style.display      = 'none';
+  document.getElementById('setup-step-configure').style.display = '';
+  const badge = document.getElementById('setup-mode-badge');
+  if (badge) badge.textContent = mode === 'campaign' ? '🏆 CAMPAIGN RUN' : '⚔ SINGLE ENGAGEMENT';
+}
+
+function _setupPickStation(station) {
+  window._wizardStation = station;
+  document.getElementById('setup-step-configure').style.display = 'none';
+  if (window._wizardMode === 'campaign') {
+    document.getElementById('setup-step-campaign').style.display = '';
+    const badge = document.getElementById('setup-campaign-badge');
+    if (badge) badge.textContent = `${_STATION_LABELS[station]} · ${(G.playerShipConfig||PLAYER_SHIP_CONFIGS.defiant).label}`;
+  } else {
+    document.getElementById('setup-step-single').style.display = '';
+    const badge = document.getElementById('setup-single-badge');
+    if (badge) badge.textContent = `${_STATION_LABELS[station]} · ${(G.playerShipConfig||PLAYER_SHIP_CONFIGS.defiant).label}`;
+    setDifficulty(currentDifficulty); // refresh diff buttons
+  }
+}
+
+function _setupBack(targetStep) {
+  document.getElementById('setup-step-configure').style.display = 'none';
+  document.getElementById('setup-step-single').style.display    = 'none';
+  document.getElementById('setup-step-campaign').style.display  = 'none';
+  document.getElementById('setup-step-mode').style.display      = 'none';
+  document.getElementById(`setup-step-${targetStep}`).style.display = '';
+}
+
+function _setupReset() {
+  document.getElementById('setup-step-mode').style.display      = '';
+  document.getElementById('setup-step-configure').style.display = 'none';
+  document.getElementById('setup-step-single').style.display    = 'none';
+  document.getElementById('setup-step-campaign').style.display  = 'none';
+}
+
+// ============================================================
 // SHIP SELECTION
 // ============================================================
 function selectPlayerShip(key) {
@@ -379,15 +437,9 @@ function returnToSetup() {
   const actDiv    = document.getElementById('campaign-action-btns');    if (actDiv)    actDiv.style.display    = 'none';
   const hud       = document.getElementById('campaign-hud');            if (hud)       hud.style.display       = 'none';
 
-  // Restore overlay to full setup state — show all selection sections
-  const title = document.getElementById('modal-title');
-  if (title) { title.textContent = 'STATION DELEGATION ARCHITECTURE'; title.style.color = ''; }
-  const desc = document.getElementById('modal-desc');
-  if (desc) { desc.textContent = 'Select your operational assignment. The alternative deck matrix will automatically delegate tasks to computer subroutines.'; }
-  const shipSec  = document.getElementById('ship-select-section');    if (shipSec)   shipSec.style.display    = '';
-  const setup    = document.getElementById('setup-controls-anchor');  if (setup)     setup.style.display      = '';
-  const diffSec  = document.getElementById('campaign-diff-section');  if (diffSec)   diffSec.style.display    = '';
-  const runSec   = document.getElementById('campaign-run-section');   if (runSec)    runSec.style.display     = '';
+  // Reset wizard to step 1
+  _setupReset();
+  setDifficulty(currentDifficulty);
 
   // Clear lingering overlays
   const mv = document.querySelector('.main-viewport'); if (mv) mv.classList.remove('last-stand-flash');
@@ -395,8 +447,7 @@ function returnToSetup() {
   const sg = document.getElementById('sensor-ghost-overlay'); if (sg) sg.style.display = 'none';
 
   const overlay = document.getElementById('overlay'); if (overlay) overlay.style.display = 'flex';
-  setDifficulty(currentDifficulty);
-  // Re-apply ship selection button states
+  // Re-apply ship selection button states (ship-desc, button highlights)
   selectPlayerShip(G.playerShipKey || 'defiant');
 }
 
