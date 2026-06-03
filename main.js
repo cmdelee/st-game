@@ -461,6 +461,9 @@ function returnToSetup() {
   const sg = document.getElementById('sensor-ghost-overlay'); if (sg) sg.style.display = 'none';
 
   const overlay = document.getElementById('overlay'); if (overlay) overlay.style.display = 'flex';
+  // Scroll modal back to top so wizard step 1 is visible (score may have pushed it down)
+  const modalBox = document.querySelector('.modal-frame-box');
+  if (modalBox) modalBox.scrollTop = 0;
   // Re-apply ship selection button states (ship-desc, button highlights)
   selectPlayerShip(G.playerShipKey || 'defiant');
 }
