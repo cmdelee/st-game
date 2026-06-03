@@ -712,17 +712,9 @@ function computeConduitConduction(dt) {
 
   recalculateShieldRegenRate();
 
-  // Enemy shield regen
-  if (!G.enemyCloaked) {
-    const cfg = ENEMY_CONFIGS[G.enemyArchetype];
-    const eSS = G.enemySystems.shields_sys;
-    let eRegen = (eSS ? eSS.health / 100 : 1) * 1.2;
-    if (cfg.adaptiveShields) eRegen *= (1 + G.enemyAdaptiveHits * 0.15);
-    SHIELD_SECTORS.forEach(s => {
-      if (G.threat.shields[s] < cfg.shields[s])
-        G.threat.shields[s] = Math.min(cfg.shields[s], G.threat.shields[s] + eRegen * sc);
-    });
-  }
+  // Enemy shield regen moved to processEnemyAI() in enemy-ai.js — it belongs with the
+  // other enemy state updates, not in the player's EPS conduit tick (this misplacement
+  // was the root cause of the shields_sys key bug, #92/#93/#126).
 
   processBattery(dt);
   processAblativeArmour(dt);

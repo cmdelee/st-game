@@ -100,6 +100,10 @@ python -m http.server 8000   # or: npx serve .
 
 Open `http://localhost:8000`. No build step, no bundler.
 
+**Smoke tests:** append `?test=1` to the URL (e.g. `http://localhost:8000/?test=1`) — a harness boots every ship × station × enemy combination, drives the real per-frame logic, and asserts no exceptions and finite/in-range hull, shields, lock, and system values. Results print to the browser console; failures are logged as errors. You can also run `runSmokeTests()` from the console at any time.
+
+**Cache-busting:** script URLs use `?v=<content-hash>` so changed files always refetch while unchanged files stay cached. Run `./cachebust.ps1` before committing to refresh the hashes (`./cachebust.ps1 -Check` reports whether any are stale).
+
 ---
 
 ## Stations
@@ -288,32 +292,39 @@ Pick your ship and station once, then fight all 9 enemies in order. Ship fully r
 
 ## Architecture
 
-No build step. 15 plain JS files loaded in order:
+No build step. 20 plain JS files loaded in order (+ an optional test harness):
 
 ```
-config.js            — constants: DIFFICULTY, ENEMY_CONFIGS, ARRAYS_DICTIONARY,
-                       PLAYER_SHIP_CONFIGS (both ships + weapon arrays + crew + defaultPower)
-state.js             — G state object; G.playerShipKey/Config/activeWeaponArrays
-engineering.js       — power, repairs, EPS, ablative armour (Defiant), shield regen
-crew.js              — casualties, efficiency modifiers, emergency warp
-sensors.js           — scan profiles, subsystem targeting
-tactical.js          — player weapons, cloaking/saucer sep, saucer auto-fire,
-                       burst/overload/Enterprise modes
-helm.js              — speed, vector, range, all helm manoeuvres
-encounter-phases.js  — faction encounter phase arcs, hull milestone events (75/50/25/10%),
-                       Klingon death salvo
-enemy-ai.js          — enemy cloaking AI, sensor ghosts, mechanics timers, Jem'Hadar
-                       ramming, AI loop, enemy fire
-auto-delegation.js   — computer management of uncrewed stations (auto-engineering,
-                       auto-tactical, captain-mode autonomous crew behaviours)
-command.js           — Captain's Chair: crew reports (ship-aware), order cooldowns, crew AI
-canvas-three.js      — Three.js 3D view; Defiant + Sovereign-class meshes; 3D beam tubes,
-                       burst shockwave, torpedo impacts, exhaust particles, saucer sep mesh
-canvas-2d.js         — 2D schematics: Defiant hull / Enterprise hull / enemy / power
-ui.js                — deck switching, global UI sync, scoring, end-game
-main.js              — game loop, sim init, ship selection, campaign
-lcars.css            — LCARS styling
-index.html           — splash, ship selection UI, shell + script tags
+config.js                — constants: DIFFICULTY, ENEMY_CONFIGS, ARRAYS_DICTIONARY,
+                           PLAYER_SHIP_CONFIGS (both ships + weapon arrays + crew + defaultPower)
+state.js                 — G state object; G.playerShipKey/Config/activeWeaponArrays
+engineering.js           — power, repairs, EPS, ablative armour (Defiant), shield regen
+crew.js                  — casualties, efficiency modifiers, emergency warp
+sensors.js               — deep scan, subsystem targeting
+tactical.js              — player weapons, cloaking/saucer sep, saucer auto-fire,
+                           burst/overload/Enterprise modes
+helm.js                  — speed, vector, range, all helm manoeuvres
+encounter-phases.js      — faction encounter phase arcs, hull milestone events (75/50/25/10%),
+                           Klingon death salvo
+enemy-ai.js              — enemy cloaking AI, sensor ghosts, mechanics timers, Jem'Hadar
+                           ramming, AI loop, enemy fire, enemy shield regen
+auto-delegation.js       — computer management of uncrewed stations (auto-engineering,
+                           auto-tactical, captain-mode autonomous crew behaviours)
+command.js               — Captain's Chair: crew reports (ship-aware), order cooldowns, crew AI
+canvas-three.js          — Three.js scene setup + shared render state, model loading
+canvas-three-geometry.js — Three.js mesh builders: Defiant + Sovereign + enemy geometry
+canvas-three-render.js   — Three.js per-frame render loop: camera, beams, shockwaves, torpedo
+                           impacts, exhaust + hull-damage sparks, saucer-sep flight
+                           (geometry + render share canvas-three.js state — must load after it)
+canvas-2d.js             — 2D schematics: Defiant hull / Enterprise hull / enemy / power
+ui.js                    — deck switching, _EL DOM cache, global UI sync, scoring, end-game
+setup.js                 — setup wizard, ship selection, weapon-matrix/cap-bar builders, splash
+campaign.js              — campaign run mode (9 levels, save/restore between fights)
+briefing.js              — pre-battle intel briefing + combat engagement (startCombat)
+main.js                  — game loop, sim init, boot, returnToSetup
+smoketest.js             — optional invariant test harness (runs on ?test=1)
+lcars.css                — LCARS styling
+index.html               — splash, ship selection UI, shell + script tags
 ```
 
 ### Ship config architecture

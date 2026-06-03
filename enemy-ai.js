@@ -252,6 +252,18 @@ function processEnemyAI(dt) {
     return;
   }
 
+  // Enemy shield regen — scales with shield-generator health; faster as Borg adapts.
+  // (Past this point the enemy is guaranteed not cloaked — early-returned above.)
+  {
+    const eSS = G.enemySystems.shields_sys;
+    let eRegen = (eSS ? eSS.health / 100 : 1) * 1.2;
+    if (cfg.adaptiveShields) eRegen *= (1 + G.enemyAdaptiveHits * 0.15);
+    SHIELD_SECTORS.forEach(s => {
+      if (G.threat.shields[s] < cfg.shields[s])
+        G.threat.shields[s] = Math.min(cfg.shields[s], G.threat.shields[s] + eRegen * sc);
+    });
+  }
+
   // Weapons disruption countdown
   if (G.weaponsDisrupted) {
     G.weaponsDisruptedTimer -= dt;

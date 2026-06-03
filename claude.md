@@ -2,16 +2,22 @@
 
 ## Project overview
 
-Single-page Star Trek tactical combat simulator. The player selects a vessel (**USS Defiant NX-74205** or **USS Enterprise NCC-1701-E**) and a command station (**Tactical**, **Engineering**, **Helm**, or **Captain's Chair**); the unchosen stations are delegated to the computer. All game logic lives across **15 JS files** served from the same directory — no build step, no bundler.
+Single-page Star Trek tactical combat simulator. The player selects a vessel (**USS Defiant NX-74205** or **USS Enterprise NCC-1701-E**) and a command station (**Tactical**, **Engineering**, **Helm**, or **Captain's Chair**); the unchosen stations are delegated to the computer. All game logic lives across **20 JS files** served from the same directory (plus an optional `smoketest.js` test harness) — no build step, no bundler.
 
 **File load order (matters — each file depends on the previous):**
 ```
 config.js → state.js → engineering.js → crew.js → sensors.js → tactical.js →
 helm.js → encounter-phases.js → enemy-ai.js → auto-delegation.js →
-command.js → canvas-three.js → canvas-2d.js → ui.js → main.js
+command.js → canvas-three.js → canvas-three-geometry.js → canvas-three-render.js →
+canvas-2d.js → ui.js → setup.js → campaign.js → briefing.js → main.js →
+smoketest.js (optional — only runs work on ?test=1)
 lcars.css (stylesheet)
 index.html (HTML shell + script tags)
 ```
+
+> **Classic-script scoping note:** these are plain `<script>` files (no modules). Top-level `function`/`var` become `window` properties; top-level `let`/`const` live in a shared global lexical environment accessible across all files. `canvas-three-geometry.js` reads colour/offset consts (`_FACTION_*`, `_NAC_OFFSET`, …) and `canvas-three-render.js` reads `let`-declared render state (`THREE_scene`, `mesh_defiant`, `beam_lines`, shield/glow/particle handles, …) — both defined in `canvas-three.js`, so **canvas-three.js must load first**. `setup.js`/`campaign.js`/`briefing.js` only *call* functions (resolved at runtime), so their order is flexible as long as they load before the first call.
+
+> **Cache-busting:** every local `<script src>` carries a `?v=<sha1>` content hash. Run `./cachebust.ps1` before committing to refresh hashes for changed files (`./cachebust.ps1 -Check` exits non-zero if any are stale). Changed files get a new URL (browsers refetch); unchanged files keep theirs (stay cached). This replaced the old manual `?v=N` bumps.
 
 ---
 
@@ -30,10 +36,16 @@ index.html (HTML shell + script tags)
 | `enemy-ai.js` | Enemy cloaking AI (`processEnemyCloakDecision`, `triggerEnemyCloak/Decloak`), sensor ghosts (`processEnemySensorGhosts`), mechanics timers (`processNewMechanicsTimers`), Jem'Hadar ramming (`initiateRammingRun`, `executeRammingImpact`), enemy AI loop (`processEnemyAI`), enemy fire (`executeThreatCounterVolley`) |
 | `auto-delegation.js` | Computer management of uncrewed stations (`processAutomatedDelegation`): auto-engineering relay resets + repair dispatch, auto-tactical fire cycle, captain-mode Worf/O'Brien/Nog autonomous behaviours |
 | `command.js` | Captain's Chair: `postCrewReport`, `_renderCrewComms` (uses `_crewLabel`/`_crewColour` getters — ship-aware); `_CAP_CD` cooldowns; 40+ order functions; manoeuvre ticker; ship-specific periodic reports (`_WORF_REPORTS`, `_OBRIEN_REPORTS`/`_LAFORGE_REPORTS`, `_NOG_REPORTS`/`_DATA_REPORTS`); `initCaptainStation()` |
-| `canvas-three.js` | Three.js 3D spatial battle view; `buildDefiantGeometry()` + `buildSovereignGeometry()` + `rebuildPlayerMesh()` — swaps player mesh on ship select; `buildSaucerSepGeometry()` — independent saucer section; 3D beam tubes, burst shockwave rings, torpedo impact spheres, nacelle exhaust particles, ramming trajectory indicator; `_FACTION_GLOW_COL` / `_FACTION_BEAM_COL` colour maps |
+| `canvas-three.js` | Three.js scene setup only: shared render-state declarations (`THREE_scene`, mesh/shield/glow/particle handles), model loading, `initThreeScene()`, `rebuildPlayerMesh()`/`rebuildEnemyMesh()`, shield/particle/starfield/nebula builders, `resizeThreeRenderer()`, `_cleanupSaucerSep()`, `_makeTubeMesh`; `_FACTION_GLOW_COL` / `_FACTION_BEAM_COL` colour maps. **Must load before the geometry + render files** (they read its module state) |
+| `canvas-three-geometry.js` | Three.js mesh/geometry builders only — `buildDefiantGeometry`, `buildSovereignGeometry`, `buildKtinga/Vorcha/RomulanWarbird/EnemyGeometry`, `buildSaucerSepGeometry`. Each returns a `THREE.Group`; invoked at runtime by scene init / mesh rebuild |
+| `canvas-three-render.js` | Per-frame spatial render loop (`renderSpatialViewCanvas`): camera orbit/shake, ship drift, hull-damage colouring, engine glow + exhaust particles, cloak fade, shield bubbles, enemy movement, saucer-sep flight, ramming trajectory line, 3D beam tubes, burst shockwave rings, torpedo impacts, hull-damage sparks (`_emitHullSparks`/`_tickHullSparks`). Shares `canvas-three.js` module state — loads after it |
 | `canvas-2d.js` | Enemy schematic, hull schematic (`_renderDefiantSchematic` / `_renderEnterpriseESchematic`), power distribution canvas. Shared `_lcarsHdr(ctx,t,x,y,w,col)` / `_row(ctx,lbl,val,pct,col,…)` / `_trow` helpers. All panels use LCARS-style filled section headers, inline mini-bars for hull/shields/systems/ordnance/lock, background grid, scan bonus readout, lock reticle arc, node glow radials. |
-| `ui.js` | Deck switching (`toggleActiveDeck` — handles tactical/engineering/helm/captain), global UI sync (`synchronizeGlobalInterfaceDisplays`), scoring with hull integrity bonus (`calculateFinalScore`), end-game (`concludeSimulationRun`) |
-| `main.js` | Game loop; simulation init (`initiateVesselSimulation`); boot; ship selection (`selectPlayerShip`, `rebuildWeaponFireMatrix`, `_rebuildCapBarGrid`, `_updateSpecialAbilityButtons`); campaign mode; `returnToSetup()` |
+| `ui.js` | Deck switching (`toggleActiveDeck` — handles tactical/engineering/helm/captain), `_EL` DOM-element cache (`_buildELCache`/`_rebuildCapBarCache`/`_rebuildEngCache`), global UI sync (`synchronizeGlobalInterfaceDisplays`), scoring with hull integrity bonus (`calculateFinalScore`), end-game (`concludeSimulationRun`), `_cleanupPostBattleOverlays` |
+| `setup.js` | Setup wizard (`_setupGoMode`/`_setupPickStation`/`_setupBack`/`_setupReset`), ship selection (`selectPlayerShip`), tactical fire/overload button + capacitor-bar builders (`rebuildWeaponFireMatrix`, `_rebuildCapBarGrid`, `_updateCapacitorBarLabels`, `_updateSpecialAbilityButtons`), splash (`dismissSplash`) (moved out of main.js) |
+| `campaign.js` | Campaign run mode: `startCampaign`, `_launchCampaignLevel`, `_updateCampaignHUD`, `concludeCampaignLevel`, `_nextCampaignLevel`, `_restartCampaign` (moved out of main.js) |
+| `briefing.js` | Pre-battle intel briefing + combat engagement: `_drawBriefingSilhouette`, `showPreBattleBriefing`, `engageFromBriefing`, `_engageCombat`, `startCombat` (moved out of main.js) |
+| `main.js` | Game loop (`masterSimulationCoreLoop`); simulation init (`initiateVesselSimulation`); boot (`runMasterBootSequence`); `returnToSetup()`; viewport resize. Setup/ship-select → `setup.js`, campaign → `campaign.js`, pre-battle briefing → `briefing.js` |
+| `smoketest.js` | Optional invariant test harness (`runSmokeTests`). Drives every ship × station × enemy combo through the real per-frame ticks (no RAF/canvas) and asserts no exception + finite/in-range hull/shields/lock/systems. Auto-runs on `?test=1`; or call `runSmokeTests()` from the console |
 
 ---
 
@@ -913,8 +925,8 @@ header                 — brand + accent line + stardate + mission context
 Identified during the June 2026 simplification review. Tick off as completed.
 
 ### Performance
-- [ ] **DOM element caching** — `synchronizeGlobalInterfaceDisplays`, `refreshEngineeringPanelGraphics`, `updateHelmPanel`, `_updateCaptainOrderButtons`, `processEnemyAI` all call `getElementById` / `querySelector` on every frame. Cache all hot-path element refs at game start into a `_EL` map; invalidate only on deck switch. Estimated: ~60 DOM queries/frame eliminated.
-- [ ] **`getWarpOutput` / `getTotalAllocatedPower` computed 3× per frame** — called independently from `synchronizeGlobalInterfaceDisplays`, `updateHelmPanel`, and `updateEngUtilityPanel` in the same tick. Compute once at top of `masterSimulationCoreLoop` and pass down.
+- [x] **DOM element caching** — done. `_EL` map built by `_buildELCache()` (ui.js) at game start, re-primed on ship select / deck switch; hot-path lookups use the cache-first `_g(id)` helper.
+- [x] **`getWarpOutput` / `getTotalAllocatedPower` computed 3× per frame** — done. `state.js` now memoises both via `_refreshPowerCache()`, keyed on `G.lastFrameTimestamp` (recomputed at most once per frame, invalidated on any power change via `_invalidatePowerCache()`).
 - [ ] **`recalculateShieldRegenRate` DOM write every frame** — rate only changes when power/health changes; add dirty flag, skip DOM update when value unchanged.
 - [ ] **Button update throttling** — `updateEvasiveButton`, `updateShieldFreqButton`, `_updateDeepScanButton` update DOM 60×/s for values that change once per second. Only update when `Math.ceil(timer/1000)` differs from the previous frame.
 
@@ -924,6 +936,10 @@ Identified during the June 2026 simplification review. Tick off as completed.
 - [ ] **`firePulseCannons` / `fireAllPhaserArrays` one-liner wrappers** — both are single-line delegates to `fireEnergyWeapons()`; remove wrappers and call `fireEnergyWeapons()` directly at the two call sites in `auto-delegation.js`.
 
 ### Architecture
-- [ ] **`G.threat.fireInterval` as derived value** — currently mutated independently by `initiateVesselSimulation`, `_commitDeepScan`, `toggleActiveSensorSystems`, `checkBorgScanExpiry`, and `processEnemyAI`. A `getEffectiveFireInterval()` computed from base × difficulty × modifier flags would eliminate all mutation sites and prevent multiplicative drift (root cause of bug #70).
-- [ ] **`initiateVesselSimulation` module reset pattern** — 220-line monolith directly zeros 50+ G fields from all modules. Each module should expose an `initForBattle()` / `reset()` function owning its own state; `initiateVesselSimulation` calls them. Root cause of bugs #34, #36, #60, #61 (missing resets found only when stale state caused visible bugs).
-- [ ] **Enemy regen in `computeConduitConduction`** — enemy shield regen logic lives inside the player EPS conduit tick function. Move to `processEnemyAI` where all other enemy state updates live. Root cause of bugs #92, #93 (`shields_sys` key error went undetected because it was in the wrong file).
+- [x] **`G.threat.fireInterval` as derived value** — done. `getEffectiveFireInterval()` (state.js) computes base × difficulty × `weapon_disrupt` × active-scanner each frame; `G.threat.fireInterval` is no longer mutated (the field is gone — only the derived getter is used).
+- [ ] **`initiateVesselSimulation` module reset pattern** — 220-line monolith directly zeros 50+ G fields from all modules. Each module should expose an `initForBattle()` / `reset()` function owning its own state; `initiateVesselSimulation` calls them. Root cause of bugs #34, #36, #60, #61 (missing resets found only when stale state caused visible bugs). *Still open — deferred as a high-churn, higher-risk refactor.*
+- [x] **Enemy regen in `computeConduitConduction`** — done. Moved to `processEnemyAI()` (enemy-ai.js), in the non-cloaked path where `cfg`/`sc` are already in scope, alongside the other enemy state updates. This was the root cause of #92/#93/#126 (the `shields_sys` key error hid because it lived in the wrong file).
+
+### File structure (June 2026 split)
+- [x] **main.js** (1,127 → 509 lines) — campaign mode → `campaign.js`; pre-battle briefing + `startCombat` → `briefing.js`; setup wizard + ship selection + weapon-matrix/cap-bar builders + splash → `setup.js`.
+- [x] **canvas-three.js** (1,725 → 562 lines) — per-frame render loop → `canvas-three-render.js`; all mesh/geometry builders → `canvas-three-geometry.js`. Scene setup + model loading + scene-construction helpers remain.
