@@ -226,10 +226,10 @@ const ENEMY_CONFIGS = {
 // ── Player weapons ────────────────────────────────────────────
 const ARRAYS_DICTIONARY = {
   // Pulse cannons: 22/each — "overpowered and overgunned for a ship its size" (Sisko, The Search)
-  cannon_port_upper:{ yield:22, cost:20, parentSystem:'cannon_pu', tag:'cpu', label:'Port Upper Pulse Cannon', arc:['fore'] },
-  cannon_port_lower:{ yield:22, cost:20, parentSystem:'cannon_pl', tag:'cpl', label:'Port Lower Pulse Cannon', arc:['fore','port'] },
-  cannon_stbd_upper:{ yield:22, cost:20, parentSystem:'cannon_su', tag:'csu', label:'Stbd Upper Pulse Cannon', arc:['fore'] },
-  cannon_stbd_lower:{ yield:22, cost:20, parentSystem:'cannon_sl', tag:'csl', label:'Stbd Lower Pulse Cannon', arc:['fore','starboard'] },
+  cannon_port_upper:{ yield:22, cost:20, parentSystem:'cannon_pu', tag:'cpu', label:'Port Upper Pulse Cannon', arc:['fore'], mount:'dorsal' },
+  cannon_port_lower:{ yield:22, cost:20, parentSystem:'cannon_pl', tag:'cpl', label:'Port Lower Pulse Cannon', arc:['fore','port'], mount:'ventral' },
+  cannon_stbd_upper:{ yield:22, cost:20, parentSystem:'cannon_su', tag:'csu', label:'Stbd Upper Pulse Cannon', arc:['fore'], mount:'dorsal' },
+  cannon_stbd_lower:{ yield:22, cost:20, parentSystem:'cannon_sl', tag:'csl', label:'Stbd Lower Pulse Cannon', arc:['fore','starboard'], mount:'ventral' },
   // Nose emitter: 65 — heavy Type-XII array, precision strike weapon
   emitter_nose:     { yield:65, cost:50, parentSystem:'nose_beam', tag:'emn', label:'Heavy Nose Array Emitter', arc:['fore'] },
   // Quantum torpedo: 125 — designed to exceed Borg shielding; far superior to photon (The Search, Defiant tech manual)
@@ -489,14 +489,14 @@ const PLAYER_SHIP_CONFIGS = {
     weaponArrays: {
       // ── Saucer section: dorsal arrays (top of saucer) ──
       // Dorsal forward: best fore coverage, some broadside
-      cannon_port_upper: { yield:42, cost:32, parentSystem:'cannon_pu', tag:'cpu', label:'Saucer Dorsal Fwd',   arc:['fore','port','starboard'] },
+      cannon_port_upper: { yield:42, cost:32, parentSystem:'cannon_pu', tag:'cpu', label:'Saucer Dorsal Fwd',   arc:['fore','port','starboard'], mount:'dorsal' },
       // Saucer port rim: sweeps fore through aft on port side
-      phaser_saucer_port:{ yield:36, cost:28, parentSystem:'cannon_pu', tag:'scp', label:'Saucer Port Array',   arc:['fore','port','aft'] },
+      phaser_saucer_port:{ yield:36, cost:28, parentSystem:'cannon_pu', tag:'scp', label:'Saucer Port Array',   arc:['fore','port','aft'], mount:'dorsal' },
 
       // ── Saucer section: ventral arrays (underside) ──
-      cannon_port_lower: { yield:38, cost:28, parentSystem:'cannon_pl', tag:'cpl', label:'Saucer Ventral Fwd',  arc:['fore','port','starboard'] },
+      cannon_port_lower: { yield:38, cost:28, parentSystem:'cannon_pl', tag:'cpl', label:'Saucer Ventral Fwd',  arc:['fore','port','starboard'], mount:'ventral' },
       // Saucer starboard rim: symmetric to port rim
-      phaser_saucer_stbd:{ yield:36, cost:28, parentSystem:'cannon_pl', tag:'scs', label:'Saucer Stbd Array',   arc:['fore','starboard','aft'] },
+      phaser_saucer_stbd:{ yield:36, cost:28, parentSystem:'cannon_pl', tag:'scs', label:'Saucer Stbd Array',   arc:['fore','starboard','aft'], mount:'dorsal' },
 
       // ── Stardrive section: forward arrays ──
       // Upper-forward stardrive: covers full forward hemisphere
@@ -506,7 +506,7 @@ const PLAYER_SHIP_CONFIGS = {
 
       // ── Saucer aft and rim arrays ──
       // Aft saucer rim: sweeps aft quadrant broadly
-      cannon_stbd_lower: { yield:35, cost:26, parentSystem:'cannon_sl', tag:'csl', label:'Saucer Aft Arrays',   arc:['aft','port','starboard'] },
+      cannon_stbd_lower: { yield:35, cost:26, parentSystem:'cannon_sl', tag:'csl', label:'Saucer Aft Arrays',   arc:['aft','port','starboard'], mount:'dorsal' },
 
       // ── Primary and aft stardrive emitters ──
       // Primary emitter: heaviest single array, fore-only precision strike

@@ -44,7 +44,7 @@ function executeBurstFireSalvo() {
   const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
   const cannons = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
   const ready   = cannons.filter(k => {
-    if (!aw[k] || !aw[k].arc.includes(G.helmAttackVector)) return false;
+    if (!weaponInArc(aw[k])) return false;
     const s = G.systems[aw[k].parentSystem];
     return !s.tripped && s.health >= 10 && s.cap >= aw[k].cost;
   });
@@ -123,8 +123,11 @@ function fireSelectedArray(weaponKey) {
   if (_isSaucerWeapon(weapon)) {
     postLogEvent(`${weapon.label} — saucer section separated. Array unavailable.`, 'warn'); return;
   }
-  if (weapon.arc && weapon.arc.length > 0 && !weapon.arc.includes(G.helmAttackVector) && !G._maxPulseBurstActive) {
-    postLogEvent(`${weapon.label} — out of firing arc on ${G.helmAttackVector.toUpperCase()} vector.`, 'warn'); return;
+  if (weapon.arc && weapon.arc.length > 0 && !weaponInArc(weapon) && !G._maxPulseBurstActive) {
+    const elevBlock = weapon.arc.includes(G.helmAttackVector) && !mountBearsOnTarget(weapon);
+    postLogEvent(elevBlock
+      ? `${weapon.label} — can't bear, target ${G.enemyElevation} the firing plane.`
+      : `${weapon.label} — out of firing arc on ${G.helmAttackVector.toUpperCase()} vector.`, 'warn'); return;
   }
   const parentSys = G.systems[weapon.parentSystem];
   if (!parentSys || parentSys.health < 10 || parentSys.tripped) { postLogEvent(`${weapon.label} offline.`, 'warn'); return; }
@@ -315,7 +318,7 @@ function fireEnergyWeapons() {
   // All non-torpedo keys that bear on current attack vector
   const energyKeys = Object.keys(aw).filter(k => {
     const w = aw[k];
-    return w && !w.isQuantum && !w.isPhoton && w.arc.includes(G.helmAttackVector);
+    return w && !w.isQuantum && !w.isPhoton && weaponInArc(w);
   });
   if (energyKeys.length === 0) {
     postLogEvent("No energy weapons bear on current attack vector.", 'warn'); return;
@@ -339,8 +342,8 @@ function fireTorpedoBanks() {
   // Enterprise-E has a dedicated second fwd quantum tube; others reuse the same key
   const quantum2   = (!useAft && aw['torpedo_quantum_b']) ? 'torpedo_quantum_b' : quantumKey;
 
-  const qInArc = aw[quantumKey] && aw[quantumKey].arc.includes(vec);
-  const pInArc = aw[photonKey]  && aw[photonKey].arc.includes(vec);
+  const qInArc = weaponInArc(aw[quantumKey]);
+  const pInArc = weaponInArc(aw[photonKey]);
 
   let bay1, bay2;
   if (qInArc && G.lockProgress >= 5 && G.player.torpedoes > 0) {
@@ -441,7 +444,7 @@ function executeUnstableTorpedo() {
   if (!sys || sys.tripped || sys.health < 10) { postLogEvent("Torpedo tube offline.", 'warn'); return; }
   // Validate arc before consuming cooldown — torpedo_quantum is fore/port/stbd only
   const _utWeapon = (G.activeWeaponArrays || ARRAYS_DICTIONARY)['torpedo_quantum'];
-  if (_utWeapon && !_utWeapon.arc.includes(G.helmAttackVector)) {
+  if (_utWeapon && !weaponInArc(_utWeapon)) {
     postLogEvent("Unstable torpedo — forward tubes not bearing on current attack vector.", 'warn'); return;
   }
   postLogEvent("UNSTABLE TORPEDO — +70% yield, misfire risk!", 'crit');
@@ -673,7 +676,7 @@ function executeMaxPhaserOutput() {
   const aw  = G.activeWeaponArrays || ARRAYS_DICTIONARY;
   const cfg2 = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
   const phaserKeys = cfg2.primaryWeaponKeys || ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
-  const ready = phaserKeys.filter(k => { if (!aw[k]) return false; const sys = G.systems[aw[k].parentSystem]; return sys && !sys.tripped && sys.health >= 10 && sys.cap >= aw[k].cost && aw[k].arc.includes(G.helmAttackVector); });
+  const ready = phaserKeys.filter(k => { if (!aw[k]) return false; const sys = G.systems[aw[k].parentSystem]; return sys && !sys.tripped && sys.health >= 10 && sys.cap >= aw[k].cost && weaponInArc(aw[k]); });
   if (ready.length === 0) { postLogEvent("No phaser arrays in arc and charged.", 'warn'); return; }
   postLogEvent("MAXIMUM PHASER OUTPUT — all arrays +60% yield, firing sequence!", 'crit');
   G.overchargeReady    = false;
@@ -731,7 +734,7 @@ function executeConcentratedPhaserFire() {
   const cfg = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
   const phaserKeys = cfg.primaryWeaponKeys || ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose'];
   const ready = phaserKeys.filter(k => {
-    if (!aw[k] || !aw[k].arc.includes(G.helmAttackVector)) return false;
+    if (!weaponInArc(aw[k])) return false;
     if (_isSaucerWeapon(aw[k])) return false;
     const s = G.systems[aw[k].parentSystem];
     return !s.tripped && s.health >= 10 && s.cap >= aw[k].cost;

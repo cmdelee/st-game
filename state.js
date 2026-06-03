@@ -265,6 +265,28 @@ function getWeakestShieldSector() {
   return SHIELD_SECTORS.reduce((b, s) => G.player.shields[s] < G.player.shields[b] ? s : b, 'fore');
 }
 
+// ── Weapon firing-arc resolution ──────────────────────────────
+// Horizontal arc (fore/port/starboard/aft vs the presented attack vector) AND
+// vertical mount: a dorsal (top-mounted) array can't depress onto a target
+// below the ship; a ventral (belly) array can't elevate onto one above.
+// G.enemyElevation ('above'|'level'|'below') is derived from the real 3D
+// positions in the spatial render loop; defaults to 'level' (no restriction)
+// when no spatial view is driving it (e.g. headless tests, engineering deck).
+function mountBearsOnTarget(weapon) {
+  const m = weapon && weapon.mount;
+  if (!m || m === 'any') return true;
+  const elev = G.enemyElevation || 'level';
+  if (elev === 'level') return true;
+  if (m === 'dorsal')  return elev !== 'below';
+  if (m === 'ventral') return elev !== 'above';
+  return true;
+}
+
+// Single source of truth for "can this weapon bear on the target right now?"
+function weaponInArc(weapon) {
+  return !!weapon && !!weapon.arc && weapon.arc.includes(G.helmAttackVector) && mountBearsOnTarget(weapon);
+}
+
 // ── Frame-level power cache ───────────────────────────────────
 // Recomputed at most once per RAF frame (keyed by G.lastFrameTimestamp).
 // Invalidated explicitly on any power change so user-input paths stay accurate.

@@ -610,6 +610,7 @@ function enemyResetForBattle(cfg, diff) {
   G.threat.lockRate     = cfg.lockRate * diff.enemyLockMult;
 
   G.enemyRangeBracket        = 'long';
+  G.enemyElevation           = 'level';   // vertical firing relationship; render loop refines it
   G.enemyRangeTimer          = 0;
   G.enemyRammingRun          = false;
   G.enemyRammingTimer        = 0;

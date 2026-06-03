@@ -243,9 +243,12 @@ function updateHelmPanel() {
     const lockStr  = sc.enemyLockMult > 1 ? `+${Math.round((sc.enemyLockMult-1)*100)}%` : `−${Math.round((1-sc.enemyLockMult)*100)}%`;
     const yieldStr = sc.yieldMult >= 1 ? `+${Math.round((sc.yieldMult-1)*100)}%` : `−${Math.round((1-sc.yieldMult)*100)}%`;
     const effRange = G.attackRunActive ? 'CLOSE★' : G.playerRangeBracket.toUpperCase();
+    const _elev = G.enemyElevation || 'level';
+    const _elevStr = _elev === 'above' ? '▲ ABOVE' : _elev === 'below' ? '▼ BELOW' : '◆ LEVEL';
+    const _elevCol = _elev === 'level' ? '#00cc66' : '#ffaa00';
     rl.innerHTML = G.comeAboutActive
       ? `<span style="color:#ff4444;font-weight:bold;">⚠ ROTATING — ALL SECTORS EXPOSED (${Math.ceil(G.comeAboutTimer/1000)}s)</span>`
-      : `Speed: <b style="color:#fff;">${sc.label}</b> | Lock <b style="color:${sc.enemyLockMult>1?'#ff6666':'#00cc66'};">${lockStr}</b> | Yield <b style="color:${sc.yieldMult>=1?'#00cc66':'#ffaa00'};">${yieldStr}</b> | Vec: <b style="color:#88aaff;">${G.helmAttackVector.toUpperCase()}</b> | Range: <b style="color:#ffaa00;">${effRange}</b>`;
+      : `Speed: <b style="color:#fff;">${sc.label}</b> | Lock <b style="color:${sc.enemyLockMult>1?'#ff6666':'#00cc66'};">${lockStr}</b> | Yield <b style="color:${sc.yieldMult>=1?'#00cc66':'#ffaa00'};">${yieldStr}</b> | Vec: <b style="color:#88aaff;">${G.helmAttackVector.toUpperCase()}</b> | Range: <b style="color:#ffaa00;">${effRange}</b> | Tgt: <b style="color:${_elevCol};">${_elevStr}</b>`;
   }
 
   // Auto-tactical summary

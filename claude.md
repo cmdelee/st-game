@@ -239,6 +239,10 @@ G.score = { totalDmgDealt, volleysFired, hullBreaches, systemsDestroyed,
 
 `G.activeWeaponArrays` is set to `ARRAYS_DICTIONARY` (Defiant) or `PLAYER_SHIP_CONFIGS.enterprise_e.weaponArrays` depending on ship. `fireSelectedArray(key)` reads from `G.activeWeaponArrays`. All weapon arcs are enforced — buttons dim when out of arc.
 
+**Firing-arc resolution — `weaponInArc(weapon)` (state.js):** single source of truth for "can this weapon bear right now?", combining two checks:
+- **Horizontal arc** — `weapon.arc.includes(G.helmAttackVector)` (fore/port/starboard/aft).
+- **Vertical mount** — `mountBearsOnTarget(weapon)`. Each weapon carries an optional `mount` (`'dorsal'` = top-of-hull, `'ventral'` = belly; absent = `'any'`/centerline). A dorsal array can't depress onto a target *below* the ship; a ventral array can't elevate onto one *above*. `G.enemyElevation` (`'above'|'level'|'below'`) is derived **from the real 3D mesh Y-difference** in `renderSpatialViewCanvas` (canvas-three-render.js) with a hysteresis band (enter ±7, leave ±4) to stop flicker as the enemy weaves vertically. Defaults to `'level'` (no restriction) when no spatial view drives it — headless smoke tests and the engineering deck are unaffected. Reset to `'level'` in `enemyResetForBattle`. Tagged mounts: Defiant upper cannons (`cannon_pu/su`) dorsal, lower cannons (`cannon_pl/sl`) ventral; Enterprise-E saucer arrays (`cannon_pu`, `phaser_saucer_port/stbd`, saucer-aft `cannon_sl`) dorsal, Saucer Ventral Fwd (`cannon_pl`) ventral, stardrive/nose/torpedoes all `'any'`. The helm status line shows the live elevation (`Tgt: ▲ ABOVE / ◆ LEVEL / ▼ BELOW`); button tooltips and fire-rejection log lines distinguish a vertical block from a horizontal one. All gating sites (button dimming in ui.js, every fire/validation path in tactical.js) route through `weaponInArc`. There is always at least one centerline weapon (`'any'`) bearing, so auto-tactical never fully stalls.
+
 ### USS Defiant — ARRAYS_DICTIONARY (9 entries)
 
 | Key | Label | Yield | Cost | Arc | System |

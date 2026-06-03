@@ -212,6 +212,15 @@ function renderSpatialViewCanvas() {
       mesh_enemyGroup.position.y=THREE.MathUtils.lerp(mesh_enemyGroup.position.y, _baseY, 0.03);
       mesh_enemyGroup.position.z=THREE.MathUtils.lerp(mesh_enemyGroup.position.z, _baseZ, 0.03);
     }
+    // Vertical firing relationship — gates dorsal/ventral weapons. Hysteresis
+    // band (enter at 7, leave at 4) prevents button flicker as the enemy weaves.
+    const _dy = mesh_enemyGroup.position.y - mesh_defiant.position.y;
+    const _prevElev = G.enemyElevation || 'level';
+    const _enter = 7, _leave = 4;
+    if (_dy > (_prevElev === 'above' ? _leave : _enter))      G.enemyElevation = 'above';
+    else if (_dy < -(_prevElev === 'below' ? _leave : _enter)) G.enemyElevation = 'below';
+    else G.enemyElevation = 'level';
+
     if (G.enemyRammingRun) {
       const rp=1-G.enemyRammingTimer/4000;
       mesh_enemyGroup.position.x=THREE.MathUtils.lerp(mesh_enemyGroup.position.x,mesh_defiant.position.x+8,rp*0.08);

@@ -396,11 +396,15 @@ function synchronizeGlobalInterfaceDisplays() {
   const _isEnt2 = G.playerShipKey === 'enterprise_e';
   const _arcGrey = (id, weaponKeys, label) => {
     const btn = _g(id); if (!btn) return;
-    const anyInArc = weaponKeys.some(k => _aw2[k] && _aw2[k].arc.includes(_vec));
-    const inArcCount = weaponKeys.filter(k => _aw2[k] && _aw2[k].arc.includes(_vec)).length;
+    const anyInArc = weaponKeys.some(k => weaponInArc(_aw2[k]));
+    const inArcCount = weaponKeys.filter(k => weaponInArc(_aw2[k])).length;
     if (!anyInArc) {
       btn.style.opacity = '0.35'; btn.style.pointerEvents = 'none';
-      btn.title = `Out of arc — ${_vec.toUpperCase()} vector`;
+      // Distinguish horizontal arc from vertical elevation block
+      const horizOk = weaponKeys.some(k => _aw2[k] && _aw2[k].arc.includes(_vec));
+      btn.title = horizOk && G.enemyElevation && G.enemyElevation !== 'level'
+        ? `Can't bear — target ${G.enemyElevation} (dorsal/ventral arc)`
+        : `Out of arc — ${_vec.toUpperCase()} vector`;
     } else {
       btn.style.opacity = ''; btn.style.pointerEvents = '';
       btn.title = '';
@@ -424,7 +428,7 @@ function synchronizeGlobalInterfaceDisplays() {
   const bfPrimKeys = _isEnt2
     ? ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower','emitter_nose']
     : ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
-  const bfArcCount = bfPrimKeys.filter(k => _aw2[k] && _aw2[k].arc.includes(_vec)).length;
+  const bfArcCount = bfPrimKeys.filter(k => weaponInArc(_aw2[k])).length;
   const bfArcBtn = _g('btn-burst-fire');
   if (bfArcBtn && bfArcCount === 0) { bfArcBtn.style.opacity = '0.35'; bfArcBtn.style.pointerEvents = 'none'; }
   else if (bfArcBtn) { bfArcBtn.style.opacity = ''; bfArcBtn.style.pointerEvents = ''; }
