@@ -118,6 +118,7 @@ function rebuildWeaponFireMatrix() {
       overMat.innerHTML = `
         <button class="pill-action-btn red-btn" id="btn-overcharge"    onclick="executeCannonOvercharge()">⚡ OVERCHARGE<br><span style="font-size:11px;">Cannon +50% · Breaker risk · CD 30s</span></button>
         <button class="pill-action-btn red-btn" id="btn-unstable-torp" onclick="executeUnstableTorpedo()">☢ UNSTABLE TORP<br><span style="font-size:11px;">Quantum +70% · Misfire 25% · CD 35s</span></button>
+        <button class="pill-action-btn red-btn" id="btn-max-pulse-burst" onclick="executeMaximumPulseBurst()" style="border:2px solid var(--warn);">⚡⚡⚡ MAX PULSE BURST<br><span style="font-size:11px;color:#ffcc00;">4-cannon 3-volley · +80% · Arc-free · 1/engagement</span></button>
         <button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-power-dump" onclick="executeEmergencyPowerDump()">⚡⚡ EMERGENCY POWER DUMP — Wpn+40% 10s · EPS spike · Shld−30% · CD 50s</button>
       `;
     }
@@ -253,6 +254,17 @@ function _updateSpecialAbilityButtons() {
   const cloakFooterLbl = document.getElementById('lbl-cloak-footer');
   if (cloakFooterLbl) cloakFooterLbl.textContent = isEnt ? 'Saucer Sep Power' : 'Cloak Power';
   // Cap bar grid is fully rebuilt by _rebuildCapBarGrid() — no individual bar show/hide needed here
+  // Update Max Pulse Burst button state (Defiant only — greys when expended)
+  if (!isEnt) {
+    const mpbBtn = document.getElementById('btn-max-pulse-burst');
+    if (mpbBtn) {
+      mpbBtn.style.opacity       = G.maxPulseBurstReady ? '1' : '0.4';
+      mpbBtn.style.pointerEvents = G.maxPulseBurstReady ? '' : 'none';
+      mpbBtn.querySelector('span').textContent = G.maxPulseBurstReady
+        ? '4-cannon 3-volley · +80% · Arc-free · 1/engagement'
+        : 'EXPENDED — one use per engagement';
+    }
+  }
 }
 
 // Shared entry point for cloak/saucer-sep from helm panel button.
@@ -783,7 +795,8 @@ function initiateVesselSimulation(station) {
   G.saucerSepReconnectTimer = 0;
   G.saucerSepCooldown       = 0;
   G.saucerAutoFireTimer     = 10000;
-  G.tricobalReady     = true;
+  G.tricobalReady        = true;
+  G.maxPulseBurstReady   = true;   // Defiant 1/engagement special ability
 
   G.dead               = false;   // latent fix: ensures G.dead cleared if play-again ever added
   G.running            = false;   // will be set true after overlay hidden
@@ -867,12 +880,55 @@ function initiateVesselSimulation(station) {
 // ============================================================
 // PRE-BATTLE BRIEFING
 // ============================================================
+// Draw an enemy ship outline on the pre-battle briefing canvas silhouette
+function _drawBriefingSilhouette(canvas, archetype, hullPct) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const cx = w * 0.5, cy = h * 0.52;
+  const sc = Math.min(w, h) / 120; // scale to fit
+
+  const col = hullPct > 0.65 ? '#00cc66' : hullPct > 0.35 ? '#ffaa00' : '#ff4444';
+  ctx.strokeStyle = col; ctx.lineWidth = 1.8;
+  ctx.fillStyle = `rgba(20,40,80,0.3)`;
+  ctx.shadowColor = col; ctx.shadowBlur = 8;
+  ctx.beginPath();
+  switch (archetype) {
+    case 'ktinga': case 'vor_cha':
+      ctx.moveTo(cx+22*sc,cy); ctx.lineTo(cx-8*sc,cy-22*sc); ctx.lineTo(cx-26*sc,cy-14*sc);
+      ctx.lineTo(cx-20*sc,cy); ctx.lineTo(cx-26*sc,cy+14*sc); ctx.lineTo(cx-8*sc,cy+22*sc); break;
+    case 'romulan_bop':
+      ctx.moveTo(cx+20*sc,cy); ctx.lineTo(cx-12*sc,cy-26*sc); ctx.lineTo(cx-22*sc,cy);
+      ctx.lineTo(cx-12*sc,cy+26*sc); break;
+    case 'romulan_warbird':
+      ctx.moveTo(cx+24*sc,cy); ctx.lineTo(cx-10*sc,cy-30*sc); ctx.lineTo(cx-28*sc,cy);
+      ctx.lineTo(cx-10*sc,cy+30*sc); break;
+    case 'galor_class': case 'cardassian_scout':
+      ctx.moveTo(cx+18*sc,cy); ctx.lineTo(cx-12*sc,cy-18*sc); ctx.lineTo(cx-22*sc,cy-10*sc);
+      ctx.lineTo(cx-18*sc,cy); ctx.lineTo(cx-22*sc,cy+10*sc); ctx.lineTo(cx-12*sc,cy+18*sc); break;
+    case 'borg_probe':
+      ctx.rect(cx-22*sc,cy-22*sc,44*sc,44*sc); break;
+    case 'jem_hadar_fighter': case 'jem_hadar_battleship':
+      ctx.moveTo(cx+18*sc,cy); ctx.lineTo(cx-12*sc,cy-20*sc); ctx.lineTo(cx-24*sc,cy-14*sc);
+      ctx.lineTo(cx-18*sc,cy); ctx.lineTo(cx-24*sc,cy+14*sc); ctx.lineTo(cx-12*sc,cy+20*sc); break;
+    default:
+      ctx.moveTo(cx+16*sc,cy); ctx.lineTo(cx-12*sc,cy-14*sc); ctx.lineTo(cx-12*sc,cy+14*sc);
+  }
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Shield arc hint
+  ctx.strokeStyle = `rgba(68,119,255,0.4)`; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx, cy, 36*sc, 0, Math.PI*2); ctx.stroke();
+}
+
 function showPreBattleBriefing() {
   G.preBattleScanProgress = 0;
   G.preBattleTimer        = 0;
   G.preBattleActive       = true;
 
   const cfg    = ENEMY_CONFIGS[G.enemyArchetype];
+  const diff   = DIFFICULTY[currentDifficulty];
   const intel  = MISSION_INTEL[G.enemyArchetype] || {};
   const overlay = document.getElementById('pre-battle-overlay');
   if (!overlay) { startCombat(); return; }
@@ -889,8 +945,17 @@ function showPreBattleBriefing() {
     else threat.classList.remove('critical');
   }
 
-  const sil = document.getElementById('pb-silhouette');
-  if (sil) { sil.textContent = '?'; sil.classList.remove('revealed'); }
+  // Silhouette — replace with canvas drawing
+  const silDiv = document.getElementById('pb-silhouette');
+  if (silDiv) {
+    silDiv.textContent = '';
+    silDiv.classList.remove('revealed');
+    const silCanvas = document.createElement('canvas');
+    silCanvas.width = 160; silCanvas.height = 130;
+    silCanvas.style.cssText = 'width:100%;height:100%;opacity:0;transition:opacity 0.6s;';
+    silDiv.appendChild(silCanvas);
+    silDiv._canvas = silCanvas;
+  }
 
   // Reset identity lines
   const faction   = document.getElementById('pb-faction');
@@ -900,10 +965,29 @@ function showPreBattleBriefing() {
   if (shipclass) { shipclass.textContent = 'CLASS: [SCANNING...]';   shipclass.classList.add('classified'); }
   if (mission)   mission.textContent = '';
 
-  // Build intel cards (start all classified)
+  // Build intel cards — prepend auto-generated stats card, then mission intel cards
   const cardsEl = document.getElementById('pb-cards');
   if (cardsEl) {
-    cardsEl.innerHTML = (intel.cards || []).map((c, i) => `
+    const hullScaled  = Math.round(cfg.hull * diff.enemyHullMult);
+    const fireMs      = Math.round(cfg.fireInterval * diff.enemyFireMult);
+    const specials    = [
+      cfg.hasCloakDevice  ? '◉ Cloaking' : null,
+      cfg.adaptiveShields ? '⬡ Adaptive shielding' : null,
+      cfg.polaronWeapons  ? '⚡ Polaron bypass 30%' : null,
+      cfg.canRam          ? '⚠ Ramming protocol' : null,
+      cfg.hasSensorGhosts ? '👻 Sensor ghosts' : null,
+    ].filter(Boolean).join(' · ') || 'Standard weapons only';
+
+    const statsCard = `<div class="pb-card revealed" id="pb-card-stats">
+      <div class="pb-card-label">TACTICAL PROFILE</div>
+      <div class="pb-card-text revealed" style="font-family:'Roboto Mono';font-size:10px;line-height:1.7;">
+        Hull: <b>${hullScaled}</b> · Fire interval: <b>${(fireMs/1000).toFixed(1)}s</b> · Lock rate: <b>${cfg.lockRate}/s</b><br>
+        Shields: F:${cfg.shields.fore} P:${cfg.shields.port} S:${cfg.shields.starboard} A:${cfg.shields.aft}<br>
+        <span style="color:var(--warn);">${specials}</span>
+      </div>
+    </div>`;
+
+    cardsEl.innerHTML = statsCard + (intel.cards || []).map((c, i) => `
       <div class="pb-card" id="pb-card-${i}">
         <div class="pb-card-label">${c.label}</div>
         <div class="pb-card-text" id="pb-cardtext-${i}">
@@ -940,7 +1024,12 @@ function showPreBattleBriefing() {
       faction.classList.remove('classified');
     }
     if (pct >= 50) {
-      if (sil) { sil.textContent = intel.silhouette || '?'; sil.classList.add('revealed'); }
+      const sil = document.getElementById('pb-silhouette');
+      if (sil && sil._canvas && sil._canvas.style.opacity === '0') {
+        _drawBriefingSilhouette(sil._canvas, G.enemyArchetype, G.threat.hull / G.threat.maxHull);
+        sil._canvas.style.opacity = '1';
+        sil.classList.add('revealed');
+      }
       if (shipclass && shipclass.classList.contains('classified')) {
         shipclass.textContent = `CLASS: ${cfg.label}`;
         shipclass.classList.remove('classified');

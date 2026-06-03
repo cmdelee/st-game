@@ -30,6 +30,7 @@ const G = {
 
   // Tricobalt warhead (Enterprise-E special — 1 per engagement)
   tricobalReady: true,
+  maxPulseBurstReady: true,
 
   // Scan
   activeScanProfile:null, scanAnalysisProgress:0, scanBonus:null,

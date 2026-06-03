@@ -468,14 +468,24 @@ function executeThreatCounterVolley() {
   let hitPlayerSystem = null;
   if (diff.targetsSystems && Math.random() < diff.systemTargetChance) {
     const systemTargets = {
-      torpedo_tube:['torpedoes'], disruptors:['cannon_pu','cannon_pl','cannon_su','cannon_sl'],
+      disruptors:['cannon_pu','cannon_pl','cannon_su','cannon_sl'],
       phasers:['cannon_pu','nose_beam'], engines:['engines'], sensors:['sensors'],
-      cloak:['cloak_dev'], warp:['warp_core'], shields:['shields']
+      cloak:['cloak_dev'], warp:['warp_core'], shields:['shields'], torpedoes:['torpedoes']
     };
-    const priorities     = currentDifficulty === 'elite'
-      ? ['warp','cloak','sensors','disruptors','shields']
-      : ['disruptors','sensors','shields','engines'];
-    const chosenPriority = priorities[Math.floor(Math.random() * priorities.length)];
+    // Faction-specific targeting doctrines
+    const _factionPriorities = {
+      Klingon:    ['disruptors','engines','shields','sensors'],         // disable weapons, then trap, then grind
+      Romulan:    ['sensors','cloak','disruptors','shields'],           // blind first so cloak is harder to exploit
+      Cardassian: ['shields','disruptors','sensors','engines'],         // methodical attrition
+      Dominion:   ['engines','disruptors','shields','warp'],            // prevent escape; polaron bypasses shields anyway
+      Borg:       ['shields','disruptors','warp','sensors','cloak'],    // systematic — optimal assimilation sequence
+    };
+    const priorities = _factionPriorities[cfg.faction] ||
+                       (currentDifficulty === 'elite' ? ['warp','cloak','sensors','disruptors','shields']
+                                                      : ['disruptors','sensors','shields','engines']);
+    // Weight toward front of list: pick from first N entries where N decreases with index
+    const weightedIdx = Math.floor(Math.pow(Math.random(), 1.5) * priorities.length);
+    const chosenPriority = priorities[Math.min(weightedIdx, priorities.length - 1)];
     const candidateKeys  = systemTargets[chosenPriority] || ['shields'];
     hitPlayerSystem = candidateKeys[Math.floor(Math.random() * candidateKeys.length)];
     postLogEvent(`PRECISION STRIKE: Enemy targeting [${G.systems[hitPlayerSystem] ? G.systems[hitPlayerSystem].label : hitPlayerSystem}]!`, 'crit');

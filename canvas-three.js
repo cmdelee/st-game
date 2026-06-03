@@ -1261,6 +1261,42 @@ function _cleanupSaucerSep() {
   if (engine_glow_saucer) engine_glow_saucer.intensity = 0;
 }
 
+// ── Hull damage spark pool ────────────────────────────────────
+let _hullSparks = [];            // { mesh, vel, life, maxLife }
+let _hullSparkTimer = 0;         // accumulator — emit sparks at intervals
+
+function _emitHullSparks(origin, count, col) {
+  for (let i = 0; i < count; i++) {
+    const geo = new THREE.SphereGeometry(0.06 + Math.random()*0.06, 4, 4);
+    const mat = new THREE.MeshBasicMaterial({ color: col || 0xff6600 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(
+      origin.x + (Math.random()-0.5)*3,
+      origin.y + (Math.random()-0.5)*2,
+      origin.z + (Math.random()-0.5)*3
+    );
+    THREE_scene.add(mesh);
+    _hullSparks.push({
+      mesh,
+      vel: new THREE.Vector3((Math.random()-0.5)*4, Math.random()*3+1, (Math.random()-0.5)*4),
+      life: 0, maxLife: 0.4 + Math.random()*0.5,
+    });
+  }
+}
+
+function _tickHullSparks(dt) {
+  _hullSparks = _hullSparks.filter(s => {
+    s.life += dt;
+    const t = s.life / s.maxLife;
+    s.mesh.position.addScaledVector(s.vel, dt);
+    s.vel.y -= 8 * dt; // gravity
+    s.mesh.material.opacity = Math.max(0, 1 - t * t);
+    s.mesh.material.transparent = true;
+    if (s.life >= s.maxLife) { THREE_scene.remove(s.mesh); s.mesh.geometry.dispose(); s.mesh.material.dispose(); return false; }
+    return true;
+  });
+}
+
 function renderSpatialViewCanvas() {
   if (!THREE_ready || !THREE_renderer) return;
   const dt  = Math.min(THREE_clock.getDelta(), 0.05);
@@ -1667,6 +1703,23 @@ function renderSpatialViewCanvas() {
     impulse_glow_player.intensity = G.cloaked ? 0 : _impGlow * (G.systems.engines.health / 100);
     impulse_glow_player.position.set(mesh_defiant.position.x + 4, mesh_defiant.position.y, mesh_defiant.position.z);
   }
+  // Hull damage sparks — emit when hull below 50%, more frequent at lower hull
+  _tickHullSparks(dt);
+  if (G.running && !G.dead && !G.cloaked) {
+    const hullPct = G.player.hull / G.player.maxHull;
+    if (hullPct < 0.50) {
+      _hullSparkTimer += dt;
+      const sparkInterval = hullPct < 0.20 ? 0.15 : hullPct < 0.35 ? 0.35 : 0.8;
+      if (_hullSparkTimer >= sparkInterval) {
+        _hullSparkTimer = 0;
+        const sparkCol = hullPct < 0.20 ? 0xff2200 : 0xff6600;
+        _emitHullSparks(mesh_defiant.position, hullPct < 0.20 ? 6 : hullPct < 0.35 ? 3 : 2, sparkCol);
+      }
+    } else {
+      _hullSparkTimer = 0;
+    }
+  }
+
   G.renderedBeamsVector = G.renderedBeamsVector.filter(b => performance.now() - b.trackingStartTime < b.duration);
   THREE_renderer.render(THREE_scene, THREE_camera);
 }

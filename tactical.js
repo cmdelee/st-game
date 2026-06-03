@@ -123,7 +123,7 @@ function fireSelectedArray(weaponKey) {
   if (_isSaucerWeapon(weapon)) {
     postLogEvent(`${weapon.label} — saucer section separated. Array unavailable.`, 'warn'); return;
   }
-  if (weapon.arc && weapon.arc.length > 0 && !weapon.arc.includes(G.helmAttackVector)) {
+  if (weapon.arc && weapon.arc.length > 0 && !weapon.arc.includes(G.helmAttackVector) && !G._maxPulseBurstActive) {
     postLogEvent(`${weapon.label} — out of firing arc on ${G.helmAttackVector.toUpperCase()} vector.`, 'warn'); return;
   }
   const parentSys = G.systems[weapon.parentSystem];
@@ -189,7 +189,7 @@ function fireSelectedArray(weaponKey) {
   else if (_isCannon) { if (_r === 'close' || G.attackRunActive) dmg *= 1.20; else if (_r === 'long' && !G.attackRunActive) dmg *= 0.90; }
   else if (_isNose)   { if (_r === 'close') dmg *= 1.10; if (_r === 'long') dmg *= 0.90; }
 
-  if (G._overchargeActive)   dmg *= (G._maxPhaserActive ? 1.60 : 1.50);
+  if (G._overchargeActive)   dmg *= (G._maxPhaserActive ? 1.60 : G._maxPulseBurstActive ? 1.80 : 1.50);
   if (G._unstableTorpActive) dmg *= 1.70;
   if (G.powerDumpActive)     dmg *= 1.40;
   // Stardrive power boost — EPS no longer split with saucer section
@@ -365,6 +365,43 @@ function fireAllWeapons() {
 
 // ── Keep for internal / delegation use ───────────────────────
 function firePulseCannons() { fireEnergyWeapons(); }
+
+// ── Defiant exclusive: Maximum Pulse Burst ────────────────────
+// All 4 pulse cannons fire 3 rapid volleys with +80% yield,
+// ignoring arc restrictions. Once per engagement. High EPS cost.
+function executeMaximumPulseBurst() {
+  if (!G.running || G.dead) return;
+  if (G.playerShipKey !== 'defiant') return;
+  if (!G.maxPulseBurstReady) { postLogEvent("Maximum Pulse Burst already expended this engagement.", 'warn'); return; }
+  if (G.cloaked || G.cloakVulnTimer > 0) { postLogEvent("Cannot fire while cloaking.", 'warn'); return; }
+  if (G.enemyTractorActive) { postLogEvent("TRACTOR BEAM — weapons offline!", 'crit'); return; }
+  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  const cannonKeys = ['cannon_port_upper','cannon_port_lower','cannon_stbd_upper','cannon_stbd_lower'];
+  const available = cannonKeys.filter(k => {
+    const w = aw[k]; if (!w) return false;
+    const s = G.systems[w.parentSystem]; return s && !s.tripped && s.health >= 10;
+  });
+  if (available.length === 0) { postLogEvent("All pulse cannon arrays offline — Maximum Pulse Burst unavailable.", 'warn'); return; }
+
+  G.maxPulseBurstReady = false;
+  postLogEvent("MAXIMUM PULSE BURST — 3-volley salvo, +80% yield, arc-free. ONCE PER ENGAGEMENT!", 'crit');
+
+  let delay = 0;
+  for (let volley = 0; volley < 3; volley++) {
+    available.forEach(k => {
+      setTimeout(() => {
+        if (G.dead) return;
+        G._overchargeActive = true;
+        G._maxPulseBurstActive = true;
+        try { fireSelectedArray(k); } finally { G._overchargeActive = false; G._maxPulseBurstActive = false; }
+        G.epsHeat = Math.min(100, G.epsHeat + 5);
+        G.systems[aw[k].parentSystem].stress = Math.min(100, G.systems[aw[k].parentSystem].stress + 20);
+      }, delay);
+      delay += 80;
+    });
+    delay += 300; // gap between volleys
+  }
+}
 function fireAllPhaserArrays() { fireEnergyWeapons(); }
 
 // Alpha salvo — all in-arc energy weapons + one torpedo (strict single-tube, arc-correct)
