@@ -57,20 +57,22 @@ function buildDefiantGeometry() {
   bridge.scale.set(1, 1, 0.8);
   group.add(bridge);
 
-  // ── Quad nacelles — the Defiant's defining feature ────────────
-  // Four nacelles mounted flush to the hull sides, two per side:
-  //   Upper pair: just above hull mid-line, z = ±1.5
-  //   Lower pair: below hull mid-line,     z = ±2.6
-  // Each nacelle is short and stubby (not long swept nacelles)
+  // ── Twin nacelles — the Defiant's defining feature ────────────
+  // The Defiant-class mounts two large warp nacelles recessed into the aft
+  // hull flanks. Each is modelled as a stacked upper+lower pod pair per side,
+  // which together read as the tall, wide nacelle structures of the Defiant
+  // (rather than thin external tubes):
+  //   Upper pods: hull mid-line,        z = ±2.6
+  //   Lower pods: below hull mid-line,  z = ±1.5
   const nacGeo = new THREE.CylinderGeometry(0.30, 0.42, 4.8, 8);
   const bussGeo = new THREE.SphereGeometry(0.36, 8, 6);
   const bussMat = new THREE.MeshPhongMaterial({ color:0xff5500, emissive:0xcc2200, emissiveIntensity:2.2 });
 
   [
-    { z: 2.6,  y: 0.0,  label:'upper_port'  },  // outer upper
-    { z: -2.6, y: 0.0,  label:'upper_stbd'  },
-    { z: 1.5,  y:-0.9,  label:'lower_port'  },  // inner lower (slightly tucked)
-    { z:-1.5,  y:-0.9,  label:'lower_stbd'  },
+    { z: 2.6,  y: 0.0,  label:'port_upper' },  // port nacelle — upper pod
+    { z: -2.6, y: 0.0,  label:'stbd_upper' },  // starboard nacelle — upper pod
+    { z: 1.5,  y:-0.9,  label:'port_lower' },  // port nacelle — lower pod (tucked)
+    { z:-1.5,  y:-0.9,  label:'stbd_lower' },  // starboard nacelle — lower pod
   ].forEach(({ z, y }) => {
     // Short stubby nacelle pod — horizontal, slightly angled
     const nac = new THREE.Mesh(nacGeo, nacMat);

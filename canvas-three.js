@@ -39,22 +39,29 @@ const _MODEL_ROTATIONS = {
   defiant:              { x:0,            y:Math.PI/2,   z:0 },
   // Y-long/Z-up STL; nose at −Y → x:-π/2 z:+π/2 maps −Y→+X, +Z→+Y(dorsal up)
   enterprise_e:         { x:-Math.PI/2,   y:0,           z: Math.PI/2 },
-  // Y-up native STL; nose empirically requires y:π to face +X
-  ktinga:               { x:0,            y:Math.PI,     z:0 },
-  // Y-up native STL; nose at +Z facing −X in STL → y:−π/2 maps to +X
-  vor_cha:              { x:0,            y:-Math.PI/2,  z:0 },
+  // Native long axis Y (nose), height on Z; x:π/2 + z:π/2 → nose+X, dorsal+Y.
+  // (Was y:π, which left the long axis vertical — ship appeared to point up.)
+  ktinga:               { x:Math.PI/2,    y:0,           z:Math.PI/2 },
+  // Native long axis Y (nose), height on Z; x:π/2 + z:π/2 → nose+X, dorsal+Y.
+  // (Was y:−π/2, which left the long axis vertical — ship appeared to point up.)
+  vor_cha:              { x:Math.PI/2,    y:0,           z:Math.PI/2 },
   // Long axis X already = forward, height Z → x:-π/2 makes Z→Y(up)
   romulan_bop:          { x:-Math.PI/2,   y:0,           z:0 },
-  // Z-up STL; x:-π/2 corrects up, y:π/2 faces nose +X
-  romulan_warbird:      { x:-Math.PI/2,   y:Math.PI/2,  z:0 },
+  // Native long axis Y (nose), tall ring on X, thin width Z; z:−π/2 maps
+  // long axis → +X (nose) and ring height → +Y. (Was x:−π/2 y:π/2, which
+  // left the hull broadside/vertical — ship faced sideways.)
+  romulan_warbird:      { x:0,            y:0,           z:-Math.PI/2 },
   // Empirically verified: nose+up both 1.000
   cardassian_scout:     { x:Math.PI/2,    y:0,          z:-Math.PI/2 },
-  // Y-up native STL; nose at −Y in STL → y:−π/2 maps to +X
-  galor_class:          { x:0,            y:-Math.PI/2,  z:0 },
+  // Native long axis Y (nose along Y), height on Z; x:π/2 + z:π/2 maps
+  // long axis → +X (nose) and height → +Y (dorsal up). (Was y:−π/2, which
+  // left the long axis vertical — the ship appeared to "point down".)
+  galor_class:          { x:Math.PI/2,    y:0,           z:Math.PI/2 },
   // Empirically verified: nose+up both 1.000
   jem_hadar_fighter:    { x:Math.PI/2,    y:0,           z:Math.PI/2 },
-  // OBJ; Y-up native; nose at +X after x:-π/2 rotation
-  jem_hadar_battleship: { x:-Math.PI/2,   y:0,           z:0 },
+  // OBJ; Y-up native, nose along Z; y:π/2 maps nose → +X, keeps dorsal +Y.
+  // (Was x:−π/2, which tipped the long nose axis vertical — pointed up.)
+  jem_hadar_battleship: { x:0,            y:Math.PI/2,   z:0 },
   // Symmetric cube — rotation irrelevant
   borg_probe:           { x:0,            y:0,           z:0 },
 };
