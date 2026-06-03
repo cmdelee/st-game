@@ -64,6 +64,11 @@ function _setupReset() {
   document.getElementById('setup-step-configure').style.display = 'none';
   document.getElementById('setup-step-single').style.display    = 'none';
   document.getElementById('setup-step-campaign').style.display  = 'none';
+  // Restore the inner sections that concludeCampaignLevel() hides to declutter
+  // the campaign summary modal. Without this they stay display:none and the
+  // wizard's ship/station/difficulty controls are invisible on the next run.
+  ['ship-select-section','setup-controls-anchor','campaign-diff-section','campaign-run-section']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
 }
 
 // ============================================================
