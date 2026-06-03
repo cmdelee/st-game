@@ -204,185 +204,36 @@ function initiateVesselSimulation(station) {
   }
 
   const cfg = ENEMY_CONFIGS[G.enemyArchetype];
-
-  // Deep-copy enemy systems
-  G.enemySystems = {};
-  Object.keys(cfg.systems).forEach(k => { G.enemySystems[k] = Object.assign({}, cfg.systems[k]); });
-
-  // Apply difficulty multipliers
-  G.threat.hull         = Math.round(cfg.hull * diff.enemyHullMult);
-  G.threat.maxHull      = G.threat.hull;
-  G.threat.shields      = Object.assign({}, cfg.shields);
-  G.threat.recoveryCoefficient = cfg.recoveryCoefficient;
-  // G.threat.fireInterval removed — use getEffectiveFireInterval() (derived from config × difficulty × modifiers)
-  G.threat.lockRate     = cfg.lockRate * diff.enemyLockMult;
   const shipCfg = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
-  G.player.hull         = Math.round(shipCfg.hull * diff.playerHullMult);
-  G.player.maxHull      = G.player.hull;
-  // Reset shields and torpedoes from ship config
-  G.player.torpedoes          = shipCfg.torpedoes;
-  G.player.maxTorpedoes       = shipCfg.torpedoes;
-  G.player.photonTorpedoes    = shipCfg.photonTorpedoes;
-  G.player.maxPhotonTorpedoes = shipCfg.photonTorpedoes;
-  G.player.shields = Object.assign({}, shipCfg.shields);
 
-  // Reset ablative armour — 6 layers
-  G.ablative = { layers:6, layerHealth:[100,100,100,100,100,100], regenTimers:[0,0,0,0,0,0], regenProgress:[0,0,0,0,0,0] };
+  // Per-module battle reset — each module owns its own state (replaces the old
+  // ~180-line monolith; see CLAUDE.md "initForBattle module reset pattern").
+  enemyResetForBattle(cfg, diff);
+  engineeringResetForBattle(shipCfg, diff);
+  tacticalResetForBattle();
+  helmResetForBattle();
+  sensorsResetForBattle();
+  commandResetForBattle();
+  crewResetForBattle();
 
-  // Reset new mechanic states
-  G.enemyRangeBracket        = 'long';
-  G.enemyRangeTimer          = 0;
-  G.enemyRammingRun          = false;
-  G.enemyRammingTimer        = 0;
-  G.plasmaTorpedoReady       = true;
-  G.plasmaTorpedoReloadTimer = 0;
-  G.shieldFreqActive         = false;
-  G.shieldFreqTimer          = 0;
-  G.shieldFreqCooldown       = 0;
-  G.shieldFreqWeaponType     = null;
-  G.burstFireReady           = true;
-  G.burstFireCooldown        = 0;
-  G.helmSpeed                = 'half';
-  G.helmAttackVector         = 'fore';
-  G.playerRangeBracket       = 'long';
-  G.attackRunActive          = false;
-  G.attackRunTimer           = 0;
-  G.attackRunCooldown        = 0;
-  G.comeAboutActive          = false;
-  G.comeAboutTimer           = 0;
-  G.comeAboutCooldown        = 0;
-  G.picardManoeuverActive    = false;
-  G.picardManoeuverTimer     = 0;
-  G.picardManoeuverCooldown  = 0;
-  G.attackPatternOmegaActive = false;
-  G.attackPatternOmegaTimer  = 0;
-  G.attackPatternOmegaCooldown = 0;
-  G.evasiveAlphaActive       = false;
-  G.evasiveAlphaTimer        = 0;
-  G.evasiveAlphaCooldown     = 0;
-  G.evasiveActive            = false;
-  G.evasiveCooldown          = 0;
-  G.enemyPhase               = '';
-  G.enemyPhaseIndex          = 0;
-  G.enemyPhaseTimer          = 0;
-  G.enemyPhaseFireMult       = 1.0;
-  G.enemyPhaseLockMult       = 1.0;
-  G.holdFire                 = false;
-  G.holdFireTimer            = 0;
-  G.autoShieldTrack          = false;
-  G.autoShieldTrackTimer     = 0;
-  G.silentRunning            = false;
-  G.silentRunningTimer       = 0;
-  G.epsHeat                  = 0;
-  G.shieldTransferInProgress = false;
-  G.lastPlayerFireTime       = 0;
-  G.overchargeReady          = true;
-  G.overchargeCooldown       = 0;
-  G.unstableTorpReady        = true;
-  G.unstableTorpCooldown     = 0;
-  G.powerDumpActive          = false;
-  G.powerDumpTimer           = 0;
-  G.powerDumpReady           = true;
-  G.powerDumpCooldown        = 0;
-  G.enemyAdaptiveResist      = { cannon_pu:0, cannon_pl:0, cannon_su:0, cannon_sl:0, nose_beam:0, torpedoes:0, photon:0 };
-  G.enemyAdaptiveHits        = 0;
-  G.borgEscalationLevel      = 0;
-
-  // Item 1 — Full state reset between games (crew, score, queues, timers, misc)
-  // Apply ship-specific crew names before resetting status
-  const _crewCfg = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).crewStations || {};
-  Object.keys(CREW_STATIONS).forEach(k => {
-    if (_crewCfg[k]) CREW_STATIONS[k].name = _crewCfg[k].name;
-    CREW_STATIONS[k].status = 'nominal';
-    CREW_STATIONS[k].casualties = 0;
-  });
-  G.score              = { totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false,
-                           weaponsFired:{ cannons:0, nose:0, quantum:0, photon:0 },
-                           sectorBreaches:{ fore:0, port:0, starboard:0, aft:0 },
-                           peakHullHit:0, systemsTripped:[], enemyPhaseReached:'' };
-  G.lastStandActive         = false;
-  G.lastStandReported       = false;
-  G.enemyHullMilestones     = {};
-  G.crewReports             = [];
-  G._captainLowHullReported = false;
-  G.cloakEngagedAt          = 0;
-  G.enemyCloakEngagedAt     = 0;
-  G.frozenShields           = { fore:0, port:0, starboard:0, aft:0 };
-  G.enemyFrozenShields      = { fore:0, port:0, starboard:0, aft:0 };
-  G.repairQueue        = [];
-  G.enemyRepairQueue   = [];  // clear stale entries from previous game
-  G.repairTeams        = [
-    { sysKey:null, label:'', totalTime:0, remaining:0 },
-    { sysKey:null, label:'', totalTime:0, remaining:0 },
-  ];
-  G.batteryCharge      = 100;
-  G.batteryActive      = false;
-  G.inFlightTorpedoes  = [];
-  G.renderedBeamsVector = [];
-  G.shieldHitFlash     = { player:{ sector:null, timer:0 }, enemy:{ sector:null, timer:0 } };
-  G.damageParticles    = [];
-  G.lockProgress       = 0;
-  G.enemyLockProgress  = 0;
-  G.weaponsDisrupted   = false;
-  G.weaponsDisruptedTimer = 0;
-  G.scanBonus             = null;
-  G.activeScanProfile     = null;
-  G.scanAnalysisProgress  = 0;
-  G.permanentScanBonuses  = {};
-  G.deepScanActive        = false;
-  G.deepScanProgress      = 0;
-  G.deepScanCooldown      = 0;
-  G.fireAtWill            = false;
-  G.activeScanningProfile = false;   // active scanner toggle — not reset elsewhere
-  G.captainOrderCooldowns = {};      // stale CDs persist between games otherwise
-  // Refresh scan UI so results/button from previous game are cleared
-  if (typeof _updateDeepScanButton === 'function') _updateDeepScanButton();
-  if (typeof _renderScanResults    === 'function') _renderScanResults();
-  G.sensorGhostActive  = false;
-  G.sensorGhostTimer   = 0;
-  G.enemyTractorActive = false;
-  G.cloaked            = false;
-  G.cloakCooldown      = 0;
-  G.cloakVulnTimer     = 0;
-  G.cloakPowerReserve  = 100;
-  G.enemyCloaked       = false;
-  G.enemyCloakCooldown = 0;
-  G.enemyCloakVulnTimer = 0;
-  G.enemyCloakPower    = 100;
-  G.enemyManeuverState = 'neutral';
-  G.enemyManeuverTimer = 0;
-  G.enemyManeuverThreshold = 9000;
-  G.enemyPreferredSector = 'fore';
-  G.threatCycleTimer   = 0;
+  // Cross-cutting lifecycle / score / visual-effect state stays here.
+  G.score = { totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false,
+              weaponsFired:{ cannons:0, nose:0, quantum:0, photon:0 },
+              sectorBreaches:{ fore:0, port:0, starboard:0, aft:0 },
+              peakHullHit:0, systemsTripped:[], enemyPhaseReached:'' };
+  G.lastStandActive        = false;
+  G.lastStandReported      = false;
+  G.inFlightTorpedoes      = [];
+  G.renderedBeamsVector    = [];
+  G.shieldHitFlash         = { player:{ sector:null, timer:0 }, enemy:{ sector:null, timer:0 } };
+  G.damageParticles        = [];
   G.shieldUnderAttackTimer = 0;
-  G.historicalLogTracks = [];
-  // Reset all player systems to full health
-  Object.keys(G.systems).forEach(k => {
-    G.systems[k].health = 100;
-    G.systems[k].stress = 0;
-    G.systems[k].tripped = false;
-    G.systems[k].cap = 100;
-    if (G.systems[k].aftCap !== undefined) G.systems[k].aftCap = 100;
-  });
-  // Apply ship-specific system labels and default EPS allocations
-  const _shipCfg = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;
-  Object.entries(_shipCfg.systemLabels).forEach(([k, label]) => { if (G.systems[k]) G.systems[k].label = label; });
-  Object.entries(_shipCfg.defaultPower).forEach(([k, pwr])   => { if (G.systems[k]) G.systems[k].allocatedPower = pwr; });
-  // Reset saucer separation and tricobalt
-  G.saucerSepActive         = false;
-  G.saucerSepReconnecting   = false;
-  G.saucerSepReconnectTimer = 0;
-  G.saucerSepCooldown       = 0;
-  G.saucerAutoFireTimer     = 10000;
-  G.tricobalReady        = true;
-  G.maxPulseBurstReady   = true;   // Defiant 1/engagement special ability
-
-  G.dead               = false;   // latent fix: ensures G.dead cleared if play-again ever added
-  G.running            = false;   // will be set true after overlay hidden
+  G.historicalLogTracks    = [];
+  G.dead               = false;
+  G.running            = false;
   G.lastFrameTimestamp = 0;
   G.autoTacticalFireClock = 0;
-  G.gameSessionId      = (G.gameSessionId || 0) + 1; // guards async intervals from prior game
-
+  G.gameSessionId      = (G.gameSessionId || 0) + 1;
   // Bug 4: clear transcript box for fresh game
   const txBox = document.getElementById('terminal-transcript-box');
   if (txBox) { txBox.innerHTML = ''; txBox.style.display = 'none'; }

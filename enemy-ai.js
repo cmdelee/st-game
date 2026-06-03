@@ -596,3 +596,48 @@ function executeThreatCounterVolley() {
     });
   }
 }
+
+// --- Battle reset (called by initiateVesselSimulation) ---
+// Owns all enemy state: G.threat, G.enemySystems, cloak/manoeuvre/range/phase,
+// ramming, plasma, tractor, Borg adaptation, sensor ghosts.
+function enemyResetForBattle(cfg, diff) {
+  G.enemySystems = {};
+  Object.keys(cfg.systems).forEach(k => { G.enemySystems[k] = Object.assign({}, cfg.systems[k]); });
+  G.threat.hull         = Math.round(cfg.hull * diff.enemyHullMult);
+  G.threat.maxHull      = G.threat.hull;
+  G.threat.shields      = Object.assign({}, cfg.shields);
+  G.threat.recoveryCoefficient = cfg.recoveryCoefficient;
+  G.threat.lockRate     = cfg.lockRate * diff.enemyLockMult;
+
+  G.enemyRangeBracket        = 'long';
+  G.enemyRangeTimer          = 0;
+  G.enemyRammingRun          = false;
+  G.enemyRammingTimer        = 0;
+  G.plasmaTorpedoReady       = true;
+  G.plasmaTorpedoReloadTimer = 0;
+  G.enemyPhase               = '';
+  G.enemyPhaseIndex          = 0;
+  G.enemyPhaseTimer          = 0;
+  G.enemyPhaseFireMult       = 1.0;
+  G.enemyPhaseLockMult       = 1.0;
+  G.enemyAdaptiveResist      = { cannon_pu:0, cannon_pl:0, cannon_su:0, cannon_sl:0, nose_beam:0, torpedoes:0, photon:0 };
+  G.enemyAdaptiveHits        = 0;
+  G.borgEscalationLevel      = 0;
+  G.enemyHullMilestones      = {};
+  G.enemyCloakEngagedAt      = 0;
+  G.enemyFrozenShields       = { fore:0, port:0, starboard:0, aft:0 };
+  G.enemyRepairQueue         = [];
+  G.enemyLockProgress        = 0;
+  G.sensorGhostActive        = false;
+  G.sensorGhostTimer         = 0;
+  G.enemyTractorActive       = false;
+  G.enemyCloaked             = false;
+  G.enemyCloakCooldown       = 0;
+  G.enemyCloakVulnTimer      = 0;
+  G.enemyCloakPower          = 100;
+  G.enemyManeuverState       = 'neutral';
+  G.enemyManeuverTimer       = 0;
+  G.enemyManeuverThreshold   = 9000;
+  G.enemyPreferredSector     = 'fore';
+  G.threatCycleTimer         = 0;
+}

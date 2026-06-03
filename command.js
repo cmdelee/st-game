@@ -756,3 +756,19 @@ function initCaptainStation() {
   _renderCrewComms();
   updateCaptainOverview();
 }
+
+// --- Battle reset (called by initiateVesselSimulation) ---
+// Owns captain-station state: crew comms feed, order cooldowns, captain manoeuvre
+// toggles (hold fire / auto shield track / silent running) and fire-at-will.
+function commandResetForBattle() {
+  G.holdFire                = false;
+  G.holdFireTimer           = 0;
+  G.autoShieldTrack         = false;
+  G.autoShieldTrackTimer    = 0;
+  G.silentRunning           = false;
+  G.silentRunningTimer      = 0;
+  G.crewReports             = [];
+  G._captainLowHullReported = false;
+  G.fireAtWill              = false;
+  G.captainOrderCooldowns   = {};
+}

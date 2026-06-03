@@ -206,3 +206,18 @@ function toggleActiveSensorSystems() {
   if (G.activeScanningProfile) postLogEvent("Active scanning on — enemy also benefits from better targeting.", 'warn');
   else postLogEvent("Passive tracking restored.", 'info');
 }
+
+// --- Battle reset (called by initiateVesselSimulation) ---
+// Owns scan bonuses, deep-scan progress/cooldown and the active-scanner toggle.
+function sensorsResetForBattle() {
+  G.scanBonus             = null;
+  G.activeScanProfile     = null;
+  G.scanAnalysisProgress  = 0;
+  G.permanentScanBonuses  = {};
+  G.deepScanActive        = false;
+  G.deepScanProgress      = 0;
+  G.deepScanCooldown      = 0;
+  G.activeScanningProfile = false;
+  if (typeof _updateDeepScanButton === 'function') _updateDeepScanButton();
+  if (typeof _renderScanResults    === 'function') _renderScanResults();
+}

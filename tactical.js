@@ -749,3 +749,42 @@ function executeConcentratedPhaserFire() {
     }, i * 180);
   });
 }
+
+// --- Battle reset (called by initiateVesselSimulation) ---
+// Owns player weapon timers, cloak, evasive, overload modes, weapons-disrupted
+// state, lock progress, and Enterprise-E saucer/tricobalt/pulse-burst flags.
+function tacticalResetForBattle() {
+  G.shieldFreqActive     = false;
+  G.shieldFreqTimer      = 0;
+  G.shieldFreqCooldown   = 0;
+  G.shieldFreqWeaponType = null;
+  G.burstFireReady       = true;
+  G.burstFireCooldown    = 0;
+  G.evasiveActive        = false;
+  G.evasiveCooldown      = 0;
+  G.lastPlayerFireTime   = 0;
+  G.overchargeReady      = true;
+  G.overchargeCooldown   = 0;
+  G.unstableTorpReady    = true;
+  G.unstableTorpCooldown = 0;
+  G.powerDumpActive      = false;
+  G.powerDumpTimer       = 0;
+  G.powerDumpReady       = true;
+  G.powerDumpCooldown    = 0;
+  G.weaponsDisrupted     = false;
+  G.weaponsDisruptedTimer = 0;
+  G.lockProgress         = 0;
+  G.cloaked              = false;
+  G.cloakCooldown        = 0;
+  G.cloakVulnTimer       = 0;
+  G.cloakPowerReserve    = 100;
+  G.cloakEngagedAt       = 0;
+  G.frozenShields        = { fore:0, port:0, starboard:0, aft:0 };
+  G.saucerSepActive         = false;
+  G.saucerSepReconnecting   = false;
+  G.saucerSepReconnectTimer = 0;
+  G.saucerSepCooldown       = 0;
+  G.saucerAutoFireTimer     = 10000;
+  G.tricobalReady        = true;
+  G.maxPulseBurstReady   = true;
+}

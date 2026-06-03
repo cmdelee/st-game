@@ -72,3 +72,14 @@ function updateWarpAvailability() {
   else if (hp > 0.35)               { lbl.textContent = 'WARP STANDBY';  lbl.style.color = 'var(--warn)'; }
   else                              { lbl.textContent = '⚡ WARP READY';  lbl.style.color = 'var(--green)'; }
 }
+
+// --- Battle reset (called by initiateVesselSimulation) ---
+// Applies ship-specific crew names and clears casualty/status for all stations.
+function crewResetForBattle() {
+  const _crewCfg = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).crewStations || {};
+  Object.keys(CREW_STATIONS).forEach(k => {
+    if (_crewCfg[k]) CREW_STATIONS[k].name = _crewCfg[k].name;
+    CREW_STATIONS[k].status = 'nominal';
+    CREW_STATIONS[k].casualties = 0;
+  });
+}

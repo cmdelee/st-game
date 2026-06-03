@@ -773,3 +773,38 @@ function rebalanceShieldArrays() {
     postLogEvent("Shields equalised.", 'good');
   }, 2000);
 }
+
+// --- Battle reset (called by initiateVesselSimulation) ---
+// Owns player hull/shields/ordnance, all 11 systems, EPS/thermal, battery,
+// repair teams and ablative armour.
+function engineeringResetForBattle(shipCfg, diff) {
+  G.player.hull               = Math.round(shipCfg.hull * diff.playerHullMult);
+  G.player.maxHull            = G.player.hull;
+  G.player.torpedoes          = shipCfg.torpedoes;
+  G.player.maxTorpedoes       = shipCfg.torpedoes;
+  G.player.photonTorpedoes    = shipCfg.photonTorpedoes;
+  G.player.maxPhotonTorpedoes = shipCfg.photonTorpedoes;
+  G.player.shields = Object.assign({}, shipCfg.shields);
+
+  G.ablative = { layers:6, layerHealth:[100,100,100,100,100,100], regenTimers:[0,0,0,0,0,0], regenProgress:[0,0,0,0,0,0] };
+
+  G.epsHeat                  = 0;
+  G.shieldTransferInProgress = false;
+  G.repairQueue              = [];
+  G.repairTeams              = [
+    { sysKey:null, label:'', totalTime:0, remaining:0 },
+    { sysKey:null, label:'', totalTime:0, remaining:0 },
+  ];
+  G.batteryCharge = 100;
+  G.batteryActive = false;
+
+  Object.keys(G.systems).forEach(k => {
+    G.systems[k].health = 100;
+    G.systems[k].stress = 0;
+    G.systems[k].tripped = false;
+    G.systems[k].cap = 100;
+    if (G.systems[k].aftCap !== undefined) G.systems[k].aftCap = 100;
+  });
+  Object.entries(shipCfg.systemLabels).forEach(([k, label]) => { if (G.systems[k]) G.systems[k].label = label; });
+  Object.entries(shipCfg.defaultPower).forEach(([k, pwr])   => { if (G.systems[k]) G.systems[k].allocatedPower = pwr; });
+}

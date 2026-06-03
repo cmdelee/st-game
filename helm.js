@@ -270,3 +270,26 @@ function updateHelmPanel() {
     ae.innerHTML = `${teamA} · ${teamB} · EPS: <b style="color:#fff;">${getTotalAllocatedPower()}/${getWarpOutput()}MW</b> · Heat: <b style="color:${heatCol};">${Math.round(G.epsHeat)}%</b>`;
   }
 }
+
+// --- Battle reset (called by initiateVesselSimulation) ---
+// Owns speed, attack vector, range and all helm-manoeuvre timers/cooldowns.
+function helmResetForBattle() {
+  G.helmSpeed                  = 'half';
+  G.helmAttackVector           = 'fore';
+  G.playerRangeBracket         = 'long';
+  G.attackRunActive            = false;
+  G.attackRunTimer             = 0;
+  G.attackRunCooldown          = 0;
+  G.comeAboutActive            = false;
+  G.comeAboutTimer             = 0;
+  G.comeAboutCooldown          = 0;
+  G.picardManoeuverActive      = false;
+  G.picardManoeuverTimer       = 0;
+  G.picardManoeuverCooldown    = 0;
+  G.attackPatternOmegaActive   = false;
+  G.attackPatternOmegaTimer    = 0;
+  G.attackPatternOmegaCooldown = 0;
+  G.evasiveAlphaActive         = false;
+  G.evasiveAlphaTimer          = 0;
+  G.evasiveAlphaCooldown       = 0;
+}
