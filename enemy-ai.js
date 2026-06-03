@@ -451,8 +451,13 @@ function executeThreatCounterVolley() {
     }
   } else {
     let candidateWpns = wpns;
+    // Vertical bearing — dorsal/ventral enemy arrays can't fire when the player
+    // is above/below them (mirror of the player's own limit). Fall back to the
+    // full list if nothing bears so the enemy is never fully silenced.
+    const _bearing = candidateWpns.filter(([k, s]) => enemyWeaponBears(s));
+    if (_bearing.length > 0) candidateWpns = _bearing;
     if (cfg.prefersCloseRange && G.enemyRangeBracket === 'close') {
-      const disruptors = wpns.filter(([k, s]) => s.systemTargetKey === 'disruptors');
+      const disruptors = candidateWpns.filter(([k, s]) => s.systemTargetKey === 'disruptors');
       if (disruptors.length > 0) candidateWpns = disruptors;
     }
     [chosenKey, chosenSys] = candidateWpns[Math.floor(Math.random() * candidateWpns.length)];
@@ -603,6 +608,15 @@ function executeThreatCounterVolley() {
 function enemyResetForBattle(cfg, diff) {
   G.enemySystems = {};
   Object.keys(cfg.systems).forEach(k => { G.enemySystems[k] = Object.assign({}, cfg.systems[k]); });
+  // Assign vertical mounts so the enemy obeys the same dorsal/ventral firing
+  // limits as the player (helm elevation matters for both sides). Torpedo
+  // launchers gimbal freely ('any'). Beam/disruptor/polaron arrays alternate
+  // dorsal/ventral when a ship has ≥2 of them, guaranteeing at least one bears
+  // at any elevation; a lone beam stays 'any' so single-gun ships never stall.
+  const _beamKeys = Object.keys(G.enemySystems).filter(k => G.enemySystems[k].isWeapon && !G.enemySystems[k].isTorpedo);
+  Object.values(G.enemySystems).forEach(s => { if (s.isWeapon && s.isTorpedo) s.mount = 'any'; });
+  if (_beamKeys.length >= 2) _beamKeys.forEach((k, i) => { G.enemySystems[k].mount = (i % 2 === 0) ? 'dorsal' : 'ventral'; });
+  else _beamKeys.forEach(k => { G.enemySystems[k].mount = 'any'; });
   G.threat.hull         = Math.round(cfg.hull * diff.enemyHullMult);
   G.threat.maxHull      = G.threat.hull;
   G.threat.shields      = Object.assign({}, cfg.shields);

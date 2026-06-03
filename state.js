@@ -272,19 +272,36 @@ function getWeakestShieldSector() {
 // G.enemyElevation ('above'|'level'|'below') is derived from the real 3D
 // positions in the spatial render loop; defaults to 'level' (no restriction)
 // when no spatial view is driving it (e.g. headless tests, engineering deck).
-function mountBearsOnTarget(weapon) {
-  const m = weapon && weapon.mount;
-  if (!m || m === 'any') return true;
-  const elev = G.enemyElevation || 'level';
-  if (elev === 'level') return true;
-  if (m === 'dorsal')  return elev !== 'below';
-  if (m === 'ventral') return elev !== 'above';
-  return true;
+// Does a given mount fail to bear on a target at the given elevation?
+// dorsal (top) can't depress onto a target below; ventral (belly) can't
+// elevate onto one above. 'any'/centerline and 'level' targets always bear.
+function _elevationBlocks(mount, elev) {
+  if (!mount || mount === 'any' || elev === 'level') return false;
+  if (mount === 'dorsal')  return elev === 'below';
+  if (mount === 'ventral') return elev === 'above';
+  return false;
 }
 
-// Single source of truth for "can this weapon bear on the target right now?"
+// Player weapon vs the enemy (enemy's elevation relative to the player).
+function mountBearsOnTarget(weapon) {
+  return !_elevationBlocks(weapon && weapon.mount, G.enemyElevation || 'level');
+}
+
+// Single source of truth for "can this player weapon bear on the target right now?"
 function weaponInArc(weapon) {
   return !!weapon && !!weapon.arc && weapon.arc.includes(G.helmAttackVector) && mountBearsOnTarget(weapon);
+}
+
+// The player's elevation as seen by the enemy is the inverse of the enemy's
+// elevation as seen by the player.
+function getPlayerElevation() {
+  const e = G.enemyElevation || 'level';
+  return e === 'above' ? 'below' : e === 'below' ? 'above' : 'level';
+}
+
+// Enemy weapon vs the player — same dorsal/ventral limitation, mirrored.
+function enemyWeaponBears(sys) {
+  return !_elevationBlocks(sys && sys.mount, getPlayerElevation());
 }
 
 // ── Frame-level power cache ───────────────────────────────────

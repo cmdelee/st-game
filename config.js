@@ -496,17 +496,17 @@ const PLAYER_SHIP_CONFIGS = {
       // ── Saucer section: ventral arrays (underside) ──
       cannon_port_lower: { yield:38, cost:28, parentSystem:'cannon_pl', tag:'cpl', label:'Saucer Ventral Fwd',  arc:['fore','port','starboard'], mount:'ventral' },
       // Saucer starboard rim: symmetric to port rim
-      phaser_saucer_stbd:{ yield:36, cost:28, parentSystem:'cannon_pl', tag:'scs', label:'Saucer Stbd Array',   arc:['fore','starboard','aft'], mount:'dorsal' },
+      phaser_saucer_stbd:{ yield:36, cost:28, parentSystem:'cannon_pl', tag:'scs', label:'Saucer Stbd Array',   arc:['fore','starboard','aft'], mount:'ventral' },
 
       // ── Stardrive section: forward arrays ──
-      // Upper-forward stardrive: covers full forward hemisphere
-      cannon_stbd_upper: { yield:40, cost:30, parentSystem:'cannon_su', tag:'csu', label:'Stardrive Fwd Arrays', arc:['fore','port','starboard'] },
-      // Secondary hull broadside arrays (largest lateral coverage)
-      phaser_secondary:  { yield:42, cost:32, parentSystem:'cannon_su', tag:'phs', label:'Secondary Hull Arrays', arc:['fore','port','starboard'] },
+      // Upper-forward stardrive (dorsal): covers full forward hemisphere
+      cannon_stbd_upper: { yield:40, cost:30, parentSystem:'cannon_su', tag:'csu', label:'Stardrive Fwd Arrays', arc:['fore','port','starboard'], mount:'dorsal' },
+      // Secondary (engineering) hull broadside arrays — ventral underside, largest lateral coverage
+      phaser_secondary:  { yield:42, cost:32, parentSystem:'cannon_su', tag:'phs', label:'Secondary Hull Arrays', arc:['fore','port','starboard'], mount:'ventral' },
 
       // ── Saucer aft and rim arrays ──
-      // Aft saucer rim: sweeps aft quadrant broadly
-      cannon_stbd_lower: { yield:35, cost:26, parentSystem:'cannon_sl', tag:'csl', label:'Saucer Aft Arrays',   arc:['aft','port','starboard'], mount:'dorsal' },
+      // Aft ventral rim: sweeps aft quadrant broadly
+      cannon_stbd_lower: { yield:35, cost:26, parentSystem:'cannon_sl', tag:'csl', label:'Saucer Aft Arrays',   arc:['aft','port','starboard'], mount:'ventral' },
 
       // ── Primary and aft stardrive emitters ──
       // Primary emitter: heaviest single array, fore-only precision strike
