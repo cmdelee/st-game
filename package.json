@@ -1,0 +1,13 @@
+{
+  "name": "st-game",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Starship Battle Simulator — the game is buildless static files; this package.json exists only for the Playwright smoke-test runner.",
+  "scripts": {
+    "smoke": "node tests/run-smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

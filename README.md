@@ -1,5 +1,7 @@
 # 🖖 Starship Battle Simulator - A STAR TREK FAN PRODUCTION
 
+[![Smoke Tests](https://github.com/cmdelee/st-game/actions/workflows/smoke.yml/badge.svg)](https://github.com/cmdelee/st-game/actions/workflows/smoke.yml)
+
 "Star Trek and all related marks, logos and characters are solely owned by CBS Studios Inc. This fan production is not endorsed by, sponsored by, nor affiliated with CBS, Paramount Pictures, or any other Star Trek franchise, and is a non-commercial fan-made interactive experience intended for recreational use. No commercial exhibition or distribution is permitted. No alleged independent rights will be asserted against CBS or Paramount Pictures."
 
 Command a Starfleet vessel in real-time tactical combat. Choose from two iconic ships and four command stations — the computer handles everything you don't.
@@ -100,7 +102,15 @@ python -m http.server 8000   # or: npx serve .
 
 Open `http://localhost:8000`. No build step, no bundler.
 
-**Smoke tests:** append `?test=1` to the URL (e.g. `http://localhost:8000/?test=1`) — a harness boots every ship × station × enemy combination, drives the real per-frame logic, and asserts no exceptions and finite/in-range hull, shields, lock, and system values. Results print to the browser console; failures are logged as errors. You can also run `runSmokeTests()` from the console at any time.
+**Smoke tests:** append `?test=1` to the URL (e.g. `http://localhost:8000/?test=1`) — a harness boots every ship × station × enemy combination, drives the real per-frame logic, exercises every special ability, and asserts no exceptions, finite/in-range values, and correct behaviour (firing deals damage, repairs heal, warp-core trip scales power, emergency warp / ramming end the engagement). Results print to the browser console; failures are logged as errors. You can also run `runSmokeTests()` from the console at any time.
+
+These same tests run in **CI on every push and PR** via Playwright headless Chromium (`.github/workflows/smoke.yml`). Run them locally the same way CI does:
+
+```bash
+npm install
+npx playwright install --with-deps chromium
+npm run smoke
+```
 
 **Cache-busting:** script URLs use `?v=<content-hash>` so changed files always refetch while unchanged files stay cached. Run `./cachebust.ps1` before committing to refresh the hashes (`./cachebust.ps1 -Check` reports whether any are stale).
 

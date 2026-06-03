@@ -45,7 +45,7 @@ index.html (HTML shell + script tags)
 | `campaign.js` | Campaign run mode: `startCampaign`, `_launchCampaignLevel`, `_updateCampaignHUD`, `concludeCampaignLevel`, `_nextCampaignLevel`, `_restartCampaign` (moved out of main.js) |
 | `briefing.js` | Pre-battle intel briefing + combat engagement: `_drawBriefingSilhouette`, `showPreBattleBriefing`, `engageFromBriefing`, `_engageCombat`, `startCombat` (moved out of main.js) |
 | `main.js` | Game loop (`masterSimulationCoreLoop`); simulation init (`initiateVesselSimulation`); boot (`runMasterBootSequence`); `returnToSetup()`; viewport resize. Setup/ship-select → `setup.js`, campaign → `campaign.js`, pre-battle briefing → `briefing.js` |
-| `smoketest.js` | Optional invariant test harness (`runSmokeTests`). Drives every ship × station × enemy combo through the real per-frame ticks (no RAF/canvas) and asserts no exception + finite/in-range hull/shields/lock/systems. Auto-runs on `?test=1`; or call `runSmokeTests()` from the console |
+| `smoketest.js` | Invariant + behaviour test harness (`runSmokeTests`). Drives every ship × station × enemy combo through the real per-frame ticks (no RAF/canvas), exercises every special ability, and runs scenario tests (repair heals, warp-core trip scales power, emergency warp / ramming end the game). Asserts no exception + finite/in-range values + firing deals damage. Auto-runs on `?test=1` (publishes `window.__SMOKE_RESULT` / `__SMOKE_DONE`); or call `runSmokeTests()`. Runs in CI via `tests/run-smoke.mjs` (Playwright headless Chromium) on every push/PR — see `.github/workflows/smoke.yml` |
 
 ---
 
