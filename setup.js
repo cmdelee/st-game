@@ -108,7 +108,7 @@ function rebuildWeaponFireMatrix() {
     ? `<button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-burst-fire" onclick="executeConcentratedPhaserFire()">⚡⚡ CONCENTRATED FIRE</button>`
     : `<button class="pill-action-btn red-btn" style="grid-column:span 2;" id="btn-burst-fire" onclick="executeBurstFireSalvo()">⚡⚡ BURST SALVO</button>`;
   const specialBtn  = isEnt
-    ? `<button class="pill-action-btn warn-btn" id="btn-cloak" onclick="toggleSaucerSeparation()">◯ SAUCER SEP</button>`
+    ? `<button class="pill-action-btn warn-btn" id="btn-cloak" onclick="toggleSaucerSeparation()">◈ ANTIPROTON DEFLECTOR</button>`
     : `<button class="pill-action-btn warn-btn" id="btn-cloak" onclick="toggleCloakingDevice()">◉ CLOAK</button>`;
 
   fireMat.innerHTML = `
@@ -230,12 +230,12 @@ function _updateSpecialAbilityButtons() {
   const helmCloak = document.getElementById('btn-helm-cloak');
   const helmSub   = document.getElementById('btn-helm-cloak-sub');
   if (helmCloak) {
-    if (isEnt) { helmCloak.innerHTML = '◯ SAUCER SEP<br><span style="font-size:11px; color:#cc99ff;" id="btn-helm-cloak-sub">Engines ≥20% · CD 50s</span>'; helmCloak.onclick = toggleSaucerSeparation; }
+    if (isEnt) { helmCloak.innerHTML = '◈ DEFLECTOR<br><span style="font-size:11px; color:#88aaff;" id="btn-helm-cloak-sub">Dmg −35% · Lock −50%</span>'; helmCloak.onclick = toggleSaucerSeparation; }
     else       { helmCloak.innerHTML = '◉ ENGAGE CLOAK<br><span style="font-size:11px; color:#cc99ff;" id="btn-helm-cloak-sub">Health ≥20% · CD 25s</span>'; helmCloak.onclick = toggleCloakingDevice; }
   }
   // Captain deck cloak label
   const capCloak = document.getElementById('cap-cloak-label');
-  if (capCloak) capCloak.textContent = isEnt ? '◯ Saucer Sep' : '◉ Cloak';
+  if (capCloak) capCloak.textContent = isEnt ? '◈ Deflector' : '◉ Cloak';
   // Captain chair header
   const capHeader = document.getElementById('captain-chair-header');
   if (capHeader && G.playerShipConfig) capHeader.textContent = `⭐ Captain's Chair — ${G.playerShipConfig.label} ${G.playerShipConfig.registry}`;

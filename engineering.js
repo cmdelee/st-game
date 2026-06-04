@@ -563,23 +563,21 @@ function updateEngUtilityPanel() {
   // Cloak / Saucer separation section
   const cloakSection = document.getElementById('eng-cloak-section');
   const cloakTitle   = document.getElementById('lbl-eng-cloak-title');
-  if (cloakTitle) cloakTitle.textContent = _isEnt ? 'SAUCER SEPARATION' : 'CLOAKING DEVICE';
+  if (cloakTitle) cloakTitle.textContent = _isEnt ? 'TACTICAL DEFLECTOR' : 'CLOAKING DEVICE';
   const cs = document.getElementById('lbl-cloak-eng-status');
   if (_isEnt) {
-    // Show saucer sep status
+    // Show antiproton tactical deflector status (cloak_dev system repurposed)
     if (cloakSection) cloakSection.style.display = '';  // keep visible, repurposed
     if (cs) {
       const dh = G.systems.cloak_dev.health;
       if (dh < 20) cs.textContent = `OFFLINE (${Math.round(dh)}%)`;
-      else if (G.saucerSepReconnecting) cs.textContent = `DOCKING — ${Math.ceil(G.saucerSepReconnectTimer/1000)}s`;
-      else if (G.saucerSepActive) cs.textContent = 'SEPARATED — stardrive independent';
-      else if (G.saucerSepCooldown > 0) cs.textContent = `Sep CD ${Math.ceil(G.saucerSepCooldown/1000)}s`;
+      else if (G.deflectorActive) cs.textContent = 'ENGAGED — dmg −35%, lock −50%';
       else cs.textContent = `Ready (${Math.round(dh)}%)`;
     }
     const bce = document.getElementById('btn-cloak-eng');
     if (bce) {
-      bce.textContent = G.saucerSepReconnecting ? '◯ Docking' : G.saucerSepActive ? '◯ Order Reconnect' : '◯ Separate';
-      bce.style.background = G.saucerSepActive ? (G.saucerSepReconnecting ? 'rgba(255,170,0,0.3)' : 'rgba(0,204,102,0.3)') : '';
+      bce.textContent = G.deflectorActive ? '◈ Disengage' : '◈ Deflector';
+      bce.style.background = G.deflectorActive ? 'rgba(68,119,255,0.35)' : '';
       bce.onclick = toggleSaucerSeparation;
     }
   } else {
@@ -685,11 +683,11 @@ function computeConduitConduction(dt) {
     } else if (sys.stress > 0) {
       sys.stress = Math.max(0, sys.stress - (1.8 * sc));
     }
-    // Capacitor charging — reduced by EPS heat; stardrive systems get ×1.15 boost when saucer separated
+    // Capacitor charging — reduced by EPS heat; weapon caps recharge slower while
+    // the antiproton tactical deflector is drawing EPS priority (Enterprise-E).
     if (sys.cap < 100 || (key === 'torpedoes' && sys.aftCap !== undefined && sys.aftCap < 100)) {
-      const _isSaucerSys   = key === 'cannon_pu' || key === 'cannon_pl';
-      const stardriveBoost = (G.saucerSepActive && !G.saucerSepReconnecting && !_isSaucerSys) ? 1.15 : 1.0;
-      const ls = (sys.allocatedPower * 0.6) * (sys.health / 100) * heatPenalty * stardriveBoost;
+      const deflectorPenalty = G.deflectorActive ? 0.55 : 1.0;
+      const ls = (sys.allocatedPower * 0.6) * (sys.health / 100) * heatPenalty * deflectorPenalty;
       if (sys.cap < 100) sys.cap = Math.min(100, sys.cap + ls * sc);
       if (key === 'torpedoes' && sys.aftCap !== undefined && sys.aftCap < 100)
         sys.aftCap = Math.min(100, sys.aftCap + ls * sc);

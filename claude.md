@@ -77,7 +77,9 @@ G.systems[key]  // { health, allocatedPower, cap, stress, tripped, label, isWeap
   // Defiant labels: 'Pulse Cannon P/U' etc.
   // Enterprise labels: 'Saucer Dorsal Sys', 'Stardrive Fwd Sys' etc.
 
-// Saucer separation (Enterprise-E only — replaces cloak) — toggle, not timed
+// Antiproton Tactical Deflector (Enterprise-E only — replaces cloak slot) — on/off toggle
+G.deflectorActive       // dmg −35%, enemy lock −50%, weapon cap recharge ×0.55
+// (legacy saucer-sep flags below remain but are inert — never set true)
 // State: ready → separated (until reconnect ordered) → reconnecting (6s docking) → cooldown (60s) → ready
 G.saucerSepActive / G.saucerSepReconnecting / G.saucerSepReconnectTimer / G.saucerSepCooldown
 
@@ -580,15 +582,15 @@ In `processEnemyAI`: below 35% enemy hull, 0.4% chance per frame-second of rando
 
 ### Enterprise-E exclusive mechanics
 
-**Saucer Separation** (`toggleSaucerSeparation` in tactical.js):
-- **Toggle mechanic** — saucer stays separated until player orders reconnect (no fixed duration)
-- Separated: `saucerSepActive=true, saucerSepReconnecting=false` — saucer arrays (cannon_pu/pl) offline; decoy active
-- Reconnecting: `saucerSepReconnecting=true` — 6s docking sequence; decoy effect drops
-- Enemy lock rate ×0.4 (−60%) via `saucerSepMod` in `processEnemyAI` (×0.75 while reconnecting)
-- Stardrive cap recharge ×1.15 boost (freed EPS budget); stardrive weapon yield ×1.20
-- Engine stress +15 on separate; 60s cooldown after full reconnect
-- `G.saucerSepActive / G.saucerSepReconnecting / G.saucerSepReconnectTimer / G.saucerSepCooldown`
-- Timers tick in `masterSimulationCoreLoop`; status bar shows in tactical panel and eng-utility panel
+**Antiproton Tactical Deflector** (`toggleSaucerSeparation` in tactical.js — function name retained for callers; replaced the old saucer-separation ability because the Sovereign's separation is a one-way emergency jettison, not a tactical toggle):
+- **Simple on/off toggle**, self-limiting (no cooldown). Canon: the Sovereign's main deflector can be antiproton-charged as a defensive screen (*First Contact* / *Nemesis*).
+- `G.deflectorActive` (the single state flag). Effects while engaged:
+  - **Incoming enemy fire −35%** — `if (G.deflectorActive) rawDmg *= 0.65` in `executeThreatCounterVolley` (enemy-ai.js)
+  - **Enemy targeting lock −50%** — `deflectorMod = 0.50` in the `processEnemyAI` lock-build formula
+  - **Weapon capacitors recharge ×0.55** — `deflectorPenalty` in `computeConduitConduction` (engineering.js); the deflector draws EPS priority
+- Engine stress +8 on engage. 3D: player shield bubble brightens to forward-blue while active.
+- UI: tactical-deck button `btn-cloak` (`◈ ANTIPROTON DEFLECTOR` / `◈ DEFLECTOR ACTIVE`), captain label `cap-cloak-label` (`◈ Tactical Deflector` / `◈ Deflector Active`), eng-utility panel (`TACTICAL DEFLECTOR` status). Captain `capCloakToggle` routes E-E here.
+- The old saucer-sep state (`G.saucerSepActive` etc.) is left initialised to `false` and never set true, so its render mesh / array-offline / stardrive-boost branches are inert. `fireSaucerAutomatic`/`_isSaucerWeapon` are dead (early-return on `!saucerSepActive`).
 
 **Tricobalt Warhead** (`executeTricobalWarhead`):
 - 250–350 total yield (random); 40% bypass shields directly to hull

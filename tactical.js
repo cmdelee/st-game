@@ -555,40 +555,28 @@ function updateCloakButton() {
 //   • Decoy effect drops — enemy sees the docking as it happens
 //
 // COOLDOWN: 60s after full reconnect (structural operation)
+// ── Antiproton Tactical Deflector (Enterprise-E signature) ────
+// The Sovereign's main deflector can be charged with antiprotons as a defensive
+// screen (First Contact / Nemesis). Simple on/off toggle, self-limiting:
+//   • Incoming enemy fire −35%  (enemy-ai.js rawDmg)
+//   • Enemy targeting lock −50% (enemy-ai.js lock build, deflectorMod)
+//   • Weapon capacitors recharge ~45% slower while engaged (deflector priority)
+// Pairs with the regenerative shield grid for a Borg-survival tank posture.
+// (Replaces saucer separation — the Sovereign's separation is a one-way
+//  emergency jettison, not a tactical toggle. Function name kept for callers.)
 function toggleSaucerSeparation() {
   if (!G.running || G.dead) return;
   if (G.playerShipKey !== 'enterprise_e') return;
-
-  if (G.saucerSepReconnecting) {
-    postLogEvent("Docking sequence in progress — stand by.", 'warn'); return;
-  }
-  if (G.saucerSepCooldown > 0) {
-    postLogEvent(`Saucer separation offline — reconnect cooldown ${Math.ceil(G.saucerSepCooldown/1000)}s.`, 'warn'); return;
-  }
-
-  if (G.saucerSepActive) {
-    // ── Order reconnect ──
-    if (G.systems.engines.health < 15 || G.systems.engines.tripped) {
-      postLogEvent("Engines too damaged for docking approach.", 'crit'); return;
-    }
-    G.saucerSepReconnecting    = true;
-    G.saucerSepReconnectTimer  = 6000;   // 6s docking sequence
-    postLogEvent("RECONNECT ORDER — saucer section on docking approach. 6s.", 'good');
-    postCrewReport('helm', "Saucer section coming about for docking. Hold steady, Captain.", 'status');
-    updateSaucerSepButton();
+  G.deflectorActive = !G.deflectorActive;
+  if (G.deflectorActive) {
+    G.systems.engines.stress = Math.min(100, G.systems.engines.stress + 8);
+    postLogEvent("ANTIPROTON TACTICAL DEFLECTOR ENGAGED — incoming fire −35%, enemy targeting −50%. Weapon capacitors recharge slowed (deflector power priority).", 'good');
+    postCrewReport('helm', "Charging the main deflector with antiprotons, Captain — defensive screen is up.", 'good');
   } else {
-    // ── Initiate separation ──
-    if (G.systems.engines.health < 20 || G.systems.engines.tripped) {
-      postLogEvent("Engines too damaged for saucer separation.", 'crit'); return;
-    }
-    G.saucerSepActive = true;
-    G.systems.engines.stress = Math.min(100, G.systems.engines.stress + 15);
-    postLogEvent("SAUCER SEPARATION — stardrive section independent. Saucer running decoy.", 'good');
-    postLogEvent("OFFLINE: Saucer dorsal and ventral arrays (with saucer section). All stardrive weapons nominal.", 'warn');
-    postLogEvent("Stardrive agility +15% — lighter hull profile. Enemy lock −60% (dual contact).", 'good');
-    postCrewReport('helm', "Separation complete, Captain. Saucer section clear — stardrive maneuvering at full agility.", 'good');
-    updateSaucerSepButton();
+    postLogEvent("Tactical deflector disengaged — weapon capacitor recharge restored.", 'info');
+    postCrewReport('helm', "Deflector returned to navigational mode, Captain.", 'status');
   }
+  updateSaucerSepButton();
 }
 
 // Which weapon systems belong to the saucer section (offline to player when separated).
@@ -650,18 +638,12 @@ function _isSaucerWeapon(weapon) {
 
 function updateSaucerSepButton() {
   const btn = document.getElementById('btn-cloak'); if (!btn) return;
-  if (G.saucerSepReconnecting) {
-    btn.textContent = `◯ DOCKING ${Math.ceil(G.saucerSepReconnectTimer/1000)}s`;
-    btn.style.background = 'var(--warn)'; btn.style.color = '#000';
-  } else if (G.saucerSepActive) {
-    btn.textContent = '◯ SEPARATED — ORDER RECONNECT';
-    btn.style.background = 'var(--green)'; btn.style.color = '#000';
-    btn.className = 'pill-action-btn green-btn';
-  } else if (G.saucerSepCooldown > 0) {
-    btn.textContent = `◯ SEP CD ${Math.ceil(G.saucerSepCooldown/1000)}s`;
-    btn.style.background = 'var(--dim2)'; btn.style.color = '#aabbcc';
+  if (G.deflectorActive) {
+    btn.textContent = '◈ DEFLECTOR ACTIVE — DISENGAGE';
+    btn.style.background = 'var(--b)'; btn.style.color = '#fff';
+    btn.className = 'pill-action-btn';
   } else {
-    btn.textContent = '◯ SEPARATE SAUCER';
+    btn.textContent = '◈ ANTIPROTON DEFLECTOR';
     btn.style.background = ''; btn.style.color = '';
     btn.className = 'pill-action-btn warn-btn';
   }
@@ -787,6 +769,7 @@ function tacticalResetForBattle() {
   G.saucerSepReconnecting   = false;
   G.saucerSepReconnectTimer = 0;
   G.saucerSepCooldown       = 0;
+  G.deflectorActive         = false;   // Antiproton Tactical Deflector (E-E signature)
   G.saucerAutoFireTimer     = 10000;
   G.tricobalReady        = true;
   G.maxPulseBurstReady   = true;

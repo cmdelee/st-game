@@ -451,7 +451,7 @@ const PLAYER_SHIP_CONFIGS = {
     registry:       'NCC-1701-E',
     shipClass:      'Sovereign-class',
     era:            '2373+',
-    description:    "Starfleet's flagship. Regenerative shielding, heavy Type-XII phaser arrays, saucer separation.",
+    description:    "Starfleet's flagship. Regenerative shielding, heavy Type-XII phaser arrays, antiproton tactical deflector.",
     accentColor:    'var(--b)',
     crewStations: {
       tactical:    { name:'Lt. Cmdr Worf',        role:'Tactical',       status:'nominal', casualties:0 },
@@ -477,7 +477,7 @@ const PLAYER_SHIP_CONFIGS = {
       cannon_su:'Stardrive Fwd Sys',     cannon_sl:'Saucer Rim/Aft Sys',
       nose_beam:'Primary Emitter Sys',   torpedoes:'Torpedo Systems',
       shields:'Regenerative Shield Grid', sensors:'Sensor Arrays',
-      engines:'Impulse Engines',          cloak_dev:'Saucer Separation Sys', warp_core:'Warp Core M/ARA',
+      engines:'Impulse Engines',          cloak_dev:'Tactical Deflector Sys', warp_core:'Warp Core M/ARA',
     },
     // All 9 phaser array entry keys (used for "⚡ All Phaser Arrays ×N" arc counter)
     primaryWeaponKeys: ['cannon_port_upper','phaser_saucer_port','cannon_port_lower','phaser_saucer_stbd','cannon_stbd_upper','phaser_secondary','cannon_stbd_lower','phaser_aft_emitter','emitter_nose'],

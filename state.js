@@ -27,6 +27,7 @@ const G = {
   saucerSepReconnectTimer: 0,    // ms remaining in docking sequence
   saucerSepCooldown:     0,      // ms cooldown after reconnect completes
   saucerAutoFireTimer:   10000,  // ms until saucer section fires autonomously
+  deflectorActive:       false,  // Antiproton Tactical Deflector (Enterprise-E signature)
 
   // Tricobalt warhead (Enterprise-E special — 1 per engagement)
   tricobalReady: true,

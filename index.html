@@ -144,7 +144,7 @@
             <br>
             <span style="color:var(--b);font-family:'Antonio';">USS ENTERPRISE NCC-1701-E</span> — Sovereign-class<br>
             Hull: 750 · Fore shield: 500 · Quantum torps: 24 · Photon: 30<br>
-            <span style="color:var(--green);">Special:</span> Regenerative shielding (×1.4) + Saucer Separation<br>
+            <span style="color:var(--green);">Special:</span> Regenerative shielding (×1.4) + Antiproton Tactical Deflector<br>
             <span style="color:var(--green);">Weapons:</span> 9× Type-XII phaser arrays, stardrive emitter (90yd), 2× fwd quantum tubes + aft<br>
             <span style="color:var(--green);">Burst:</span> Concentrated Phaser Fire · <span style="color:var(--green);">Overloads:</span> Max Phaser Output (+60%), Tricobalt Warhead (1/game)
           </div>
@@ -206,7 +206,7 @@
             <span style="color:var(--t);">Deep Scan</span> — reveals permanent frequency bonuses: shield freq (−25% dmg), hull fissure (+20% yield), sensor blind (−40% enemy lock), weapons disrupt (+30% fire interval). Run early — bonuses persist all fight.<br><br>
             <span style="color:var(--t);">Subsystem Targeting</span> — focus on a specific enemy system. Deals 62% system damage + collateral hull bleed (~12–22 hull). Destroying cloak forces decloak. Destroying weapons cuts their fire.<br><br>
             <span style="color:var(--p);">Cloaking (Defiant)</span> — 1200ms vulnerability window on engage/disengage. Shields accumulate regen credit while cloaked — decloak restores them. 25s cooldown, 4%/s power drain.<br><br>
-            <span style="color:var(--green);">Saucer Sep (Enterprise)</span> — toggle mechanic: stays separated until you order reconnect. Enemy lock −60%. Stardrive weapons +20% yield. 60s cooldown after docking.<br><br>
+            <span style="color:var(--green);">Antiproton Deflector (Enterprise)</span> — toggle: charge the main deflector as a defensive screen. Incoming fire −35%, enemy targeting lock −50%. Weapon capacitors recharge ~45% slower while engaged (deflector draws EPS priority). Pairs with regenerative shields for a Borg-survival tank posture.<br><br>
             <span style="color:var(--warn);">EPS Heat</span> — sustained rapid fire heats conduits. Above 70% reduces capacitor recharge up to 30%. Cools passively at 8/s.<br><br>
             <span style="color:var(--green);">Ablative Armour (Defiant)</span> — 6 layers, each absorbs 60% of a hull hit. Auto-regenerates after 45s per layer.
           </div>
@@ -296,7 +296,7 @@
             ⬟ USS DEFIANT NX-74205<br><span style="font-size:9px;">Defiant-class · Ablative armor · Cloak · Pulse cannons</span>
           </button>
           <button id="ship-btn-enterprise_e" class="pill-action-btn" style="font-size:11px;padding:8px 14px;background:var(--dim2);color:#aabbcc;flex:1;" onclick="selectPlayerShip('enterprise_e')">
-            ◈ USS ENTERPRISE NCC-1701-E<br><span style="font-size:9px;">Sovereign-class · Regen shields · Type-XII arrays · Saucer Sep</span>
+            ◈ USS ENTERPRISE NCC-1701-E<br><span style="font-size:9px;">Sovereign-class · Regen shields · Type-XII arrays · Antiproton Deflector</span>
           </button>
         </div>
         <div id="ship-desc" style="font-size:10px;color:#7799dd;text-align:center;min-height:16px;">Heavily armed escort. Ablative armor, cloaking device, devastating pulse cannon burst salvo.</div>
@@ -1036,23 +1036,23 @@
                tactical → helm → encounter-phases → enemy-ai →
                auto-delegation → command → canvas → ui → main
 ════════════════════════════════════════════════════════════ -->
-<script src="config.js?v=3690c2b7"></script>
-<script src="state.js?v=dfe87639"></script>
-<script src="engineering.js?v=c20706ad"></script>
+<script src="config.js?v=df05be43"></script>
+<script src="state.js?v=d4dd2951"></script>
+<script src="engineering.js?v=4da6e29f"></script>
 <script src="crew.js?v=96eb5068"></script>
 <script src="sensors.js?v=fb263e1f"></script>
-<script src="tactical.js?v=bbedf934"></script>
+<script src="tactical.js?v=1f1389e2"></script>
 <script src="helm.js?v=9bcb5e63"></script>
 <script src="encounter-phases.js?v=d34b4172"></script>
-<script src="enemy-ai.js?v=762a8b13"></script>
+<script src="enemy-ai.js?v=96e24d73"></script>
 <script src="auto-delegation.js?v=dc49ec0d"></script>
-<script src="command.js?v=0cfca132"></script>
+<script src="command.js?v=7fd6ff36"></script>
 <script src="canvas-three.js?v=29a27cf8"></script>
 <script src="canvas-three-geometry.js?v=faa58b86"></script>
-<script src="canvas-three-render.js?v=240271b8"></script>
+<script src="canvas-three-render.js?v=8c0fa995"></script>
 <script src="canvas-2d.js?v=020f751a"></script>
 <script src="ui.js?v=7c4830a6"></script>
-<script src="setup.js?v=5f8916a6"></script>
+<script src="setup.js?v=6a2e1eb4"></script>
 <script src="campaign.js?v=e0f96c98"></script>
 <script src="briefing.js?v=31071348"></script>
 <script src="main.js?v=0ddbd530"></script>

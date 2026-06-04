@@ -229,10 +229,10 @@ function capRotateFreq()   { _order('rotate_freq',   rotateShieldFrequency,     
 // Decloaking has no captain-side cooldown; cloaking uses the 28s CD.
 function capCloakToggle() {
   if (G.playerShipKey === 'enterprise_e') {
-    // Saucer separation for Enterprise-E (this slot has no cloak)
-    const msg = G.saucerSepActive
-      ? "Reconnecting the saucer section, Captain."
-      : "Initiating saucer separation on your order, Captain.";
+    // Antiproton tactical deflector for Enterprise-E (this slot has no cloak)
+    const msg = G.deflectorActive
+      ? "Returning the deflector to navigational mode, Captain."
+      : "Charging the deflector with antiprotons, Captain — defensive screen up.";
     _order('cloak', toggleSaucerSeparation, 'worf', msg);
     return;
   }
@@ -250,19 +250,13 @@ function _updateCloakButtonLabel() {
   if (!btn) return;
   const span = btn.firstChild;
   if (!span) return;
-  // Enterprise-E has saucer separation in this slot, not a cloaking device.
+  // Enterprise-E has the antiproton tactical deflector in this slot, not a cloak.
   if (G.playerShipKey === 'enterprise_e') {
-    if (G.saucerSepReconnecting) {
-      span.textContent = `⬡ Reconnecting ${Math.ceil((G.saucerSepReconnectTimer||0)/1000)}s`;
-      btn.className = 'pill-action-btn';
-    } else if (G.saucerSepActive) {
-      span.textContent = '⬡ Reconnect Saucer';
-      btn.className = 'pill-action-btn green-btn';
-    } else if (G.saucerSepCooldown > 0) {
-      span.textContent = `⬡ Saucer CD ${Math.ceil(G.saucerSepCooldown/1000)}s`;
+    if (G.deflectorActive) {
+      span.textContent = '◈ Deflector Active';
       btn.className = 'pill-action-btn';
     } else {
-      span.textContent = '⬡ Saucer Separation';
+      span.textContent = '◈ Tactical Deflector';
       btn.className = 'pill-action-btn warn-btn';
     }
     return;

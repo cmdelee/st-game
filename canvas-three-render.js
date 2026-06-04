@@ -190,6 +190,12 @@ function renderSpatialViewCanvas() {
     const shAvg=['fore','port','starboard','aft'].reduce((a,s)=>a+G.player.shields[s],0)/4;
     shield_player.material.opacity=0.04+(shAvg/G.player.shields.maxSectorValue)*0.06;
     shield_player.material.emissive.setRGB(0.1,0.2,0.6);
+    // Antiproton tactical deflector — bright forward-blue screen when engaged
+    if (G.deflectorActive) {
+      shield_player.material.opacity += 0.10 + Math.sin(now*4)*0.03;
+      shield_player.material.emissive.setRGB(0.2, 0.5, 1.0);
+      shield_player.material.color.setRGB(0.3, 0.6, 1.0);
+    }
   }
 
   // ── Saucer separation (Enterprise-E) — independent flight path ──

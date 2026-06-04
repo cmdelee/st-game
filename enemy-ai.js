@@ -362,12 +362,11 @@ function processEnemyAI(dt) {
   const alphaLockMod  = G.evasiveAlphaActive   ? 0.5 : 1.0;
   const picardLockMod = G.picardManoeuverActive ? 0.0 : 1.0;
   const silentRunMod  = G.silentRunning         ? 0.6 : 1.0;
-  const saucerSepMod  = G.saucerSepActive
-    ? (G.saucerSepReconnecting ? 0.75 : 0.40)
-    : 1.0;
+  // Antiproton tactical deflector (Enterprise-E) scatters the enemy targeting solution.
+  const deflectorMod  = G.deflectorActive ? 0.50 : 1.0;
   const phaseLockMod  = G.enemyPhaseLockMult || 1.0;
   const permSensorBlind = (G.permanentScanBonuses && G.permanentScanBonuses.sensor_blind) ? 0.60 : 1.0;
-  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * saucerSepMod * phaseLockMod * permSensorBlind * sc);
+  G.enemyLockProgress = Math.min(100, G.enemyLockProgress + G.threat.lockRate * sMod * evasiveMod * helmSpeedMod * alphaLockMod * picardLockMod * silentRunMod * deflectorMod * phaseLockMod * permSensorBlind * sc);
 
   // Jem'Hadar ramming check
   if (cfg.canRam && !G.enemyRammingRun) {
@@ -582,6 +581,7 @@ function executeThreatCounterVolley() {
   if (G.weaponsDisrupted)              rawDmg *= 0.5;
   if (G.activePanel === 'engineering') rawDmg *= 0.85;
   if (G.attackPatternOmegaActive)      rawDmg *= 1.20;
+  if (G.deflectorActive)               rawDmg *= 0.65;   // antiproton deflector screen −35%
 
   if (cfg.prefersCloseRange && G.enemyRangeBracket === 'close' && chosenSys.systemTargetKey === 'disruptors')
     rawDmg *= (cfg.closeRangeDmgBonus || 1.4);
