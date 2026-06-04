@@ -287,9 +287,25 @@ function mountBearsOnTarget(weapon) {
   return !_elevationBlocks(weapon && weapon.mount, G.enemyElevation || 'level');
 }
 
+// ── Horizontal bearing ────────────────────────────────────────
+// Sectors clockwise, 90° apart. The enemy can manoeuvre to a player-relative
+// bearing (G.enemyBearing); the player turns the ship (G.helmAttackVector =
+// where the bow points) to bring the enemy back into a strong arc.
+const _SECTOR_ORDER = ['fore','starboard','aft','port'];
+function _sectorIdx(s) { const i = _SECTOR_ORDER.indexOf(s); return i < 0 ? 0 : i; }
+
+// The ship-relative sector the enemy currently occupies. Reduces to
+// G.helmAttackVector when enemyBearing is 'fore' (default / headless / no
+// spatial view), so behaviour is unchanged unless the enemy actively flanks.
+function effectiveEnemySector() {
+  const f = _sectorIdx(G.helmAttackVector || 'fore');
+  const b = _sectorIdx(G.enemyBearing || 'fore');
+  return _SECTOR_ORDER[(f - b + 4) % 4];
+}
+
 // Single source of truth for "can this player weapon bear on the target right now?"
 function weaponInArc(weapon) {
-  return !!weapon && !!weapon.arc && weapon.arc.includes(G.helmAttackVector) && mountBearsOnTarget(weapon);
+  return !!weapon && !!weapon.arc && weapon.arc.includes(effectiveEnemySector()) && mountBearsOnTarget(weapon);
 }
 
 // The player's elevation as seen by the enemy is the inverse of the enemy's

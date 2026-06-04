@@ -207,7 +207,7 @@ function _enemyPickElevation() {
   const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
   let dorsal = 0, ventral = 0;
   Object.values(aw).forEach(w => {
-    if (!w || !w.arc || !w.arc.includes(G.helmAttackVector)) return;
+    if (!w || !w.arc || !w.arc.includes(effectiveEnemySector())) return;
     const sys = G.systems[w.parentSystem];
     if (sys && (sys.tripped || sys.health < 10)) return;   // dead guns don't matter
     if (w.mount === 'dorsal')  dorsal++;
@@ -221,6 +221,33 @@ function _enemyPickElevation() {
     want = want === 'below' ? 'above' : 'below';
   }
   return want;
+}
+
+// ── Enemy lateral flanking intent ─────────────────────────────
+// Slide to the player-relative bearing that puts the enemy on the player's
+// weakest *effective* arc (fewest live weapons that can bear there) — typically
+// the aft, where most ships carry only torpedoes. The player counters by
+// turning (setHelmAttackVector) or a come-about to face the enemy again.
+function _enemyPickBearing() {
+  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  let weakSec = 'aft', weakCount = Infinity;
+  ['fore','port','starboard','aft'].forEach(sec => {
+    let n = 0;
+    Object.values(aw).forEach(w => {
+      if (!w || !w.arc || !w.arc.includes(sec)) return;
+      const sys = G.systems[w.parentSystem];
+      if (sys && (sys.tripped || sys.health < 10)) return;
+      n++;
+    });
+    if (n < weakCount) { weakCount = n; weakSec = sec; }
+  });
+  // Convert that desired effective sector into an absolute bearing given the
+  // player's current facing: effective = (facingIdx - bearingIdx) → so
+  // bearingIdx = (facingIdx - effectiveIdx).
+  const ORDER = ['fore','starboard','aft','port'];
+  const f = ORDER.indexOf(G.helmAttackVector || 'fore');
+  const e = ORDER.indexOf(weakSec);
+  return ORDER[((f - e) % 4 + 4) % 4];
 }
 
 // ── Jem'Hadar ramming ─────────────────────────────────────────
@@ -362,6 +389,15 @@ function processEnemyAI(dt) {
     G.enemyElevDecisionTimer = _commit;
   }
 
+  // Lateral flanking — slide to the player's weakest arc (force a come-about).
+  G.enemyBearingDecisionTimer -= dt;
+  if (G.enemyBearingDecisionTimer <= 0) {
+    G.enemyDesiredBearing = _enemyPickBearing();
+    const _commitB = diff.targetsSystems ? (4000 + Math.random() * 3000)
+                                          : (6000 + Math.random() * 3500);
+    G.enemyBearingDecisionTimer = _commitB;
+  }
+
   // Manoeuvre
   G.enemyManeuverTimer += dt;
   if (!G.enemyManeuverThreshold) G.enemyManeuverThreshold = 7000 + Math.random() * 5000;
@@ -488,7 +524,8 @@ function executeThreatCounterVolley() {
         dmgMin = chosenSys.dmgMin; dmgMax = chosenSys.dmgMax;
         const arc = chosenSys.firingArc.length ? chosenSys.firingArc : ['fore','port','starboard','aft'];
         targetSector = arc[Math.floor(Math.random() * arc.length)] || 'fore';
-        if (!G.comeAboutActive && arc.includes(G.helmAttackVector) && Math.random() < 0.65) targetSector = G.helmAttackVector;
+        { const _eff = effectiveEnemySector();
+          if (!G.comeAboutActive && arc.includes(_eff) && Math.random() < 0.65) targetSector = _eff; }
         G.enemyLockProgress = 0; G.enemyManeuverState = 'neutral';
       } else {
         [chosenKey, chosenSys] = torps;
@@ -530,7 +567,8 @@ function executeThreatCounterVolley() {
     const preferredValid  = validSectors.filter(s => preferred.includes(s));
     const pool            = preferredValid.length > 0 ? preferredValid : validSectors;
     targetSector = pool[Math.floor(Math.random() * pool.length)] || 'fore';
-    if (!G.comeAboutActive && arc.includes(G.helmAttackVector) && Math.random() < 0.65) targetSector = G.helmAttackVector;
+    { const _eff = effectiveEnemySector();
+      if (!G.comeAboutActive && arc.includes(_eff) && Math.random() < 0.65) targetSector = _eff; }
   }
 
   let rawDmg = (Math.random() * (dmgMax - dmgMin) + dmgMin) * (chosenSys.health / 100) * diff.enemyDmgMult;
@@ -689,6 +727,9 @@ function enemyResetForBattle(cfg, diff) {
   G.enemyElevation           = 'level';   // vertical firing relationship; render loop refines it
   G.enemyDesiredElevation    = 'level';   // AI intent: where it WANTS to be vs the player
   G.enemyElevDecisionTimer   = 2000;      // countdown to next elevation decision
+  G.enemyBearing             = 'fore';    // player-relative sector the enemy occupies (render-driven)
+  G.enemyDesiredBearing      = 'fore';    // AI intent: which of the player's arcs to flank
+  G.enemyBearingDecisionTimer= 3000;      // countdown to next flanking decision
   G.enemyRangeTimer          = 0;
   G.enemyRammingRun          = false;
   G.enemyRammingTimer        = 0;

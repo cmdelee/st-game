@@ -223,7 +223,15 @@ function renderSpatialViewCanvas() {
     const _eDist = G.enemyRangeBracket==='close'?22:G.enemyRangeBracket==='medium'?38:55;
     const _pDist = G.playerRangeBracket==='close'?22:G.playerRangeBracket==='medium'?38:55;
     const rangeDist = Math.min(_eDist, _pDist);
-    mesh_enemyGroup.position.x = THREE.MathUtils.lerp(mesh_enemyGroup.position.x, mesh_defiant.position.x+rangeDist, 0.025);
+    // Lateral flanking — commit the AI's chosen bearing (headless leaves this
+    // 'fore'). Slide the enemy around toward that side of the player so the
+    // manoeuvre reads in 3D; the gameplay effect is via effectiveEnemySector().
+    G.enemyBearing = G.enemyDesiredBearing || 'fore';
+    const _bearX = G.enemyBearing==='aft' ? -rangeDist*0.45
+                 : (G.enemyBearing==='port'||G.enemyBearing==='starboard') ? -rangeDist*0.15 : 0;
+    const _bearZ = G.enemyBearing==='port' ? +rangeDist*0.55
+                 : G.enemyBearing==='starboard' ? -rangeDist*0.55 : 0;
+    mesh_enemyGroup.position.x = THREE.MathUtils.lerp(mesh_enemyGroup.position.x, mesh_defiant.position.x+rangeDist+_bearX, 0.025);
     // 3D orbit — lateral weave across the player's arc, plus a DELIBERATE
     // vertical position: the enemy holds an elevation relative to the player
     // (G.enemyDesiredElevation) to deny the player's dorsal/ventral guns. The
@@ -235,7 +243,7 @@ function renderSpatialViewCanvas() {
     // climbing/diving to the same plane and re-open a firing solution.
     const _desOff = { above:+12, level:0, below:-12 }[G.enemyDesiredElevation] ?? 0;
     const _baseY = _desOff + Math.sin(now*0.16+0.4)*_vertAmp;
-    const _baseZ = Math.sin(now*0.22+0.7)*2.2 + Math.sin(now*0.13)*_orbitAmp;
+    const _baseZ = _bearZ + Math.sin(now*0.22+0.7)*2.2 + Math.sin(now*0.13)*_orbitAmp;
 
     if (G.enemyManeuverState==='angling') {
       const roll={fore:0,aft:Math.PI*0.15,port:0.25,starboard:-0.25}[G.enemyPreferredSector]||0;

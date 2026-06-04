@@ -275,9 +275,15 @@ function updateHelmPanel() {
     const _elevCol = _elev === 'level' ? '#00cc66' : '#ffaa00';
     const _pitch = G.helmPitch || 'level';
     const _pitchStr = _pitch === 'climb' ? '▲ CLIMB' : _pitch === 'dive' ? '▼ DIVE' : '◆ LEVEL';
+    // Lateral flank: where the enemy bears relative to the ship's nose. Guns bear
+    // best when it's dead ahead (fore); turn that way to bring the enemy forward.
+    const _foe = (typeof effectiveEnemySector === 'function' ? effectiveEnemySector() : 'fore');
+    const _foeArrow = { fore:'▲ FORE', port:'◄ PORT', starboard:'► STBD', aft:'▼ AFT' }[_foe] || _foe.toUpperCase();
+    const _gunsBear = _foe === 'fore';
+    const _foeCol = _gunsBear ? '#00cc66' : '#ff6666';
     rl.innerHTML = G.comeAboutActive
       ? `<span style="color:#ff4444;font-weight:bold;">⚠ ROTATING — ALL SECTORS EXPOSED (${Math.ceil(G.comeAboutTimer/1000)}s)</span>`
-      : `Speed: <b style="color:#fff;">${sc.label}</b> | Lock <b style="color:${sc.enemyLockMult>1?'#ff6666':'#00cc66'};">${lockStr}</b> | Yield <b style="color:${sc.yieldMult>=1?'#00cc66':'#ffaa00'};">${yieldStr}</b> | Vec: <b style="color:#88aaff;">${G.helmAttackVector.toUpperCase()}</b> | Range: <b style="color:#ffaa00;">${effRange}</b> | Us: <b style="color:#88ccff;">${_pitchStr}</b> | Tgt: <b style="color:${_elevCol};">${_elevStr}</b>`;
+      : `Speed: <b style="color:#fff;">${sc.label}</b> | Lock <b style="color:${sc.enemyLockMult>1?'#ff6666':'#00cc66'};">${lockStr}</b> | Yield <b style="color:${sc.yieldMult>=1?'#00cc66':'#ffaa00'};">${yieldStr}</b> | Vec: <b style="color:#88aaff;">${G.helmAttackVector.toUpperCase()}</b> | Range: <b style="color:#ffaa00;">${effRange}</b> | Us: <b style="color:#88ccff;">${_pitchStr}</b> | Tgt: <b style="color:${_elevCol};">${_elevStr}</b> | Foe: <b style="color:${_foeCol};">${_foeArrow}${_gunsBear?'':' — TURN!'}</b>`;
   }
 
   // Auto-tactical summary

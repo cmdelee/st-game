@@ -12,12 +12,14 @@ function processAutomatedDelegation(dt) {
   const runAutoEng = G.playerChosenStation === 'tactical' || G.playerChosenStation === 'helm' || isCaptain;
   const runAutoTac = G.playerChosenStation === 'engineering' || G.playerChosenStation === 'helm' || isCaptain;
 
-  // Auto-helm elevation matching — when the player isn't flying the ship, the
-  // computer matches the enemy's vertical position so the auto-tactical guns
-  // keep bearing (the enemy actively climbs/dives to deny dorsal/ventral arrays).
+  // Auto-helm — when the player isn't flying the ship, the computer counters the
+  // enemy's 3D positioning so the auto-tactical guns keep bearing: match its
+  // vertical plane (climb/dive) and turn to face its lateral flank.
   if (G.playerChosenStation !== 'helm') {
     const e = G.enemyElevation || 'level';
     G.helmPitch = e === 'above' ? 'climb' : e === 'below' ? 'dive' : 'level';
+    // Face the enemy: setting the bow to its bearing makes effectiveEnemySector → fore
+    if (!G.comeAboutActive) G.helmAttackVector = G.enemyBearing || 'fore';
   }
 
   // ── Auto-engineering: relay resets + repair dispatch ─────────
@@ -81,13 +83,18 @@ function processAutomatedDelegation(dt) {
     G.autoTacticalFireClock += dt;
     if (G.autoTacticalFireClock > _fireClock) {
       G.autoTacticalFireClock = 0;
-      if (!G.cloaked && G.cloakVulnTimer === 0 && G.lockProgress >= _lockMin) {
+      // Don't auto-fire at a cloaked target — no firing solution, no weapons.
+      // (During the brief decloak vulnerability window the enemy IS targetable.)
+      const enemyFullyCloaked = G.enemyCloaked && G.enemyCloakVulnTimer <= 0;
+      if (!G.cloaked && G.cloakVulnTimer === 0 && !enemyFullyCloaked && G.lockProgress >= _lockMin) {
         const ce = getCrewEfficiency('tactical');
         if (Math.random() < ce) {
           const warpOnline = !G.systems.warp_core.tripped || G.batteryActive;
           if (warpOnline) {
             fireEnergyWeapons();
-            if (Math.random() < _torpChance * ce) fireTorpedoBanks();
+            // Torpedoes are limited ordnance — only spend them with a real lock,
+            // never blind-fired automatically.
+            if (G.lockProgress >= 25 && Math.random() < _torpChance * ce) fireTorpedoBanks();
           }
         }
       }

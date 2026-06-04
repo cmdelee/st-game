@@ -493,6 +493,17 @@ The enemy actively manoeuvres in the vertical plane to deny the player's guns, a
 - **Auto-helm** — when the player isn't on the helm, `processAutomatedDelegation` auto-sets `helmPitch` to chase the enemy's elevation so the computer keeps the auto-tactical guns bearing (consistent with the other delegated stations).
 - **UI** — helm status line shows both sides: `Us: ▲ CLIMB … Tgt: ▼ BELOW` (Tgt green only at `level`). Buttons `btn-helm-pitch-climb/level/dive`.
 
+### Lateral flanking duel (enemy 3D positioning AI — horizontal)
+The horizontal analogue of the elevation duel: the enemy slides around to attack from the player's **weakest arc** (typically aft, where most ships carry only torpedoes), forcing a come-about. Backward-compatible — reduces to the old behaviour when the enemy hasn't flanked.
+- **`effectiveEnemySector()` (state.js)** — the ship-relative sector the enemy occupies, `_SECTOR_ORDER[(facingIdx − bearingIdx + 4) % 4]` from `G.helmAttackVector` (where the bow points) and `G.enemyBearing` (where the enemy has manoeuvred). When `enemyBearing === 'fore'` (default / headless / no spatial view) it equals `helmAttackVector`, so nothing changes. **`weaponInArc` now gates on `effectiveEnemySector()`** instead of `helmAttackVector`; the enemy's own targeting snap and `_enemyPickElevation`'s in-arc count use it too.
+- **Enemy intent** — `_enemyPickBearing()` (enemy-ai.js) finds the player's weakest *raw* arc (fewest live weapons) and converts it to the absolute `G.enemyDesiredBearing` that puts the enemy on that effective sector given the player's current facing. Commits on `G.enemyBearingDecisionTimer` (shorter on hard/elite), re-flanks on re-evaluation.
+- **Render** commits `G.enemyBearing = G.enemyDesiredBearing` (headless leaves it `'fore'`) and slides the enemy mesh toward that side (`_bearX`/`_bearZ`) so the flank reads in 3D.
+- **Player counter** — turn the bow to the enemy (`setHelmAttackVector`) or come-about; when `effectiveEnemySector()` returns `fore`, the full forward arsenal bears again. **Auto-helm** sets `helmAttackVector = G.enemyBearing` for non-helm players so delegated guns keep bearing.
+- **UI** — helm status line shows `Foe: ▼ AFT — TURN!` (red) when the enemy isn't dead ahead, `Foe: ▲ FORE` (green) when guns bear.
+
+### Auto-fire discipline (cloak + lock)
+`processAutomatedDelegation` auto-tactical never fires at a **fully-cloaked** enemy (`G.enemyCloaked && enemyCloakVulnTimer <= 0`) — no firing solution, no weapons (the decloak vulnerability window is still targetable). Torpedoes are limited ordnance and are only auto-spent with a real lock (`G.lockProgress >= 25`), never blind-fired by the computer.
+
 ### Cloaking (player)
 - 1200ms vulnerability window on engage AND disengage
 - Shields frozen at cloak; regen credit accumulates while cloaked
