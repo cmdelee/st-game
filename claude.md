@@ -395,7 +395,7 @@ Engine glow intensity and Defiant drift amplitude in the 3D view both scale with
 | Action | Effect | Cooldown |
 |---|---|---|
 | **Attack Run** | 8s cannon +20%, closes to combat range; engine stress +35; resets to medium on expiry | 20s |
-| **Come About** | 3s rotation, all sectors exposed; auto-presents strongest shield on completion | 18s |
+| **Come About** | 3s rotation, all sectors exposed; on completion swings the bow onto the enemy's current bearing (`G.enemyBearing`) so the forward arsenal bears again — a one-press counter to a flank (falls back to strongest-shield sector if the enemy hasn't flanked) | 18s |
 | **Evasive Pattern Delta** | Enemy lock rate −60% for 8s; engine stress +25 | 20s |
 | **Picard Manoeuvre** | Micro-warp jump; enemy cannot lock or fire for 3s | 60s |
 | **Attack Pattern Omega** | All weapons +40% for 10s; incoming damage +20% | 45s |
@@ -500,6 +500,7 @@ The horizontal analogue of the elevation duel: the enemy slides around to attack
 - **Render** commits `G.enemyBearing = G.enemyDesiredBearing` (headless leaves it `'fore'`) and slides the enemy mesh toward that side (`_bearX`/`_bearZ`) so the flank reads in 3D.
 - **Player counter** — turn the bow to the enemy (`setHelmAttackVector`) or come-about; when `effectiveEnemySector()` returns `fore`, the full forward arsenal bears again. **Auto-helm** sets `helmAttackVector = G.enemyBearing` for non-helm players so delegated guns keep bearing.
 - **UI** — helm status line shows `Foe: ▼ AFT — TURN!` (red) when the enemy isn't dead ahead, `Foe: ▲ FORE` (green) when guns bear.
+- **Coordinated pincer** — when the enemy re-flanks, it also re-picks its elevation at the same instant and syncs the two hold timers (~60% chance on hard/elite, ~35% on normal), so the player must re-establish bearing **and** elevation together instead of countering one axis at a time. **Come-about** swings the bow onto the enemy's bearing on completion as a one-press counter.
 
 ### Auto-fire discipline (cloak + lock)
 `processAutomatedDelegation` auto-tactical never fires at a **fully-cloaked** enemy (`G.enemyCloaked && enemyCloakVulnTimer <= 0`) — no firing solution, no weapons (the decloak vulnerability window is still targetable). Torpedoes are limited ordnance and are only auto-spent with a real lock (`G.lockProgress >= 25`), never blind-fired by the computer.

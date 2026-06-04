@@ -396,6 +396,13 @@ function processEnemyAI(dt) {
     const _commitB = diff.targetsSystems ? (4000 + Math.random() * 3000)
                                           : (6000 + Math.random() * 3500);
     G.enemyBearingDecisionTimer = _commitB;
+    // Coordinated pincer — reposition on the vertical axis at the same instant
+    // and sync the holds, so the player must re-establish bearing AND elevation
+    // together rather than countering one axis at a time. More likely on hard/elite.
+    if (Math.random() < (diff.targetsSystems ? 0.6 : 0.35)) {
+      G.enemyDesiredElevation  = _enemyPickElevation();
+      G.enemyElevDecisionTimer = _commitB;
+    }
   }
 
   // Manoeuvre

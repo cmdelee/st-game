@@ -26,7 +26,17 @@ const _HELM_MANOEUVRES = [
   { active:'evasiveAlphaActive', timer:'evasiveAlphaTimer', cd:'evasiveAlphaCooldown',
     onExpire() { postLogEvent("Evasive Pattern Alpha complete.", 'info'); } },
   { active:'comeAboutActive', timer:'comeAboutTimer', cd:'comeAboutCooldown',
-    onExpire() { const s = getStrongestShieldSector(); G.helmAttackVector = s; postLogEvent(`Come-about complete — ${s.toUpperCase()} shields presented (${Math.round(G.player.shields[s])}MW).`, 'good'); crewReportComeAboutComplete(s); } },
+    onExpire() {
+      // Swing the bow onto the enemy's current bearing so the forward arsenal
+      // bears again (a one-press counter to a flank). Falls back to presenting
+      // the strongest shield sector if the enemy bearing is unknown.
+      const s = (typeof effectiveEnemySector === 'function' && (G.enemyBearing || 'fore') !== 'fore')
+        ? G.enemyBearing : getStrongestShieldSector();
+      G.helmAttackVector = s;
+      const onTarget = (typeof effectiveEnemySector === 'function' ? effectiveEnemySector() : 'fore') === 'fore';
+      postLogEvent(`Come-about complete — ${onTarget ? 'bearing on enemy, forward arc restored' : `${s.toUpperCase()} shields presented (${Math.round(G.player.shields[s])}MW)`}.`, 'good');
+      crewReportComeAboutComplete(s);
+    } },
 ];
 
 function processHelmTimers(dt) {
