@@ -86,10 +86,14 @@ function renderSpatialViewCanvas() {
   // Defiant drift — space has no fixed plane, so the ship climbs, dives and
   // slips laterally as well as pitching. Amplitude scales with helm speed.
   const _speedDrift = { stop:0.2, maneuvering:0.5, half:1.0, full:1.8 }[G.helmSpeed] ?? 1.0;
-  mesh_defiant.position.y = (Math.sin(now*0.4)*0.6 + Math.sin(now*0.17+0.9)*1.4) * _speedDrift;
+  // Helm Climb/Level/Dive sets the player's vertical posture; drift rides on top.
+  const _pitchTarget = { climb:+11, level:0, dive:-11 }[G.helmPitch] ?? 0;
+  const _driftY = (Math.sin(now*0.4)*0.6 + Math.sin(now*0.17+0.9)*1.4) * _speedDrift;
+  mesh_defiant.position.y = THREE.MathUtils.lerp(mesh_defiant.position.y, _pitchTarget + _driftY, 0.07);
   mesh_defiant.position.z = (Math.sin(now*0.25)*0.8 + Math.sin(now*0.11+0.3)*1.6) * _speedDrift;
-  // Pitch into the vertical motion (climb/dive attitude)
-  mesh_defiant.rotation.x = Math.cos(now*0.17+0.9)*1.4*0.17*_speedDrift*0.4;
+  // Pitch into the vertical motion + climb/dive attitude (nose up when climbing)
+  mesh_defiant.rotation.x = Math.cos(now*0.17+0.9)*1.4*0.17*_speedDrift*0.4
+    + ({ climb:-0.16, level:0, dive:+0.16 }[G.helmPitch] ?? 0);
   // Yaw the ship to present the chosen attack-vector sector toward the enemy.
   // The hull physically turns, so the exposed side faces incoming fire — you
   // can't be hit on the aft while presenting your bow.
@@ -220,12 +224,17 @@ function renderSpatialViewCanvas() {
     const _pDist = G.playerRangeBracket==='close'?22:G.playerRangeBracket==='medium'?38:55;
     const rangeDist = Math.min(_eDist, _pDist);
     mesh_enemyGroup.position.x = THREE.MathUtils.lerp(mesh_enemyGroup.position.x, mesh_defiant.position.x+rangeDist, 0.025);
-    // 3D orbit — the enemy weaves across the player's arc AND climbs/dives
-    // through it (no fixed plane in space). Wider, faster when closing range.
-    // Lateral (Z) and vertical (Y) use different frequencies → Lissajous path.
+    // 3D orbit — lateral weave across the player's arc, plus a DELIBERATE
+    // vertical position: the enemy holds an elevation relative to the player
+    // (G.enemyDesiredElevation) to deny the player's dorsal/ventral guns. The
+    // player counters with the helm Climb/Dive control (they share the Y axis,
+    // so matching the enemy's elevation re-opens a firing solution).
     const _orbitAmp = G.enemyRangeBracket==='close'?16:G.enemyRangeBracket==='medium'?11:7;
-    const _vertAmp  = G.enemyRangeBracket==='close'?11:G.enemyRangeBracket==='medium'?8:5;
-    const _baseY = Math.sin(now*0.35+1.2)*2.8 + Math.sin(now*0.16+0.4)*_vertAmp;
+    const _vertAmp  = 2.4;  // gentle weave; the big vertical move is the elevation hold
+    // Absolute elevation hold (not relative) so the player CAN match it by
+    // climbing/diving to the same plane and re-open a firing solution.
+    const _desOff = { above:+12, level:0, below:-12 }[G.enemyDesiredElevation] ?? 0;
+    const _baseY = _desOff + Math.sin(now*0.16+0.4)*_vertAmp;
     const _baseZ = Math.sin(now*0.22+0.7)*2.2 + Math.sin(now*0.13)*_orbitAmp;
 
     if (G.enemyManeuverState==='angling') {

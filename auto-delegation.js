@@ -12,6 +12,14 @@ function processAutomatedDelegation(dt) {
   const runAutoEng = G.playerChosenStation === 'tactical' || G.playerChosenStation === 'helm' || isCaptain;
   const runAutoTac = G.playerChosenStation === 'engineering' || G.playerChosenStation === 'helm' || isCaptain;
 
+  // Auto-helm elevation matching — when the player isn't flying the ship, the
+  // computer matches the enemy's vertical position so the auto-tactical guns
+  // keep bearing (the enemy actively climbs/dives to deny dorsal/ventral arrays).
+  if (G.playerChosenStation !== 'helm') {
+    const e = G.enemyElevation || 'level';
+    G.helmPitch = e === 'above' ? 'climb' : e === 'below' ? 'dive' : 'level';
+  }
+
   // ── Auto-engineering: relay resets + repair dispatch ─────────
   if (runAutoEng) {
     const ce = getCrewEfficiency('engineering');

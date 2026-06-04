@@ -486,6 +486,13 @@ This prevents grinding subsystems with zero hull risk while still rewarding focu
 ### Manoeuvre choreography (3D view, canvas-three-render.js)
 Helm orders read visibly on the hull, on top of the attack-vector yaw/bank: **come-about** spins the hull through a full sweep (all sectors exposed); **evasive Delta/Alpha** corkscrew-jink (fast roll + pitch + lateral slip); **Pattern Omega** holds a nose-down attack attitude; **Picard Manoeuvre** renders the micro-warp jump as a flickering double-image plus two cyan warp streaks and a camera shake on activation (opacity restored on the falling edge, tracked by `_picardPrev`).
 
+### Vertical elevation duel (enemy 3D positioning AI)
+The enemy actively manoeuvres in the vertical plane to deny the player's guns, and the player counters with a helm **Climb / Level / Dive** control (`G.helmPitch`, `setHelmPitch`). The loop:
+- **Enemy intent** — `_enemyPickElevation()` (enemy-ai.js) counts the player's *currently in-arc, live* weapons by mount and picks the elevation that blocks the larger group: **below** a dorsal-heavy loadout, **above** a ventral-heavy one. It commits for a few seconds (`G.enemyElevDecisionTimer`; shorter on hard/elite via `diff.targetsSystems`) then re-evaluates, with a 50% feint to the opposite plane when the player has already matched (so holding one pitch isn't a permanent answer). Result in `G.enemyDesiredElevation`.
+- **Absolute holds** — in `renderSpatialViewCanvas` the enemy moves to an *absolute* Y (`{above:+12, level:0, below:-12}`), **not** relative to the player, so the player can close the gap by matching. The player's `helmPitch` drives an absolute target (`±11`) the mesh lerps toward (faster than the enemy). `G.enemyElevation` is then the signed Y-difference with hysteresis — `level` only when the two planes line up, which is when the player's dorsal/ventral arrays bear again.
+- **Auto-helm** — when the player isn't on the helm, `processAutomatedDelegation` auto-sets `helmPitch` to chase the enemy's elevation so the computer keeps the auto-tactical guns bearing (consistent with the other delegated stations).
+- **UI** — helm status line shows both sides: `Us: ▲ CLIMB … Tgt: ▼ BELOW` (Tgt green only at `level`). Buttons `btn-helm-pitch-climb/level/dive`.
+
 ### Cloaking (player)
 - 1200ms vulnerability window on engage AND disengage
 - Shields frozen at cloak; regen credit accumulates while cloaked
@@ -852,6 +859,7 @@ Weapon buttons dim (`opacity:0.35; pointer-events:none`) when the weapon's arc d
 |---|---|---|
 | Speed (4 settings) | `setHelmSpeed(speed)` | Any time |
 | Attack Vector (4 dirs) | `setHelmAttackVector(sector)` | Not during come-about |
+| Elevation (Climb/Level/Dive) | `setHelmPitch(pitch)` | Match enemy's vertical plane to keep dorsal/ventral guns bearing |
 | Range (3 settings) | `setPlayerRangeBracket(range)` | Not during attack run |
 | ◈ EVASIVE DELTA | `executeEvasivePattern()` | Engines ≥20%, 20s CD |
 | ◈ ATTACK RUN | `executeAttackRun()` | Engines ≥25%, 20s CD |

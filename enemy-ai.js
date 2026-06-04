@@ -197,6 +197,32 @@ function processNewMechanicsTimers(dt) {
   processHelmTimers(dt);
 }
 
+// ── Enemy 3D positioning intent ───────────────────────────────
+// Choose the elevation that denies the most of the player's currently in-arc
+// weapons. A player dorsal array is blocked when the enemy is BELOW it; a
+// ventral array when the enemy is ABOVE. So go below a dorsal-heavy loadout,
+// above a ventral-heavy one. Considers only weapons whose horizontal arc bears
+// on the presented vector (those are the ones actually threatening the enemy).
+function _enemyPickElevation() {
+  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  let dorsal = 0, ventral = 0;
+  Object.values(aw).forEach(w => {
+    if (!w || !w.arc || !w.arc.includes(G.helmAttackVector)) return;
+    const sys = G.systems[w.parentSystem];
+    if (sys && (sys.tripped || sys.health < 10)) return;   // dead guns don't matter
+    if (w.mount === 'dorsal')  dorsal++;
+    else if (w.mount === 'ventral') ventral++;
+  });
+  if (dorsal === 0 && ventral === 0) return 'level';
+  let want = dorsal > ventral ? 'below' : ventral > dorsal ? 'above' : (Math.random() < 0.5 ? 'below' : 'above');
+  // Feint: if the player has already matched our elevation (guns bearing again),
+  // jink to the opposite plane to force them to re-establish the solution.
+  if ((G.enemyElevation || 'level') === 'level' && Math.random() < 0.5) {
+    want = want === 'below' ? 'above' : 'below';
+  }
+  return want;
+}
+
 // ── Jem'Hadar ramming ─────────────────────────────────────────
 function initiateRammingRun(cfg) {
   if (G.enemyRammingRun) return;
@@ -320,6 +346,20 @@ function processEnemyAI(dt) {
   if (cfg.canRam && !G.enemyRammingRun) {
     const hullPct = G.threat.hull / G.threat.maxHull;
     if (hullPct < 0.20 && Math.random() < 0.008 * sc * 60) initiateRammingRun(cfg);
+  }
+
+  // ── Tactical 3D positioning — climb/dive to deny the player's guns ──
+  // The enemy commits to an elevation for a few seconds, then re-evaluates:
+  // it moves to the elevation that blocks the most of the player's currently
+  // in-arc weapons (below a dorsal-heavy loadout, above a ventral one). The
+  // player counters with the helm Climb/Dive control. Difficulty sets how
+  // decisively (and how often) the enemy repositions.
+  G.enemyElevDecisionTimer -= dt;
+  if (G.enemyElevDecisionTimer <= 0) {
+    G.enemyDesiredElevation  = _enemyPickElevation();
+    const _commit = diff.targetsSystems ? (3500 + Math.random() * 2500)   // hard/elite — re-evaluate often
+                                         : (5500 + Math.random() * 3000);  // normal — slower, more windows
+    G.enemyElevDecisionTimer = _commit;
   }
 
   // Manoeuvre
@@ -647,6 +687,8 @@ function enemyResetForBattle(cfg, diff) {
 
   G.enemyRangeBracket        = 'long';
   G.enemyElevation           = 'level';   // vertical firing relationship; render loop refines it
+  G.enemyDesiredElevation    = 'level';   // AI intent: where it WANTS to be vs the player
+  G.enemyElevDecisionTimer   = 2000;      // countdown to next elevation decision
   G.enemyRangeTimer          = 0;
   G.enemyRammingRun          = false;
   G.enemyRammingTimer        = 0;

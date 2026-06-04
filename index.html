@@ -745,6 +745,12 @@
             <button class="pill-action-btn" id="btn-helm-vector-starboard" onclick="setHelmAttackVector('starboard')">► STBD<br><span style="font-size:11px; color:#88aaff;">— MW</span></button>
             <button class="pill-action-btn" id="btn-helm-vector-aft"       onclick="setHelmAttackVector('aft')">▼ AFT<br><span style="font-size:11px; color:#88aaff;">— MW</span></button>
           </div>
+          <div style="font-family:'Antonio'; color:var(--t); font-size:10px; margin:6px 0 4px; border-bottom:1px solid var(--dim2); padding-bottom:3px;">ELEVATION <span style="font-size:9px; color:#6688aa;">— match target to bring guns to bear</span></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
+            <button class="pill-action-btn" id="btn-helm-pitch-climb" onclick="setHelmPitch('climb')">▲ CLIMB</button>
+            <button class="pill-action-btn" id="btn-helm-pitch-level" onclick="setHelmPitch('level')" style="background:#fff; color:#000;">◆ LEVEL</button>
+            <button class="pill-action-btn" id="btn-helm-pitch-dive"  onclick="setHelmPitch('dive')">▼ DIVE</button>
+          </div>
         </div>
 
       </div><!-- /row1 -->
@@ -1036,14 +1042,14 @@
 <script src="crew.js?v=96eb5068"></script>
 <script src="sensors.js?v=fb263e1f"></script>
 <script src="tactical.js?v=bbedf934"></script>
-<script src="helm.js?v=6463111d"></script>
+<script src="helm.js?v=cd0cdb19"></script>
 <script src="encounter-phases.js?v=d34b4172"></script>
-<script src="enemy-ai.js?v=04851dc5"></script>
-<script src="auto-delegation.js?v=04a66b54"></script>
+<script src="enemy-ai.js?v=61ad2aeb"></script>
+<script src="auto-delegation.js?v=8c28ec08"></script>
 <script src="command.js?v=0cfca132"></script>
 <script src="canvas-three.js?v=29a27cf8"></script>
 <script src="canvas-three-geometry.js?v=faa58b86"></script>
-<script src="canvas-three-render.js?v=25d858da"></script>
+<script src="canvas-three-render.js?v=a53f187c"></script>
 <script src="canvas-2d.js?v=020f751a"></script>
 <script src="ui.js?v=7c4830a6"></script>
 <script src="setup.js?v=5f8916a6"></script>

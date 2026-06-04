@@ -54,6 +54,21 @@ function setHelmSpeed(speed) {
 }
 
 // ============================================================
+// HELM — ELEVATION (CLIMB / LEVEL / DIVE)
+// Vertical posture vs the enemy. The enemy actively positions above/below to
+// deny your dorsal/ventral arrays; match its elevation to bring guns to bear.
+// ============================================================
+function setHelmPitch(pitch) {
+  if (!['climb','level','dive'].includes(pitch)) return;
+  G.helmPitch = pitch;
+  const msg = { climb: 'CLIMBING — gaining elevation on the target.',
+                level: 'LEVELLING — holding the engagement plane.',
+                dive:  'DIVING — dropping below the target.' }[pitch];
+  postLogEvent(`HELM: ${msg}`, 'info');
+  if (G.activePanel === 'helm') updateHelmPanel();
+}
+
+// ============================================================
 // HELM — ATTACK VECTOR
 // ============================================================
 function setHelmAttackVector(sector) {
@@ -209,6 +224,16 @@ function updateHelmPanel() {
     }
   });
 
+  // Elevation buttons — climb/level/dive
+  ['climb','level','dive'].forEach(p => {
+    const btn = _g(`btn-helm-pitch-${p}`); if (!btn) return;
+    if ((G.helmPitch || 'level') === p) {
+      btn.style.background = '#fff'; btn.style.color = '#000'; btn.style.boxShadow = '0 0 10px rgba(120,200,255,0.7)';
+    } else {
+      btn.style.background = ''; btn.style.color = ''; btn.style.boxShadow = '';
+    }
+  });
+
   // Range buttons — white/orange glow on active
   ['long','medium','close'].forEach(r => {
     const btn = _g(`btn-helm-range-${r}`); if (!btn) return;
@@ -245,10 +270,14 @@ function updateHelmPanel() {
     const effRange = G.attackRunActive ? 'CLOSE★' : G.playerRangeBracket.toUpperCase();
     const _elev = G.enemyElevation || 'level';
     const _elevStr = _elev === 'above' ? '▲ ABOVE' : _elev === 'below' ? '▼ BELOW' : '◆ LEVEL';
+    // Green only when level (best firing solution); amber when the enemy has
+    // gained a vertical advantage you haven't matched.
     const _elevCol = _elev === 'level' ? '#00cc66' : '#ffaa00';
+    const _pitch = G.helmPitch || 'level';
+    const _pitchStr = _pitch === 'climb' ? '▲ CLIMB' : _pitch === 'dive' ? '▼ DIVE' : '◆ LEVEL';
     rl.innerHTML = G.comeAboutActive
       ? `<span style="color:#ff4444;font-weight:bold;">⚠ ROTATING — ALL SECTORS EXPOSED (${Math.ceil(G.comeAboutTimer/1000)}s)</span>`
-      : `Speed: <b style="color:#fff;">${sc.label}</b> | Lock <b style="color:${sc.enemyLockMult>1?'#ff6666':'#00cc66'};">${lockStr}</b> | Yield <b style="color:${sc.yieldMult>=1?'#00cc66':'#ffaa00'};">${yieldStr}</b> | Vec: <b style="color:#88aaff;">${G.helmAttackVector.toUpperCase()}</b> | Range: <b style="color:#ffaa00;">${effRange}</b> | Tgt: <b style="color:${_elevCol};">${_elevStr}</b>`;
+      : `Speed: <b style="color:#fff;">${sc.label}</b> | Lock <b style="color:${sc.enemyLockMult>1?'#ff6666':'#00cc66'};">${lockStr}</b> | Yield <b style="color:${sc.yieldMult>=1?'#00cc66':'#ffaa00'};">${yieldStr}</b> | Vec: <b style="color:#88aaff;">${G.helmAttackVector.toUpperCase()}</b> | Range: <b style="color:#ffaa00;">${effRange}</b> | Us: <b style="color:#88ccff;">${_pitchStr}</b> | Tgt: <b style="color:${_elevCol};">${_elevStr}</b>`;
   }
 
   // Auto-tactical summary
@@ -279,6 +308,7 @@ function updateHelmPanel() {
 function helmResetForBattle() {
   G.helmSpeed                  = 'half';
   G.helmAttackVector           = 'fore';
+  G.helmPitch                  = 'level';
   G.playerRangeBracket         = 'long';
   G.attackRunActive            = false;
   G.attackRunTimer             = 0;
