@@ -231,11 +231,13 @@ Order set by **monotonic threat** (eff. hull to grind + sustained incoming DPS +
 2. galor_class (normal) — heavy slugfest, no cloak/ram (first real fight; downgraded from hard to backfill the normal tier)
 3. romulan_bop (normal) — cloak + plasma + sensor ghosts (cloak mechanic intro)
 4. ktinga (hard) — first hard: cloak + closes to brawl range, slow lock
-5. jem_hadar_battleship (hard) — heavy polaron bypass + fury scaling + ram 380
-6. vor_cha (hard) — wing disruptors + heavy torps + close brawl
-7. romulan_warbird (hard) — massive plasma + emergency cloak at 25% (tankiest single ship — caps the clean hard-tier hull ramp 1008→1030→1176→1344)
-8. jem_hadar_fighter (normal) — **wolfpack of 3** (polaron bypass, 3× ram). A pack is a hard-tier encounter, so it sits late in the hard band as the swarm climax before the Borg — kept at `diff:'normal'` so it stays 3 fragile ships (hard `diff` would spawn 4 and out-scale the Borg). Was the L3 spike; see pack.js
+5. vor_cha (hard) — wing disruptors + heavy torps + close brawl
+6. romulan_warbird (hard) — massive plasma + emergency cloak at 25% (tankiest single ship)
+7. jem_hadar_battleship (hard) — heavy polaron **bypass** + fury scaling + ram 380
+8. jem_hadar_fighter (normal) — **wolfpack of 3** (polaron bypass, 3× ram). Kept at `diff:'normal'` so it stays 3 fragile ships (hard `diff` would spawn 4 and out-scale the Borg); see pack.js
 9. borg_probe (elite) — adaptive shielding + tractor — FINAL BOSS
+
+> **Difficulty note (measured via scripted Defiant/tactical playthroughs, 10 trials each):** L1–L6 are easy for a skilled player (≈0% hull lost) — the cloakers (K'Tinga/Vor'Cha/Warbird) are mild because cloaking = not firing, so the player just out-damages them. The genuine threats are the enemies the player can't out-tank: **L7 Jem battleship** (polaron *bypass* ignores shields/regen — 6/10 win, ~32% hull lost), **L8 pack** (3× sustained bypass — 7/10 win, ~66% lost), **L9 Borg** (adaptive shields + regen out-tank the Defiant — 0/10, all timeouts). The campaign is intentionally back-loaded: trivial Alpha-quadrant patrol fights → the Dominion/Borg are the real war. The three real fights now cluster at the end in increasing order (battleship → pack → Borg). A deeper lethality pass on the trivial mid-tier (making cloakers actually press the player) is a separate, feel-changing tuning task — not yet done.
 
 ---
 
