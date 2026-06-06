@@ -233,8 +233,8 @@ Order set by **monotonic threat** (eff. hull to grind + sustained incoming DPS +
 4. ktinga (hard) — first hard: cloak + closes to brawl range, slow lock
 5. jem_hadar_battleship (hard) — heavy polaron bypass + fury scaling + ram 380
 6. vor_cha (hard) — wing disruptors + heavy torps + close brawl
-7. jem_hadar_fighter (normal) — **wolfpack of 3** (polaron bypass, 3× ram). A pack is a hard-tier encounter, so it sits in the hard band — kept at `diff:'normal'` so it stays 3 fragile ships (hard `diff` would spawn 4 and out-scale the Borg). Was the L3 spike; see pack.js
-8. romulan_warbird (hard) — massive plasma + emergency cloak at 25% (grinding attrition penultimate)
+7. romulan_warbird (hard) — massive plasma + emergency cloak at 25% (tankiest single ship — caps the clean hard-tier hull ramp 1008→1030→1176→1344)
+8. jem_hadar_fighter (normal) — **wolfpack of 3** (polaron bypass, 3× ram). A pack is a hard-tier encounter, so it sits late in the hard band as the swarm climax before the Borg — kept at `diff:'normal'` so it stays 3 fragile ships (hard `diff` would spawn 4 and out-scale the Borg). Was the L3 spike; see pack.js
 9. borg_probe (elite) — adaptive shielding + tractor — FINAL BOSS
 
 ---

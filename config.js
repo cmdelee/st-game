@@ -398,8 +398,8 @@ const CAMPAIGN_ORDER = [
   { level:4, archetype:'ktinga',               diff:'hard',   label:"LEVEL 4",  title:"K'Tinga Battle Cruiser",  subtitle:"Klingon — Cloaking · Closes to brawl range [HARD]" },
   { level:5, archetype:'jem_hadar_battleship', diff:'hard',   label:"LEVEL 5",  title:"Jem'Hadar Battle Cruiser",subtitle:"Dominion — Heavy polaron bypass · Ramming [HARD]" },
   { level:6, archetype:'vor_cha',              diff:'hard',   label:"LEVEL 6",  title:"Vor'Cha Attack Cruiser",  subtitle:"Klingon — Wing disruptors · Heavy torpedoes [HARD]" },
-  { level:7, archetype:'jem_hadar_fighter',    diff:'normal', label:"LEVEL 7",  title:"Jem'Hadar Attack Pack",   subtitle:"Dominion — Wolfpack of 3 · Polaron bypass · Ramming [SWARM]" },
-  { level:8, archetype:'romulan_warbird',      diff:'hard',   label:"LEVEL 8",  title:"D'Deridex Warbird",       subtitle:"Romulan — Massive plasma · Emergency cloak [HARD]" },
+  { level:7, archetype:'romulan_warbird',      diff:'hard',   label:"LEVEL 7",  title:"D'Deridex Warbird",       subtitle:"Romulan — Massive plasma · Emergency cloak [HARD]" },
+  { level:8, archetype:'jem_hadar_fighter',    diff:'normal', label:"LEVEL 8",  title:"Jem'Hadar Attack Pack",   subtitle:"Dominion — Wolfpack of 3 · Polaron bypass · Ramming [SWARM]" },
   { level:9, archetype:'borg_probe',           diff:'elite',  label:"LEVEL 9",  title:"Borg Probe",              subtitle:"Borg — Adaptive shielding · Tractor beam [ELITE]" },
 ];
 
