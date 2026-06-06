@@ -126,6 +126,7 @@ function masterSimulationCoreLoop(ts) {
   processRepairQueues(dt);
   processAutomatedDelegation(dt);
   processEnemyAI(dt);
+  processPackEscorts(dt);
   tickCaptainCooldowns(dt);
   tickCaptainPeriodicReports(dt);
   tickCaptainManoeuvres(dt);
@@ -161,6 +162,7 @@ function masterSimulationCoreLoop(ts) {
 
   updateWarpAvailability();
   checkLastStandCondition();
+  if (typeof _updatePackRoster === 'function') _updatePackRoster();
   synchronizeGlobalInterfaceDisplays();
 
   // Canvas rendering — helm and captain share the tactical monitor pair
@@ -209,6 +211,7 @@ function initiateVesselSimulation(station) {
   // Per-module battle reset — each module owns its own state (replaces the old
   // ~180-line monolith; see CLAUDE.md "initForBattle module reset pattern").
   enemyResetForBattle(cfg, diff);
+  packResetForBattle(diff);        // wolfpack: jem_hadar_fighter spawns 3–4 ships
   engineeringResetForBattle(shipCfg, diff);
   tacticalResetForBattle();
   helmResetForBattle();
@@ -220,7 +223,7 @@ function initiateVesselSimulation(station) {
   G.score = { totalDmgDealt:0, volleysFired:0, hullBreaches:0, systemsDestroyed:0, repairsCompleted:0, timeSurvived:0, warpedOut:false,
               weaponsFired:{ cannons:0, nose:0, quantum:0, photon:0 },
               sectorBreaches:{ fore:0, port:0, starboard:0, aft:0 },
-              peakHullHit:0, systemsTripped:[], enemyPhaseReached:'' };
+              peakHullHit:0, systemsTripped:[], enemyPhaseReached:'', enemiesDestroyed:0 };
   G.lastStandActive        = false;
   G.lastStandReported      = false;
   G.inFlightTorpedoes      = [];
@@ -271,6 +274,7 @@ function initiateVesselSimulation(station) {
   // Rebuild Three.js enemy mesh for new archetype
   rebuildEnemyMesh();
   rebuildPlayerMesh();    // swap Defiant ↔ Sovereign-class mesh
+  if (typeof rebuildPackMeshes === 'function') rebuildPackMeshes();  // wolfpack escort meshes
 
   // Boot log
   const _sc = G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant;

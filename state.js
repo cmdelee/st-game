@@ -69,6 +69,11 @@ const G = {
   enemyFrozenShields:{ fore:0, port:0, starboard:0, aft:0 },
   enemySystems:{},
   enemyRepairQueue:[],
+
+  // Wolfpack — Jem'Hadar Attack Ships fight in packs. G.threat/G.enemySystems
+  // hold the live ACTIVE target; G.pack holds full snapshots of every member.
+  pack:[], packActive:false, packCount:0, activePackIndex:0, disablePack:false,
+
   weaponsDisrupted:false, weaponsDisruptedTimer:0,
   enemyTractorActive:false,
   enemyAdaptiveHits:0,
@@ -246,6 +251,7 @@ const G = {
     peakHullHit:0,
     systemsTripped:[],
     enemyPhaseReached:'',
+    enemiesDestroyed:0,
   },
 
   // Visual effects state

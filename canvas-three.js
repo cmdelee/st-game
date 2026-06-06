@@ -289,6 +289,7 @@ const _PLAYER_SECTOR_HIT = {
 
 let THREE_scene, THREE_camera, THREE_renderer, THREE_clock;
 let mesh_defiant, mesh_enemy, mesh_enemyGroup;
+let mesh_escorts = [];   // wolfpack — extra fighter meshes (one per living non-active member)
 let shield_player, shield_enemy;
 let grid_helper;
 let beam_lines = [];          // holds THREE.Mesh tube objects
@@ -552,6 +553,41 @@ function rebuildEnemyMesh() {
     // Only apply if the archetype hasn't changed since we started loading
     if (group && G.enemyArchetype === arch) _applyEnemyMesh(group);
   });
+}
+
+// ── Wolfpack escort meshes ────────────────────────────────────
+// One mesh per living non-active pack member (the active member uses the
+// existing mesh_enemyGroup). All members are the same fighter model, so the
+// meshes are interchangeable "other ship" slots — no rebind needed on a target
+// swap; only rebuilt when membership changes (a ship dies) or at battle start.
+function _cleanupPackMeshes() {
+  mesh_escorts.forEach(e => {
+    THREE_scene.remove(e.group);
+    e.group.traverse(c => { if (c.isMesh) { c.geometry?.dispose(); c.material?.dispose(); } });
+  });
+  mesh_escorts = [];
+}
+
+function rebuildPackMeshes() {
+  if (!THREE_ready || !THREE_scene) return;
+  _cleanupPackMeshes();
+  if (!G.packActive) return;
+  const escorts = Math.max(0, (G.pack.filter(m => m.alive).length) - 1);
+  for (let i = 0; i < escorts; i++) {
+    const group = buildEnemyGeometry(PACK_ARCHETYPE);   // procedural fighter; swapped for model below
+    group.rotation.y = Math.PI;
+    THREE_scene.add(group);
+    const slot = { group };
+    mesh_escorts.push(slot);
+    _loadShipModel(PACK_ARCHETYPE, (loaded) => {
+      if (!loaded || !slot.group || !mesh_escorts.includes(slot)) return;
+      THREE_scene.remove(slot.group);
+      slot.group.traverse(c => { if (c.isMesh) { c.geometry?.dispose(); c.material?.dispose(); } });
+      loaded.rotation.y = Math.PI;
+      THREE_scene.add(loaded);
+      slot.group = loaded;
+    });
+  }
 }
 
 function _cleanupSaucerSep() {

@@ -305,7 +305,7 @@ function applyDamageToEnemy(dmg, weapon, targetSectorOverride) {
       }
     }
   }
-  if (G.threat.hull <= 0) concludeSimulationRun(true, "Enemy vessel destroyed.", false);
+  if (G.threat.hull <= 0) _resolveEnemyDestroyed("Enemy vessel destroyed.");
 }
 
 // ── Simplified fire commands ──────────────────────────────────

@@ -4,12 +4,12 @@
 
 ## Project overview
 
-Single-page Star Trek tactical combat simulator. The player selects a vessel (**USS Defiant NX-74205** or **USS Enterprise NCC-1701-E**) and a command station (**Tactical**, **Engineering**, **Helm**, or **Captain's Chair**); the unchosen stations are delegated to the computer. All game logic lives across **20 JS files** served from the same directory (plus an optional `smoketest.js` test harness) — no build step, no bundler.
+Single-page Star Trek tactical combat simulator. The player selects a vessel (**USS Defiant NX-74205** or **USS Enterprise NCC-1701-E**) and a command station (**Tactical**, **Engineering**, **Helm**, or **Captain's Chair**); the unchosen stations are delegated to the computer. All game logic lives across **21 JS files** served from the same directory (plus an optional `smoketest.js` test harness) — no build step, no bundler.
 
 **File load order (matters — each file depends on the previous):**
 ```
 config.js → state.js → engineering.js → crew.js → sensors.js → tactical.js →
-helm.js → encounter-phases.js → enemy-ai.js → auto-delegation.js →
+helm.js → encounter-phases.js → enemy-ai.js → pack.js → auto-delegation.js →
 command.js → canvas-three.js → canvas-three-geometry.js → canvas-three-render.js →
 canvas-2d.js → ui.js → setup.js → campaign.js → briefing.js → main.js →
 smoketest.js (optional — only runs work on ?test=1)
@@ -36,6 +36,7 @@ index.html (HTML shell + script tags)
 | `helm.js` | Helm timer processing (`processHelmTimers`), speed control (`setHelmSpeed`), attack vector (`setHelmAttackVector`), engagement range (`setPlayerRangeBracket`), attack run, come about, Picard Manoeuvre, Attack Pattern Omega, Evasive Pattern Alpha, helm panel UI (`updateHelmPanel`) |
 | `encounter-phases.js` | Faction encounter phase arcs (`initEncounterPhases`, `processEncounterPhase`, `_applyPhase`); hull milestone events at 75/50/25/10% (`checkEnemyHullMilestones`, `_MILESTONE_DATA`); Klingon death salvo (`_triggerKlingonDeathSalvo`); `_getFactionKey` helper |
 | `enemy-ai.js` | Enemy cloaking AI (`processEnemyCloakDecision`, `triggerEnemyCloak/Decloak`), sensor ghosts (`processEnemySensorGhosts`), mechanics timers (`processNewMechanicsTimers`), Jem'Hadar ramming (`initiateRammingRun`, `executeRammingImpact`), enemy AI loop (`processEnemyAI`), enemy fire (`executeThreatCounterVolley`) |
+| `pack.js` | **Wolfpack** — Jem'Hadar Attack Ships fight 3–4 at a time. `G.threat`/`G.enemySystems` hold the live **active** target (full single-target pipeline runs against it unchanged); `G.pack` holds full snapshots of every member. `packResetForBattle` (spawn), `_packSnapshotActive`/`_packLoadMember` (active swap), `selectPackTarget` (player target select), `processPackEscorts`/`_packEscortFire` (inactive-member harassment fire), `_resolveEnemyDestroyed` (victory gate — promotes next member, concludes only when all dead), `_updatePackRoster` (left-panel chips). Mesh handles in `canvas-three.js` (`mesh_escorts`, `rebuildPackMeshes`) |
 | `auto-delegation.js` | Computer management of uncrewed stations (`processAutomatedDelegation`): auto-engineering relay resets + repair dispatch, auto-tactical fire cycle, captain-mode Worf/O'Brien/Nog autonomous behaviours |
 | `command.js` | Captain's Chair: `postCrewReport`, `_renderCrewComms` (uses `_crewLabel`/`_crewColour` getters — ship-aware); `_CAP_CD` cooldowns; 40+ order functions; manoeuvre ticker; ship-specific periodic reports (`_WORF_REPORTS`, `_OBRIEN_REPORTS`/`_LAFORGE_REPORTS`, `_NOG_REPORTS`/`_DATA_REPORTS`); `initCaptainStation()` |
 | `canvas-three.js` | Three.js scene setup only: shared render-state declarations (`THREE_scene`, mesh/shield/glow/particle handles), model loading, `initThreeScene()`, `rebuildPlayerMesh()`/`rebuildEnemyMesh()`, shield/particle/starfield/nebula builders, `resizeThreeRenderer()`, `_cleanupSaucerSep()`, `_makeTubeMesh`; `_FACTION_GLOW_COL` / `_FACTION_BEAM_COL` colour maps. **Must load before the geometry + render files** (they read its module state) |

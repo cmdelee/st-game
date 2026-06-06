@@ -295,7 +295,7 @@ function executeRammingImpact() {
   if (G.player.hull <= 0) {
     concludeSimulationRun(false, "Vessel destroyed in Jem'Hadar ramming attack.", false);
   } else {
-    concludeSimulationRun(true, `${cfg.label} destroyed — ramming attack repelled by ablative armour.`, false);
+    _resolveEnemyDestroyed(`${cfg.label} destroyed — ramming attack repelled by ablative armour.`);
   }
 }
 
@@ -712,18 +712,25 @@ function executeThreatCounterVolley() {
 // --- Battle reset (called by initiateVesselSimulation) ---
 // Owns all enemy state: G.threat, G.enemySystems, cloak/manoeuvre/range/phase,
 // ramming, plasma, tractor, Borg adaptation, sensor ghosts.
+// Assign vertical mounts so the enemy obeys the same dorsal/ventral firing
+// limits as the player (helm elevation matters for both sides). Torpedo
+// launchers gimbal freely ('any'). Beam/disruptor/polaron arrays alternate
+// dorsal/ventral when a ship has ≥2 of them, guaranteeing at least one bears
+// at any elevation; a lone beam stays 'any' so single-gun ships never stall.
+// Shared by enemyResetForBattle and the wolfpack member builder (pack.js).
+function _assignEnemyMounts(systems) {
+  const _beamKeys = Object.keys(systems).filter(k => systems[k].isWeapon && !systems[k].isTorpedo);
+  Object.values(systems).forEach(s => { if (s.isWeapon && s.isTorpedo) s.mount = 'any'; });
+  if (_beamKeys.length >= 2) _beamKeys.forEach((k, i) => { systems[k].mount = (i % 2 === 0) ? 'dorsal' : 'ventral'; });
+  else _beamKeys.forEach(k => { systems[k].mount = 'any'; });
+}
+
 function enemyResetForBattle(cfg, diff) {
   G.enemySystems = {};
   Object.keys(cfg.systems).forEach(k => { G.enemySystems[k] = Object.assign({}, cfg.systems[k]); });
-  // Assign vertical mounts so the enemy obeys the same dorsal/ventral firing
-  // limits as the player (helm elevation matters for both sides). Torpedo
-  // launchers gimbal freely ('any'). Beam/disruptor/polaron arrays alternate
-  // dorsal/ventral when a ship has ≥2 of them, guaranteeing at least one bears
-  // at any elevation; a lone beam stays 'any' so single-gun ships never stall.
-  const _beamKeys = Object.keys(G.enemySystems).filter(k => G.enemySystems[k].isWeapon && !G.enemySystems[k].isTorpedo);
-  Object.values(G.enemySystems).forEach(s => { if (s.isWeapon && s.isTorpedo) s.mount = 'any'; });
-  if (_beamKeys.length >= 2) _beamKeys.forEach((k, i) => { G.enemySystems[k].mount = (i % 2 === 0) ? 'dorsal' : 'ventral'; });
-  else _beamKeys.forEach(k => { G.enemySystems[k].mount = 'any'; });
+  _assignEnemyMounts(G.enemySystems);
+  // Wolfpack is (re)built by packResetForBattle after this; default to clean single.
+  G.pack = []; G.packActive = false; G.packCount = 0; G.activePackIndex = 0;
   G.threat.hull         = Math.round(cfg.hull * diff.enemyHullMult);
   G.threat.maxHull      = G.threat.hull;
   G.threat.shields      = Object.assign({}, cfg.shields);

@@ -207,13 +207,32 @@ function runSmokeTests(opts) {
         return G.dead ? null : 'emergency warp did not end the game';
       } },
     { tag: 'scenario: Jem\'Hadar ramming impact resolves', fn: () => {
-        _smokeStartEngagement('defiant', 'tactical', 'jem_hadar_fighter', 'hard');
+        G.disablePack = true;   // test 1-v-1 ramming resolution, not the pack
+        try { _smokeStartEngagement('defiant', 'tactical', 'jem_hadar_fighter', 'hard'); }
+        finally { G.disablePack = false; }
         G.threat.hull = G.threat.maxHull * 0.15;
         initiateRammingRun(ENEMY_CONFIGS[G.enemyArchetype]);
         G.enemyRammingTimer = 10;
         processNewMechanicsTimers(16);   // fires executeRammingImpact
         const ie = _smokeInvariants(); if (ie.length) return ie.join(', ');
         return G.dead ? null : 'ramming impact did not resolve the engagement';
+      } },
+    { tag: 'scenario: Jem\'Hadar pack — promotion + victory', fn: () => {
+        _smokeStartEngagement('defiant', 'tactical', 'jem_hadar_fighter', 'hard');
+        if (!G.packActive || G.pack.length !== 4) return `pack not spawned (active=${G.packActive}, n=${G.pack.length})`;
+        // Destroy the active member — game must continue, lock must move to a living ship.
+        _resolveEnemyDestroyed('test kill');
+        if (G.dead) return 'game ended after first kill (should promote)';
+        if (G.pack.filter(m => m.alive).length !== 3) return 'alive count wrong after first kill';
+        if (!G.pack[G.activePackIndex].alive) return 'active index points at a dead ship';
+        let ie = _smokeInvariants(); if (ie.length) return 'after promote: ' + ie.join(', ');
+        // Tick a few frames so escorts fire (must stay invariant-safe).
+        for (let i = 0; i < 30; i++) _smokeAdvance(16);
+        ie = _smokeInvariants(); if (ie.length) return 'after escort fire: ' + ie.join(', ');
+        // Destroy the rest — last kill must conclude victory.
+        let guard = 0;
+        while (G.pack.filter(m => m.alive).length > 0 && guard++ < 10) _resolveEnemyDestroyed('test kill');
+        return G.dead ? null : 'final kill did not conclude the engagement';
       } },
   ];
   scenarios.forEach(sc => {

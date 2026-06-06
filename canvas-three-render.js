@@ -311,6 +311,24 @@ function renderSpatialViewCanvas() {
       shield_enemy.material.emissive.setRGB(0.5,0.1,0.1);
     }
     engine_glow_enemy.position.copy(mesh_enemyGroup.position); engine_glow_enemy.position.x+=10;
+
+    // ── Wolfpack escorts — fixed wedge formation around the active target ──
+    if (G.packActive && mesh_escorts && mesh_escorts.length) {
+      const _wedge = [ [6,4,9], [6,-4,-9], [12,6,-4], [12,-6,5] ];
+      mesh_escorts.forEach((e, i) => {
+        if (!e.group) return;
+        const w = _wedge[i % _wedge.length];
+        const tx = mesh_enemyGroup.position.x + w[0];
+        const ty = mesh_enemyGroup.position.y + w[1] + Math.sin(now*0.6 + i)*1.2;
+        const tz = mesh_enemyGroup.position.z + w[2] + Math.sin(now*0.4 + i*1.7)*1.5;
+        e.group.position.set(
+          THREE.MathUtils.lerp(e.group.position.x, tx, 0.05),
+          THREE.MathUtils.lerp(e.group.position.y, ty, 0.05),
+          THREE.MathUtils.lerp(e.group.position.z, tz, 0.05));
+        e.group.rotation.y = Math.PI;
+        e.group.rotation.z = Math.sin(now*0.8 + i)*0.1;
+      });
+    }
   }
 
   // ── Ramming run trajectory indicator ────────────────────────
@@ -386,10 +404,13 @@ function renderSpatialViewCanvas() {
     // ── Weapon origin: use per-ship / per-faction hardpoints ──────
     let fromV, toV;
     if (isEnemy) {
+      // Wolfpack escort beams originate from the escort's own mesh, if present.
+      const _escortMesh = (b.fromEscort != null && mesh_escorts && mesh_escorts[b.fromEscort]) ? mesh_escorts[b.fromEscort].group : null;
+      const originMesh = _escortMesh || mesh_enemyGroup;
       const pts = _ENEMY_HP[G.enemyArchetype] || [ [-5,0,0] ];
       const off = pts[Math.floor(Math.random() * pts.length)];
-      fromV = mesh_enemyGroup.position.clone().add(
-        new THREE.Vector3(off[0], off[1], off[2]).applyQuaternion(mesh_enemyGroup.quaternion));
+      fromV = originMesh.position.clone().add(
+        new THREE.Vector3(off[0], off[1], off[2]).applyQuaternion(originMesh.quaternion));
       // Target: player hull biased toward the attacked sector, rotated by player facing
       const sOff = _PLAYER_SECTOR_HIT[b.targetSector] || [0,0,0];
       toV = mesh_defiant.position.clone().add(new THREE.Vector3(
