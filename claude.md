@@ -226,9 +226,9 @@ G.score = { totalDmgDealt, volleysFired, hullBreaches, systemsDestroyed,
 
 ### Campaign order (data-driven, easiest → hardest)
 `CAMPAIGN_ORDER` in config.js — 9 entries, each `{ level, archetype, diff, label, title, subtitle }`:
-1. jem_hadar_fighter (normal) — polaron + ramming intro
-2. cardassian_scout (normal) — fast-lock harassment
-3. romulan_bop (normal) — cloak + plasma + sensor ghosts
+1. cardassian_scout (normal) — fast-lock harassment (solo intro — learn the controls)
+2. romulan_bop (normal) — cloak + plasma + sensor ghosts
+3. jem_hadar_fighter (normal) — **wolfpack of 3** + polaron + ramming (moved off level 1: a pack is too punishing as the tutorial — see pack.js)
 4. galor_class (hard) — heavier phasers + photon
 5. jem_hadar_battleship (hard) — heavy polaron + fury scaling
 6. ktinga (hard) — range-closing + berserk + death salvo
