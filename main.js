@@ -297,6 +297,7 @@ function initiateVesselSimulation(station) {
   _buildELCache();               // prime DOM element cache for hot paths
   _rebuildCapBarCache();         // cache newly-built cap bar elements
   _updateSpecialAbilityButtons(); // helm/captain cloak↔saucer-sep labels
+  buildCaptainSignaturePanel();   // ship-specific captain signature-ability row
   buildEnemySubsystemTargetGrid();
   updateCrewStatusDisplay();
   updateWarpAvailability();

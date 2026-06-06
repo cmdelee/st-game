@@ -892,7 +892,6 @@
         <div class="captain-orders-grid" style="grid-template-columns:repeat(6,1fr);margin-top:3px;">
           <button class="pill-action-btn"          id="cap-ord-deep_scan"     onclick="capDeepScan()"><span>🔭 Deep Scan</span></button>
           <button class="pill-action-btn p-btn"    id="cap-ord-evasive"       onclick="capEvasive()"><span>◈ Evasive</span></button>
-          <button class="pill-action-btn warn-btn" id="cap-ord-cloak"         onclick="capCloakToggle()"><span id="cap-cloak-label">◉ Cloak</span></button>
           <button class="pill-action-btn"          id="cap-ord-tgt_hull"      onclick="capTgtHull()"><span>⊙ Hull</span></button>
           <button class="pill-action-btn"          id="cap-ord-tgt_shields"   onclick="capTgtShields()"><span>⊙ Shields</span></button>
           <button class="pill-action-btn warn-btn" id="cap-ord-tgt_weapons"   onclick="capTgtWeaponsAny()"><span>⊙ Weapons</span></button>
@@ -903,6 +902,12 @@
           <button class="pill-action-btn"          id="cap-ord-tgt_sensors"   onclick="capTgtSensors()"><span>⊙ Sensors</span></button>
           <button class="pill-action-btn"          id="cap-ord-tgt_warpcore"  onclick="capTgtWarpCore()"><span>⊙ Warp Core</span></button>
         </div>
+      </div>
+
+      <!-- SIGNATURE SYSTEMS — ship-specific special abilities (built dynamically) -->
+      <div class="captain-orders-group">
+        <div class="captain-orders-label" style="color:var(--warn);">✦ SIGNATURE SYSTEMS <span style="color:#6688aa;font-weight:normal;font-size:9px;">SPECIAL ABILITIES</span></div>
+        <div class="captain-orders-grid" id="cap-signature-grid" style="grid-template-columns:repeat(5,1fr);"></div>
       </div>
 
       <!-- O'BRIEN — Engineering -->
@@ -1046,7 +1051,7 @@
 <script src="encounter-phases.js?v=d34b4172"></script>
 <script src="enemy-ai.js?v=96e24d73"></script>
 <script src="auto-delegation.js?v=dc49ec0d"></script>
-<script src="command.js?v=7fd6ff36"></script>
+<script src="command.js?v=08b12b1a"></script>
 <script src="canvas-three.js?v=29a27cf8"></script>
 <script src="canvas-three-geometry.js?v=faa58b86"></script>
 <script src="canvas-three-render.js?v=8c0fa995"></script>
@@ -1055,7 +1060,7 @@
 <script src="setup.js?v=6a2e1eb4"></script>
 <script src="campaign.js?v=e0f96c98"></script>
 <script src="briefing.js?v=31071348"></script>
-<script src="main.js?v=0ddbd530"></script>
+<script src="main.js?v=3f1f8000"></script>
 <script src="smoketest.js?v=f91c7b44"></script>
 
 </body>

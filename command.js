@@ -91,6 +91,7 @@ function updateCaptainOverview() {
 
   _updateCaptainOrderButtons();
   _updateCloakButtonLabel();
+  _updateSignatureAbilityPanel();
 }
 
 function _setTxt(id, txt) {
@@ -268,6 +269,91 @@ function _updateCloakButtonLabel() {
     span.textContent = '◉ Engage Cloak';
     btn.className = 'pill-action-btn warn-btn';
   }
+}
+
+// ── SIGNATURE SYSTEMS — ship-specific special abilities ──────
+// A dedicated captain order group giving live ready/active/cooldown/expended
+// status for the ship's signature abilities (which carry their OWN state flags
+// in G, not captainOrderCooldowns). Buttons are built per ship at game start.
+const _SIG_ABILITIES = {
+  defiant: [
+    { id:'cap-ord-cloak', special:'cloak' },                  // toggle; reuses capCloakToggle + _updateCloakButtonLabel
+    { id:'cap-sig-overcharge', label:'⚡ Overcharge', cls:'red-btn',
+      fn:'executeCannonOvercharge', ready:'overchargeReady', cd:'overchargeCooldown',
+      msg:'Overcharging cannon capacitors, Captain.' },
+    { id:'cap-sig-unstable', label:'☢ Unstable Torp', cls:'warn-btn',
+      fn:'executeUnstableTorpedo', ready:'unstableTorpReady', cd:'unstableTorpCooldown',
+      msg:'Loading an unstable quantum charge, Captain.' },
+    { id:'cap-sig-powerdump', label:'⚡⚡ Power Dump', cls:'red-btn',
+      fn:'executeEmergencyPowerDump', ready:'powerDumpReady', cd:'powerDumpCooldown',
+      active:'powerDumpActive', activeTimer:'powerDumpTimer',
+      msg:'Emergency power dump — routing reserves to weapons, Captain.' },
+    { id:'cap-sig-maxpulse', label:'✸ Max Pulse Burst', cls:'p-btn',
+      fn:'executeMaximumPulseBurst', oneShot:'maxPulseBurstReady',
+      msg:'Maximum pulse burst — all cannons, Captain!' },
+  ],
+  enterprise_e: [
+    { id:'cap-ord-cloak', special:'cloak' },                  // deflector toggle (capCloakToggle routes E-E)
+    { id:'cap-sig-maxphaser', label:'⚡ Max Phaser', cls:'red-btn',
+      fn:'executeMaxPhaserOutput', ready:'overchargeReady', cd:'overchargeCooldown',
+      msg:'Maximum phaser output, Captain — all arrays.' },
+    { id:'cap-sig-tricobalt', label:'☢ Tricobalt Warhead', cls:'p-btn',
+      fn:'executeTricobalWarhead', oneShot:'tricobalReady',
+      msg:'Arming the tricobalt warhead, Captain.' },
+  ],
+};
+
+function _sigList() { return _SIG_ABILITIES[G.playerShipKey] || _SIG_ABILITIES.defiant; }
+
+// Build the signature-systems button row for the active ship.
+function buildCaptainSignaturePanel() {
+  const grid = document.getElementById('cap-signature-grid');
+  if (!grid) return;
+  const list = _sigList();
+  grid.style.gridTemplateColumns = `repeat(${list.length},1fr)`;
+  grid.innerHTML = list.map(a => {
+    if (a.special === 'cloak') {
+      return `<button class="pill-action-btn warn-btn" id="cap-ord-cloak" onclick="capCloakToggle()"><span id="cap-cloak-label">◉ Cloak</span></button>`;
+    }
+    return `<button class="pill-action-btn ${a.cls || ''}" id="${a.id}" onclick="_sigOrder('${a.fn}', &quot;${a.msg.replace(/"/g,'&quot;')}&quot;)"><span>${a.label}</span></button>`;
+  }).join('');
+  _updateCloakButtonLabel();
+  _updateSignatureAbilityPanel();
+}
+
+// Thin order wrapper: post a Worf comms line, then call the ability (which
+// self-guards on its own ready flag and logs). 350ms matches _order overhead.
+function _sigOrder(fnName, msg) {
+  if (!G.running || G.dead) return;
+  const fn = window[fnName];
+  if (typeof fn !== 'function') return;
+  postCrewReport('worf', msg, 'status');
+  setTimeout(() => { try { fn(); } catch(e) { console.warn('Signature ability failed:', e); } }, 350);
+  _updateSignatureAbilityPanel();
+}
+
+// Live per-frame status for each signature button (real ability state).
+function _updateSignatureAbilityPanel() {
+  _sigList().forEach(a => {
+    if (a.special === 'cloak') return;   // owned by _updateCloakButtonLabel
+    const btn = document.getElementById(a.id);
+    if (!btn) return;
+    const span = btn.querySelector('span') || btn;
+    if (!btn.getAttribute('data-label')) btn.setAttribute('data-label', a.label);
+    const base = btn.getAttribute('data-label');
+    let txt = base, enabled = true, lit = false;
+    if (a.oneShot && !G[a.oneShot]) {
+      txt = base + ' (EXPENDED)'; enabled = false;
+    } else if (a.active && G[a.active]) {
+      txt = base + ` ACTIVE (${Math.ceil((G[a.activeTimer] || 0) / 1000)}s)`; lit = true;
+    } else if (a.ready && !G[a.ready]) {
+      txt = base + ` (${Math.ceil((G[a.cd] || 0) / 1000)}s)`; enabled = false;
+    }
+    span.textContent = txt;
+    btn.disabled      = !enabled;
+    btn.style.opacity = enabled ? '1' : '0.38';
+    btn.style.boxShadow = lit ? '0 0 6px var(--warn)' : '';
+  });
 }
 
 // ── WORF — Enemy Subsystem Targeting ─────────────────────────
