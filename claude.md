@@ -226,14 +226,15 @@ G.score = { totalDmgDealt, volleysFired, hullBreaches, systemsDestroyed,
 
 ### Campaign order (data-driven, easiest → hardest)
 `CAMPAIGN_ORDER` in config.js — 9 entries, each `{ level, archetype, diff, label, title, subtitle }`:
-1. cardassian_scout (normal) — fast-lock harassment (solo intro — learn the controls)
-2. romulan_bop (normal) — cloak + plasma + sensor ghosts
-3. jem_hadar_fighter (normal) — **wolfpack of 3** + polaron + ramming (moved off level 1: a pack is too punishing as the tutorial — see pack.js)
-4. galor_class (hard) — heavier phasers + photon
-5. jem_hadar_battleship (hard) — heavy polaron + fury scaling
-6. ktinga (hard) — range-closing + berserk + death salvo
-7. vor_cha (hard) — wing disruptors + heavy torps
-8. romulan_warbird (hard) — massive plasma + emergency cloak at 25%
+Order set by **monotonic threat** (eff. hull to grind + sustained incoming DPS + burst spikes + mechanics), not by faction:
+1. cardassian_scout (normal) — fast-lock harassment, no torpedoes (easiest — learn the controls)
+2. galor_class (normal) — heavy slugfest, no cloak/ram (first real fight; downgraded from hard to backfill the normal tier)
+3. romulan_bop (normal) — cloak + plasma + sensor ghosts (cloak mechanic intro)
+4. ktinga (hard) — first hard: cloak + closes to brawl range, slow lock
+5. jem_hadar_battleship (hard) — heavy polaron bypass + fury scaling + ram 380
+6. vor_cha (hard) — wing disruptors + heavy torps + close brawl
+7. jem_hadar_fighter (normal) — **wolfpack of 3** (polaron bypass, 3× ram). A pack is a hard-tier encounter, so it sits in the hard band — kept at `diff:'normal'` so it stays 3 fragile ships (hard `diff` would spawn 4 and out-scale the Borg). Was the L3 spike; see pack.js
+8. romulan_warbird (hard) — massive plasma + emergency cloak at 25% (grinding attrition penultimate)
 9. borg_probe (elite) — adaptive shielding + tractor — FINAL BOSS
 
 ---
