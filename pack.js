@@ -67,7 +67,7 @@ function _buildFighterState(diff, formIdx) {
 // Called by initiateVesselSimulation AFTER enemyResetForBattle. Slot 0 mirrors
 // the just-built active member; slots 1..N-1 are fresh fighters.
 function packResetForBattle(diff) {
-  G.pack = []; G.packActive = false; G.packCount = 0; G.activePackIndex = 0;
+  G.pack = []; G.packActive = false; G.packCount = 0; G.activePackIndex = 0; G.packBerserk = false;
   if (G.disablePack || G.enemyArchetype !== PACK_ARCHETYPE) return;
 
   const n = currentDifficulty === 'hard' ? 4 : 3;
@@ -117,6 +117,12 @@ function _resolveEnemyDestroyed(msg) {
     _packLoadMember(next);
     G.lockProgress = Math.max(0, G.lockProgress * 0.4);
     G.targetedSubsystemType = 'hull';
+    // Last survivor goes berserk — "Victory is life." Fires faster and hits harder.
+    if (remaining === 1 && !G.packBerserk) {
+      G.packBerserk = true;
+      postLogEvent("The last Jem'Hadar fighter goes berserk — \"Victory is life!\"", 'crit');
+      if (typeof postTacticalAdvisory === 'function') postTacticalAdvisory("Last fighter is berserk — faster, harder fire. Finish it!");
+    }
     if (typeof rebuildPackMeshes === 'function') rebuildPackMeshes();
     if (typeof buildEnemySubsystemTargetGrid === 'function') buildEnemySubsystemTargetGrid();
     _updatePackRoster();

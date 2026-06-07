@@ -23,14 +23,18 @@ function processEnemyCloakDecision(dt) {
     const repDone = G.enemyRepairQueue.length === 0;
     const hullOk  = G.threat.hull / G.threat.maxHull > 0.52;
     if (repDone && hullOk && G.enemyCloakPower < 30) triggerEnemyDecloak(cfg, 'repairs complete');
-    else if (repDone && hullOk && Math.random() < 0.0015 * (dt / 1000) * 60) triggerEnemyDecloak(cfg, 'ready to engage');
+    // Re-engage faster — cloakers shouldn't sit dark while the player free-fires (raised 0.0015→0.0035).
+    else if (repDone && hullOk && Math.random() < 0.0035 * (dt / 1000) * 60) triggerEnemyDecloak(cfg, 'ready to engage');
     return;
   }
 
   const hullPct  = G.threat.hull / G.threat.maxHull;
   const critDown = Object.keys(G.enemySystems).some(k => G.enemySystems[k].health <= 0 && k !== 'cloak_device');
   const cloakAggressiveness = cfg.faction === 'Romulan' ? 2.5 : 1.0;
-  if ((hullPct < 0.40 || (critDown && hullPct < 0.65)) && Math.random() < 0.004 * cloakAggressiveness * (dt / 1000) * 60) {
+  // Klingon brawlers stay decloaked and fighting far longer — they only run dark
+  // when nearly dead (hull <25%), so they spend the fight actually shooting you.
+  const cloakHullGate = cfg.prefersCloseRange ? 0.25 : 0.40;
+  if ((hullPct < cloakHullGate || (critDown && hullPct < 0.65)) && Math.random() < 0.004 * cloakAggressiveness * (dt / 1000) * 60) {
     triggerEnemyCloak(cfg);
   }
 }
@@ -55,17 +59,20 @@ function triggerEnemyDecloak(cfg, reason) {
   postLogEvent(`${cfg.label} DECLOAKING (${reason}) — shields offline 1.5s! Fire now!`, 'crit');
   crewReportEnemyDecloak();
   postTacticalAdvisory("Enemy shields down during decloak — maximum yield fire window open!");
-  // Romulan strike phase: fire plasma immediately on decloak — terrifying DS9-accurate behaviour
-  if (cfg.faction === 'Romulan' && G.enemyPhase === 'strike' && G.plasmaTorpedoReady) {
-    setTimeout(() => {
-      if (!G.dead && G.running) {
-        postLogEvent("ROMULAN PLASMA TORPEDO — FIRED ON DECLOAK! BRACE!", 'crit');
-        // Set timer past threshold so the main loop fires on next tick;
-        // do NOT call executeThreatCounterVolley() directly or it fires twice
-        G.threatCycleTimer = getEffectiveFireInterval() + 1;
-      }
-    }, 800);
-  }
+  // Decloak alpha strike — EVERY cloaker opens fire the instant it uncloaks,
+  // punishing the "free damage while they're hidden" assumption (canon Klingon/
+  // Romulan tactic). Romulans get the signature plasma-on-decloak flavour.
+  const _plasmaStrike = cfg.faction === 'Romulan' && G.enemyPhase === 'strike' && G.plasmaTorpedoReady;
+  setTimeout(() => {
+    if (!G.dead && G.running && !G.enemyCloaked) {
+      postLogEvent(_plasmaStrike
+        ? "ROMULAN PLASMA TORPEDO — FIRED ON DECLOAK! BRACE!"
+        : `${cfg.label} decloaks and opens fire!`, 'crit');
+      // Set timer past threshold so the main loop fires on next tick;
+      // do NOT call executeThreatCounterVolley() directly or it fires twice
+      G.threatCycleTimer = getEffectiveFireInterval() + 1;
+    }
+  }, _plasmaStrike ? 800 : 700);
   setTimeout(() => {
     if (G.dead) return;
     G.enemyCloakVulnTimer = 0;
@@ -582,6 +589,7 @@ function executeThreatCounterVolley() {
   if (G.activePanel === 'engineering') rawDmg *= 0.85;
   if (G.attackPatternOmegaActive)      rawDmg *= 1.20;
   if (G.deflectorActive)               rawDmg *= 0.65;   // antiproton deflector screen −35%
+  if (G.packBerserk)                   rawDmg *= 1.25;   // last pack survivor hits harder
 
   if (cfg.prefersCloseRange && G.enemyRangeBracket === 'close' && chosenSys.systemTargetKey === 'disruptors')
     rawDmg *= (cfg.closeRangeDmgBonus || 1.4);

@@ -156,10 +156,14 @@ function recalculateShieldRegenRate() {
   const regenBonus = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).shieldRegenBonus || 1.0;
   // Defiant: 28MW → ~3.1/s, 60MW → ~6.7/s; Enterprise-E ×1.4 bonus (regenerative shielding)
   G.shieldRegenRate = Math.max(0.5, (sp / 9) * sh * regenBonus);
+  // Dirty flag: only touch the DOM when the displayed value actually changes.
+  const _disp = G.shieldRegenRate.toFixed(1);
+  if (_disp === G._lastRegenDisp) return;
+  G._lastRegenDisp = _disp;
   const rl = document.getElementById('lbl-shield-regen');
-  if (rl && !G.cloaked) { rl.textContent = `↑+${G.shieldRegenRate.toFixed(1)}/s`; rl.style.color = 'var(--green)'; }
+  if (rl && !G.cloaked) { rl.textContent = `↑+${_disp}/s`; rl.style.color = 'var(--green)'; }
   const rr = document.getElementById('txt-shield-regen-rate');
-  if (rr) rr.textContent = G.cloaked ? 'OFFLINE' : `+${G.shieldRegenRate.toFixed(1)}/s`;
+  if (rr) rr.textContent = G.cloaked ? 'OFFLINE' : `+${_disp}/s`;
 }
 
 // ============================================================

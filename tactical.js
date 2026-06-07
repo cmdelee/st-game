@@ -21,6 +21,10 @@ function executeEvasivePattern() {
 
 function updateEvasiveButton() {
   const btn = document.getElementById('btn-evasive'); if (!btn) return;
+  // Throttle: skip DOM writes when the displayed state/second hasn't changed.
+  const _sig = G.evasiveActive ? 'a' + Math.ceil(G.evasiveCooldown/1000)
+             : G.evasiveCooldown > 0 ? 'c' + Math.ceil(G.evasiveCooldown/1000) : 'r';
+  if (btn._sig === _sig) return; btn._sig = _sig;
   if (G.evasiveActive) {
     btn.textContent = `◈ EVADING ${Math.ceil(G.evasiveCooldown/1000)}s`;
     btn.style.background = 'var(--green)'; btn.style.color = '#000';
@@ -88,6 +92,9 @@ function rotateShieldFrequency() {
 
 function updateShieldFreqButton() {
   const btn = document.getElementById('btn-shield-freq'); if (!btn) return;
+  const _sig = G.shieldFreqActive ? 'a' + Math.ceil(G.shieldFreqTimer/1000)
+             : G.shieldFreqCooldown > 0 ? 'c' + Math.ceil(G.shieldFreqCooldown/1000) : 'r';
+  if (btn._sig === _sig) return; btn._sig = _sig;
   if (G.shieldFreqActive) {
     btn.textContent = `🛡 FREQ ACTIVE ${Math.ceil(G.shieldFreqTimer/1000)}s`;
     btn.style.background = 'var(--green)'; btn.style.color = '#000';

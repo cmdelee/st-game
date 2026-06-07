@@ -72,7 +72,7 @@ const G = {
 
   // Wolfpack — Jem'Hadar Attack Ships fight in packs. G.threat/G.enemySystems
   // hold the live ACTIVE target; G.pack holds full snapshots of every member.
-  pack:[], packActive:false, packCount:0, activePackIndex:0, disablePack:false,
+  pack:[], packActive:false, packCount:0, activePackIndex:0, disablePack:false, packBerserk:false,
 
   weaponsDisrupted:false, weaponsDisruptedTimer:0,
   enemyTractorActive:false,

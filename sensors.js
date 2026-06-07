@@ -122,6 +122,9 @@ function checkBorgScanExpiry() {
 
 function _updateDeepScanButton() {
   const btn = document.getElementById('btn-deep-scan'); if (!btn) return;
+  const _sig = G.deepScanActive ? 'a' + Math.round(G.deepScanProgress)
+             : G.deepScanCooldown > 0 ? 'c' + Math.ceil(G.deepScanCooldown/1000) : 'r';
+  if (btn._sig === _sig) return; btn._sig = _sig;
   if (G.deepScanActive) {
     btn.textContent = `🔭 SCANNING ${Math.round(G.deepScanProgress)}%`;
     btn.style.background = 'var(--p)'; btn.style.color = '#fff';

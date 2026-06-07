@@ -312,21 +312,24 @@ function renderSpatialViewCanvas() {
     }
     engine_glow_enemy.position.copy(mesh_enemyGroup.position); engine_glow_enemy.position.x+=10;
 
-    // ── Wolfpack escorts — fixed wedge formation around the active target ──
+    // ── Wolfpack escorts — loose wedge, each fighter weaving/jinking on its own ──
     if (G.packActive && mesh_escorts && mesh_escorts.length) {
       const _wedge = [ [6,4,9], [6,-4,-9], [12,6,-4], [12,-6,5] ];
       mesh_escorts.forEach((e, i) => {
         if (!e.group) return;
         const w = _wedge[i % _wedge.length];
-        const tx = mesh_enemyGroup.position.x + w[0];
-        const ty = mesh_enemyGroup.position.y + w[1] + Math.sin(now*0.6 + i)*1.2;
-        const tz = mesh_enemyGroup.position.z + w[2] + Math.sin(now*0.4 + i*1.7)*1.5;
+        const ph = i * 1.7;   // per-ship phase so they don't move in lockstep
+        // Wider, faster weave than a fixed bob — fighters break and re-form the wedge.
+        const tx = mesh_enemyGroup.position.x + w[0] + Math.sin(now*0.5 + ph)*2.5;
+        const ty = mesh_enemyGroup.position.y + w[1] + Math.sin(now*0.9 + ph)*3.0;
+        const tz = mesh_enemyGroup.position.z + w[2] + Math.cos(now*0.7 + ph)*4.0;
         e.group.position.set(
-          THREE.MathUtils.lerp(e.group.position.x, tx, 0.05),
-          THREE.MathUtils.lerp(e.group.position.y, ty, 0.05),
-          THREE.MathUtils.lerp(e.group.position.z, tz, 0.05));
-        e.group.rotation.y = Math.PI;
-        e.group.rotation.z = Math.sin(now*0.8 + i)*0.1;
+          THREE.MathUtils.lerp(e.group.position.x, tx, 0.06),
+          THREE.MathUtils.lerp(e.group.position.y, ty, 0.06),
+          THREE.MathUtils.lerp(e.group.position.z, tz, 0.06));
+        e.group.rotation.y = Math.PI + Math.sin(now*0.6 + ph)*0.25;   // yaw jink
+        e.group.rotation.z = Math.sin(now*1.3 + ph)*0.35;             // aggressive bank/roll
+        e.group.rotation.x = Math.sin(now*0.8 + ph)*0.12;             // pitch weave
       });
     }
   }

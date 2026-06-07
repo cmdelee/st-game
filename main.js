@@ -156,7 +156,8 @@ function masterSimulationCoreLoop(ts) {
   const _jemFury = (_cfg && _cfg.faction === 'Dominion')
     ? Math.max(0.50, 1.0 - (1.0 - G.threat.hull / G.threat.maxHull) * 0.55)
     : 1.0;
-  const fi = getEffectiveFireInterval() * (G.enemyPhaseFireMult || 1.0) * (G.weaponsDisrupted ? 2 : 1) * _jemFury;
+  const _packBerserkFire = G.packBerserk ? 0.6 : 1.0;   // last pack survivor fires ~40% faster
+  const fi = getEffectiveFireInterval() * (G.enemyPhaseFireMult || 1.0) * (G.weaponsDisrupted ? 2 : 1) * _jemFury * _packBerserkFire;
   if (G.threatCycleTimer > fi) { G.threatCycleTimer = 0; executeThreatCounterVolley(); }
 
 
