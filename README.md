@@ -47,12 +47,13 @@ Starfleet's flagship from the TNG films. Larger, tougher, and bristling with pha
 | Fore Shields | 500 |
 | Quantum Torps | 24 |
 | Photon Torps | 30 |
-| Special | Regenerative shielding (×1.4 regen), Saucer Separation |
+| Special | Regenerative shielding (×1.4 regen), Antiproton Tactical Deflector |
 | Crew | Worf · La Forge · Data · Dr. Crusher |
 
 **Weapons:** 9× Type-XII phaser arrays (all arcs), Primary Stardrive Emitter (90yd), Aft Stardrive Emitter (55yd), 2× fwd quantum tubes + aft tube  
 **Overload modes:** Max Phaser Output (+60%), Tricobalt Warhead (300yd, 1/game), Emergency Power Dump  
-**Burst:** Concentrated Phaser Fire (all in-arc arrays, 180ms/array)
+**Burst:** Concentrated Phaser Fire (all in-arc arrays, 180ms/array)  
+**Defensive:** Antiproton Tactical Deflector — on/off toggle (no cooldown): incoming fire −35%, enemy lock −50%, but weapon capacitors recharge at ×0.55 while the screen draws EPS priority
 
 ---
 
@@ -66,10 +67,10 @@ Starfleet's flagship from the TNG films. Larger, tougher, and bristling with pha
 - **Authentic LCARS Interface**: Full LCARS styling with canon ships from Klingons, Romulans, Cardassians, Dominion, and Borg. 2D schematics feature LCARS-style section headers, inline mini-bars for hull/shields/systems/lock, scan bonus readouts, and adaptive resistance displays
 - **9 Enemy Vessels**: Each with faction-specific AI, weapons, combat phase arcs, and hull milestone events
 - **Wolfpack**: The Jem'Hadar Attack Ship never fights alone — it arrives as a pack of **3** (Normal) or **4** (Hard) full-strength, independently-targetable fighters. Switch your lock to any living ship via the left-panel pack roster (or focus-fire one down); escorts harass you with polaron volleys from formation, and victory requires destroying the entire pack
-- **3D Spatial Battle View**: Three.js WebGL — Defiant and Sovereign-class meshes, authentic Star Trek weapon colours (amber phasers, orange-red photon torpedoes, blue-white quantum torpedoes, green plasma), faction-coloured 3D beam tubes fired from **correct hull hardpoints** (pulse cannons from nacelle flanks, nose emitter from bow, saucer arrays from saucer rim, etc.), enemy beams from faction-accurate positions (Klingon wing tips, Romulan head/boom emitters, Jem'Hadar forward wing cannons, Borg all 6 faces), torpedo impacts with shockwave rings, nacelle exhaust particles (scale with helm speed), burst-salvo shockwave, saucer separation flies independently, Jem'Hadar ramming trajectory indicator
+- **3D Spatial Battle View**: Three.js WebGL — Defiant and Sovereign-class meshes, authentic Star Trek weapon colours (amber phasers, orange-red photon torpedoes, blue-white quantum torpedoes, green plasma), faction-coloured 3D beam tubes fired from **correct hull hardpoints** (pulse cannons from nacelle flanks, nose emitter from bow, saucer arrays from saucer rim, etc.), enemy beams from faction-accurate positions (Klingon wing tips, Romulan head/boom emitters, Jem'Hadar forward wing cannons, Borg all 6 faces), torpedo impacts with shockwave rings, nacelle exhaust particles (scale with helm speed), burst-salvo shockwave, antiproton deflector screen (forward-blue shield glow when active), pack escorts flying in formation, Jem'Hadar ramming trajectory indicator
 - **Advanced Combat**:
   - Real-time four-sector shield management with sector reinforcement and equalisation
-  - Cloaking device (Defiant) / Saucer Separation (Enterprise-E) with distinct mechanics
+  - Cloaking device (Defiant) / Antiproton Tactical Deflector (Enterprise-E) with distinct mechanics
   - Burst salvos, alpha salvo, and ship-specific overload weapon modes
   - Shield frequency rotation countering enemy weapon types
   - Evasive Pattern Delta, Pattern Alpha, Attack Pattern Omega, Picard Manoeuvre
@@ -121,7 +122,7 @@ npm run smoke
 
 ### 🔴 Tactical
 
-Direct weapons fire, manage evasive manoeuvres, operate cloak or saucer sep, and run sensor sweeps. Engineering runs on auto-delegation.
+Direct weapons fire, manage evasive manoeuvres, operate the cloak (Defiant) or antiproton deflector (Enterprise-E), and run sensor sweeps. Engineering runs on auto-delegation.
 
 **Defiant weapons:**
 
@@ -146,7 +147,7 @@ Direct weapons fire, manage evasive manoeuvres, operate cloak or saucer sep, and
 | Individual phaser buttons | F/P/S or F/P/A or A/P/S | 9 individually targetable arrays |
 | Fwd Quantum Tube A + B | Fore/Port/Stbd | Dual forward quantum launchers |
 | Aft Quantum / Photon | Aft/Port/Stbd | Aft launcher |
-| ◯ Saucer Separation | — | Toggle — stays separated until reconnect ordered. Enemy lock −60%. 60s CD after reconnect |
+| ◈ Antiproton Deflector | — | On/off toggle (no CD): incoming fire −35%, enemy lock −50%; weapon caps recharge ×0.55 while active |
 | ⚡ Max Phaser Output | — | All phasers +60%, 30s CD |
 | ☢ Tricobalt Warhead | — | 300yd, no lock, 40% hull bleed-through, 1 per engagement |
 
@@ -167,7 +168,7 @@ Allocate power, manage repairs. Auto-tactical fires weapons on a 2.4s clock.
 | Emergency Battery | Backup power when warp core trips |
 | Breaker Grid | Re-latch tripped EPS conduits |
 | Ablative Armour | Status display (Defiant only) |
-| Saucer Separation | Status + trigger (Enterprise-E only) |
+| Tactical Deflector | Status + toggle (Enterprise-E only) |
 
 ### 🩷 Helm
 
@@ -184,7 +185,7 @@ Navigate the ship and control the engagement. Both auto-tactical and auto-engine
 | Picard Manoeuvre | — | Micro-warp; enemy cannot fire for 3s. 60s CD |
 | Pattern Omega | — | All weapons +40% for 10s. 45s CD |
 | Evasive Alpha | — | Maximum evasion for 5s. 15s CD |
-| Cloak / Saucer Sep | — | Ship-specific special ability |
+| Cloak / Deflector | — | Ship-specific special ability (Defiant cloak · Enterprise-E antiproton deflector) |
 | Emergency Warp | — | Escape at hull ≤35% |
 
 ### ⭐ Captain's Chair
@@ -231,7 +232,7 @@ All three stations fully automated. Issue orders and override crew decisions. A 
 2. **Attack Vector (Enterprise-E)**: FORE brings 7 of 9 phaser arrays into arc. AFT still fields 4 arrays + aft tubes — the Enterprise fights effectively in every direction
 3. **Burst Fire / Concentrated Fire**: Use at ≥20% lock to overwhelm shield regen before it recovers
 4. **Cloak timing (Defiant)**: Engage during a lull; regen credit accrues while cloaked, restoring shields on decloak
-5. **Saucer Separation (Enterprise-E)**: Toggle mechanic — saucer stays separated until you order reconnect. Enemy lock −60% the whole time. Use offensively to build lock safely, or defensively when you need sustained pressure relief. 60s cooldown starts after the 6s docking sequence completes
+5. **Antiproton Deflector (Enterprise-E)**: On/off toggle, no cooldown — cuts incoming fire −35% and enemy lock −50%, but your weapon capacitors recharge at ×0.55 while it's up. Raise it to weather a heavy salvo or stretch a low-hull fight; drop it when you need full weapon throughput
 6. **Tricobalt Warhead (Enterprise-E)**: 40% bypasses shields directly to hull. Save it for the Borg (adaptation doesn't apply to subspace weapons) or a Klingon berserk window
 7. **Regenerative Shields (Enterprise-E)**: The ×1.4 regen bonus means even heavily damaged shield sectors recover quickly — play aggressively and let the shields do their job
 8. **Warp core cascades**: A tripped core spikes stress on engines (+35%), shields (+22%), sensors (+15%) — keep EPS stress low before a core risk
@@ -296,7 +297,7 @@ The order is set by **measured threat** — gentle Alpha-quadrant patrol fights 
 
 | Level | Enemy Pool | Enemy Hull | Damage | Lock | Fire | Player Hull | Features |
 |---|---|---|---|---|---|---|---|
-| Normal | Fighter, Scout, BoP, Galor, K'Tinga | ×1.0 | ×1.0 | ×1.0 | ×1.0 | ×1.0 | Hull-sector targeting only |
+| Normal | Fighter (pack ×3), Scout, BoP, Galor, K'Tinga | ×1.0 | ×1.0 | ×1.0 | ×1.0 | ×1.0 | Hull-sector targeting only |
 | Hard | All 8 conventional ships | ×1.12 | ×1.10 | ×1.25 | ×0.88 | ×0.88 | AI targets player subsystems (20%) |
 | Elite | **Borg Probe only** | ×1.40 | ×1.20 | ×1.25 | ×0.80 | ×0.85 | Subsystem strikes (25%) |
 
@@ -316,8 +317,8 @@ state.js                 — G state object; G.playerShipKey/Config/activeWeapon
 engineering.js           — power, repairs, EPS, ablative armour (Defiant), shield regen
 crew.js                  — casualties, efficiency modifiers, emergency warp
 sensors.js               — deep scan, subsystem targeting
-tactical.js              — player weapons, cloaking/saucer sep, saucer auto-fire,
-                           burst/overload/Enterprise modes
+tactical.js              — player weapons, cloaking (Defiant) / antiproton deflector
+                           (Enterprise-E), burst/overload/Enterprise modes
 helm.js                  — speed, vector, range, all helm manoeuvres
 encounter-phases.js      — faction encounter phase arcs, hull milestone events (75/50/25/10%),
                            Klingon death salvo
@@ -331,7 +332,7 @@ command.js               — Captain's Chair: crew reports (ship-aware), order c
 canvas-three.js          — Three.js scene setup + shared render state, model loading
 canvas-three-geometry.js — Three.js mesh builders: Defiant + Sovereign + enemy geometry
 canvas-three-render.js   — Three.js per-frame render loop: camera, beams, shockwaves, torpedo
-                           impacts, exhaust + hull-damage sparks, saucer-sep flight
+                           impacts, exhaust + hull-damage sparks, deflector screen, pack escorts
                            (geometry + render share canvas-three.js state — must load after it)
 canvas-2d.js             — 2D schematics: Defiant hull / Enterprise hull / enemy / power
 ui.js                    — deck switching, _EL DOM cache, global UI sync, scoring, end-game
