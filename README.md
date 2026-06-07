@@ -61,10 +61,11 @@ Starfleet's flagship from the TNG films. Larger, tougher, and bristling with pha
 - **Ship Selection**: Choose USS Defiant or USS Enterprise NCC-1701-E before each engagement — each with unique weapons, stats, special abilities, and crew
 - **Four Command Stations**: Tactical (weapons), Engineering (power & repairs), Helm (navigation), Captain's Chair (command overview + crew orders)
 - **Two Game Modes**:
-  - **Single Engagement** — pick Normal / Hard / Elite, fight one random enemy from that pool
-  - **Campaign Run** — fight all 9 enemies in order from easiest to hardest; score accumulates, ship restores between fights; Borg Probe is the final boss
+  - **Single Engagement** — pick Normal / Hard / Elite, fight one random enemy from that pool (the Jem'Hadar Attack Ship arrives as a **pack** — see Wolfpack below)
+  - **Campaign Run** — fight all 9 enemies in order from easiest to hardest; score accumulates, ship restores between fights; difficulty climbs into a Dominion → Borg finale
 - **Authentic LCARS Interface**: Full LCARS styling with canon ships from Klingons, Romulans, Cardassians, Dominion, and Borg. 2D schematics feature LCARS-style section headers, inline mini-bars for hull/shields/systems/lock, scan bonus readouts, and adaptive resistance displays
 - **9 Enemy Vessels**: Each with faction-specific AI, weapons, combat phase arcs, and hull milestone events
+- **Wolfpack**: The Jem'Hadar Attack Ship never fights alone — it arrives as a pack of **3** (Normal) or **4** (Hard) full-strength, independently-targetable fighters. Switch your lock to any living ship via the left-panel pack roster (or focus-fire one down); escorts harass you with polaron volleys from formation, and victory requires destroying the entire pack
 - **3D Spatial Battle View**: Three.js WebGL — Defiant and Sovereign-class meshes, authentic Star Trek weapon colours (amber phasers, orange-red photon torpedoes, blue-white quantum torpedoes, green plasma), faction-coloured 3D beam tubes fired from **correct hull hardpoints** (pulse cannons from nacelle flanks, nose emitter from bow, saucer arrays from saucer rim, etc.), enemy beams from faction-accurate positions (Klingon wing tips, Romulan head/boom emitters, Jem'Hadar forward wing cannons, Borg all 6 faces), torpedo impacts with shockwave rings, nacelle exhaust particles (scale with helm speed), burst-salvo shockwave, saucer separation flies independently, Jem'Hadar ramming trajectory indicator
 - **Advanced Combat**:
   - Real-time four-sector shield management with sector reinforcement and equalisation
@@ -80,7 +81,7 @@ Starfleet's flagship from the TNG films. Larger, tougher, and bristling with pha
 - **Engineering Power System**: Zero-sum EPS allocation across 11 systems, thermal buildup, breaker trips, warp core cascade failures, one-click power presets
 - **Battle Realism**: Enemy hull milestones (75/50/25/10%) trigger faction dialogue and automatic reactions — Klingon death salvo, Romulan emergency cloak, Jem'Hadar fury scaling
 - **Dynamic AI**: Klingons close range; Romulans fire plasma immediately on decloak; Borg adapt per-weapon; Jem'Hadar fire faster as they take damage
-- **Captain's Chair**: Live crew comms feed (ship-appropriate crew voices), 40+ order buttons, autonomous crew automation with command overrides
+- **Captain's Chair**: Live crew comms feed (ship-appropriate crew voices), 40+ order buttons, autonomous crew automation with command overrides, and a ship-aware **Signature Systems** panel with live ready / cooldown / active / expended status for every special ability (cloak · overcharge · unstable torpedo · power dump · max-pulse burst on the Defiant; deflector · max-phaser output · tricobalt warhead on the Enterprise-E)
 - **Named Crew**: Casualties degrade station effectiveness — both crews fully voiced with distinct speech patterns
 - **Last Stand**: Below 20% hull the crew reacts — helm goes full impulse, engineering reroutes shield power, Worf calls battle stations; viewport pulses red
 - **Post-battle Debrief**: Full tactical report — weapons by type, breaches by sector, systems tripped, peak hit, crew status, enemy phase reached
@@ -188,7 +189,7 @@ Navigate the ship and control the engagement. Both auto-tactical and auto-engine
 
 ### ⭐ Captain's Chair
 
-All three stations fully automated. Issue orders and override crew decisions.
+All three stations fully automated. Issue orders and override crew decisions. A dedicated **✦ Signature Systems** panel surfaces the active ship's special abilities with live status — *ready* / *cooling (Ns)* / *active (Ns)* / *expended* — so you can time the cloak, overload modes, deflector, or one-shot tricobalt as cleanly as the Tactical station can.
 
 **Defiant crew:**
 
@@ -212,14 +213,14 @@ All three stations fully automated. Issue orders and override crew decisions.
 
 | Vessel | Faction | Signature Mechanic | Campaign Level |
 |---|---|---|---|
-| Jem'Hadar Attack Ship | Dominion | Polaron bypass (22%), **ram** at <20% hull | L1 |
-| Cardassian Scout | Cardassian | Fast lock (7.5/s), frequent harassment fire | L2 |
+| Cardassian Scout | Cardassian | Fast lock (7.5/s), frequent harassment fire | L1 |
+| Galor-Class Warship | Cardassian | Heavy disruptors, photon torpedoes, no cloak | L2 |
 | Romulan Bird-of-Prey | Romulan | Plasma torpedo (18s reload), fires **immediately on decloak**, sensor ghosts | L3 |
-| Galor-Class Warship | Cardassian | Balanced phasers, photon torpedoes | L4 |
-| Jem'Hadar Battle Cruiser | Dominion | Heavy polaron bypass, fury scaling, ramming | L5 |
-| K'Tinga Battle Cruiser | Klingon | Closes range (+40% close disruptors), cloak, **death salvo** at 10% | L6 |
-| Vor'Cha Attack Cruiser | Klingon | Wing disruptors, heavy torpedoes, close aggression, cloak | L7 |
-| D'Deridex Warbird | Romulan | Massive plasma (22s reload), sensor ghosts, emergency cloak at 25% | L8 |
+| K'Tinga Battle Cruiser | Klingon | Closes range (+40% close disruptors), cloak, **death salvo** at 10% | L4 |
+| Vor'Cha Attack Cruiser | Klingon | Wing disruptors, heavy torpedoes, close aggression, cloak | L5 |
+| D'Deridex Warbird | Romulan | Massive plasma (22s reload), sensor ghosts, emergency cloak at 25% | L6 |
+| Jem'Hadar Battle Cruiser | Dominion | Heavy polaron bypass, fury scaling, ramming | L7 |
+| Jem'Hadar Attack Ship | Dominion | Fights as a **pack of 3** — polaron bypass, 3× ramming threat | L8 |
 | Borg Probe | Borg | Per-weapon resistance 0–65%, tractor beam, escalating damage — **final boss** | L9 |
 
 ---
@@ -244,6 +245,8 @@ All three stations fully automated. Issue orders and override crew decisions.
 16. **Deep Scan**: Scan bonuses are permanent frequency locks, not timers — run a scan early and it pays off all fight. Disrupt scan (−50% enemy fire rate) is often the strongest opener
 17. **Fire at Will**: Use the quick Fire Phasers / Fire Torpedoes / Fire All buttons to keep up pressure; the simplified interface fires the best available weapons without hunting for individual array buttons
 18. **Subsystem targeting**: Targeting a specific system still deals hull damage as collateral — roughly 12–22 hull bleed per 100 damage depending on whether attack-vector shields are up. You can't avoid attriting the hull entirely, but focused targeting is still more efficient at destroying systems than general hull fire
+19. **Wolfpack**: Jem'Hadar fighters are individually fragile (420 hull, thin shields) but fight in threes with shield-bypassing polaron — **burst them down one at a time** rather than spreading fire. Use the left-panel pack roster to lock the lowest-hull ship and finish kills; every ship still alive is still shooting you
+20. **Pack ramming**: Each pack member can attempt a suicide run below 20% hull — with three of them, keep an evasive/Picard window in reserve and don't let multiple ships drop into the ram threshold at once
 
 ---
 
@@ -251,16 +254,18 @@ All three stations fully automated. Issue orders and override crew decisions.
 
 Pick your ship and station once, then fight all 9 enemies in order. Ship fully restored between every fight.
 
+The order is set by **measured threat** — gentle Alpha-quadrant patrol fights ease you in, then the Dominion and Borg are the real war. The genuine difficulty lands in the last three levels.
+
 | Level | Enemy | Key Challenge |
 |---|---|---|
-| L1 | Jem'Hadar Fighter | Fast, polaron bypass, ramming — learn the basics |
-| L2 | Cardassian Scout | Fast lock, constant harassment |
-| L3 | Romulan Bird-of-Prey | Decloak → instant plasma torpedo |
-| L4 | Galor Warship | Heavier fight, Hard multipliers begin |
-| L5 | Jem'Hadar Battle Cruiser | Gets faster as it takes damage — kill it quickly |
-| L6 | K'Tinga Battle Cruiser | Closes to brawling range — death salvo at 10% hull |
-| L7 | Vor'Cha Attack Cruiser | Wing disruptors devastate at close range |
-| L8 | D'Deridex Warbird | Longest fight — plasma reload windows are your opportunity |
+| L1 | Cardassian Scout | Fast lock, constant harassment — learn the controls |
+| L2 | Galor-Class Warship | First real slugfest — no cloak, heavy disruptors |
+| L3 | Romulan Bird-of-Prey | Decloak → instant plasma torpedo; cloak mechanic intro |
+| L4 | K'Tinga Battle Cruiser | First Hard level — closes to brawling range, death salvo at 10% |
+| L5 | Vor'Cha Attack Cruiser | Wing disruptors devastate at close range |
+| L6 | D'Deridex Warbird | Tankiest single ship — plasma reload windows are your opportunity |
+| L7 | Jem'Hadar Battle Cruiser | Polaron **bypass** ignores your shields; gets faster as it dies |
+| L8 | Jem'Hadar Attack Pack | **Three** fighters at once — sustained bypass + triple ramming threat |
 | **L9** | **Borg Probe** | Rotate all weapon types; never fire the same weapon consecutively |
 
 ---
@@ -296,13 +301,13 @@ Pick your ship and station once, then fight all 9 enemies in order. Ship fully r
 | Elite | **Borg Probe only** | ×1.40 | ×1.20 | ×1.25 | ×0.80 | ×0.85 | Subsystem strikes (25%) |
 
 ### Campaign difficulty brackets
-- Levels 1–3: Normal · Levels 4–8: Hard · Level 9 (Borg): Elite
+- Levels 1–3: Normal · Levels 4–7: Hard · Level 8 (Jem'Hadar pack): Normal multipliers but **3 ships** · Level 9 (Borg): Elite
 
 ---
 
 ## Architecture
 
-No build step. 20 plain JS files loaded in order (+ an optional test harness):
+No build step. 21 plain JS files loaded in order (+ an optional test harness):
 
 ```
 config.js                — constants: DIFFICULTY, ENEMY_CONFIGS, ARRAYS_DICTIONARY,
@@ -318,6 +323,8 @@ encounter-phases.js      — faction encounter phase arcs, hull milestone events
                            Klingon death salvo
 enemy-ai.js              — enemy cloaking AI, sensor ghosts, mechanics timers, Jem'Hadar
                            ramming, AI loop, enemy fire, enemy shield regen
+pack.js                  — Wolfpack: Jem'Hadar Attack Ships fight 3–4 at a time. Active-target
+                           swap model, escort harassment fire, target selection, victory gate
 auto-delegation.js       — computer management of uncrewed stations (auto-engineering,
                            auto-tactical, captain-mode autonomous crew behaviours)
 command.js               — Captain's Chair: crew reports (ship-aware), order cooldowns, crew AI
