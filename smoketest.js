@@ -19,9 +19,48 @@
 // the Playwright CI runner in tests/run-smoke.mjs). Failures use console.error.
 // ============================================================
 
+// ── Deterministic sim clock (headless) ───────────────────────────────────
+// The game uses setTimeout()/performance.now() for delayed gameplay effects
+// (enemy cloak transition, decloak alpha strike, Borg tractor 8s release, burst/
+// torpedo staggers …). In a synchronous sim loop those never fire (wall-clock
+// barely advances), which silently froze e.g. the tractor ON forever and made
+// playtests wrong. This shim makes both deterministic and sim-time-driven so the
+// harness exercises them, then AUTO-RESTORES on the next real event-loop turn —
+// the whole synchronous sim burst runs first — so it can never leak into live play.
+let _SIM = { on:false, t:0, q:[], realST:null, realPN:null };
+function _simClockInstall() {
+  if (!_SIM.on) {
+    _SIM.realST = window.setTimeout.bind(window);   // native setTimeout needs window as `this`
+    _SIM.realPN = performance.now.bind(performance);
+    window.setTimeout = (fn, delay) => { _SIM.q.push({ due: _SIM.t + (delay || 0), fn }); return 0; };
+    performance.now  = () => _SIM.t;
+    _SIM.on = true;
+    _SIM.realST(() => _simClockRestore(), 0);   // self-heal once control returns to the loop
+  }
+  _SIM.t = 0; _SIM.q = [];   // fresh clock per engagement
+}
+function _simClockRestore() {
+  if (!_SIM.on) return;
+  window.setTimeout = _SIM.realST;
+  performance.now   = _SIM.realPN;
+  _SIM.on = false; _SIM.q = [];
+}
+function _simClockAdvance(dt) {
+  if (!_SIM.on) return;
+  _SIM.t += dt;
+  let guard = 0;
+  while (guard++ < 4000) {
+    const i = _SIM.q.findIndex(x => x.due <= _SIM.t);
+    if (i < 0) break;
+    const item = _SIM.q.splice(i, 1)[0];
+    try { item.fn(); } catch (e) {}
+  }
+}
+
 // Mirror of masterSimulationCoreLoop's core subsystem calls, minus RAF and
 // canvas rendering. Kept deliberately close to the real loop body.
 function _smokeAdvance(dt) {
+  _simClockAdvance(dt);   // fire any setTimeout-scheduled gameplay effects now due
   G.lastFrameTimestamp += dt;
   if (G.shieldHitFlash.player.timer > 0) G.shieldHitFlash.player.timer = Math.max(0, G.shieldHitFlash.player.timer - dt);
   if (G.shieldHitFlash.enemy.timer  > 0) G.shieldHitFlash.enemy.timer  = Math.max(0, G.shieldHitFlash.enemy.timer  - dt);
@@ -47,13 +86,17 @@ function _smokeAdvance(dt) {
   processRepairQueues(dt);
   processAutomatedDelegation(dt);
   processEnemyAI(dt);
+  if (typeof processPackEscorts === 'function') processPackEscorts(dt);   // wolfpack escorts
   tickCaptainCooldowns(dt);
   tickCaptainManoeuvres(dt);
   processDeepScan(dt);
 
   G.threat.hull = Math.min(G.threat.maxHull, G.threat.hull + G.threat.recoveryCoefficient * (dt / 1000));
   G.threatCycleTimer += dt;
-  const fi = getEffectiveFireInterval() * (G.enemyPhaseFireMult || 1.0) * (G.weaponsDisrupted ? 2 : 1);
+  // Mirror the real loop's Jem'Hadar fury + pack-berserk fire-rate factors.
+  const _cfg = ENEMY_CONFIGS[G.enemyArchetype];
+  const _jemFury = (_cfg && _cfg.faction === 'Dominion') ? Math.max(0.50, 1.0 - (1.0 - G.threat.hull / G.threat.maxHull) * 0.55) : 1.0;
+  const fi = getEffectiveFireInterval() * (G.enemyPhaseFireMult || 1.0) * (G.weaponsDisrupted ? 2 : 1) * _jemFury * (G.packBerserk ? 0.6 : 1.0);
   if (G.threatCycleTimer > fi) { G.threatCycleTimer = 0; executeThreatCounterVolley(); }
 }
 
@@ -81,6 +124,7 @@ function _smokeInvariants() {
 // Force a specific enemy regardless of difficulty pool by borrowing campaign
 // mode's archetype-preservation path, then immediately clearing it.
 function _smokeStartEngagement(shipKey, station, enemyKey, diff) {
+  _simClockInstall();   // deterministic setTimeout/performance.now for this engagement
   setDifficulty(diff);
   selectPlayerShip(shipKey);
   G.enemyArchetype = enemyKey;
@@ -234,6 +278,26 @@ function runSmokeTests(opts) {
         while (G.pack.filter(m => m.alive).length > 0 && guard++ < 10) _resolveEnemyDestroyed('test kill');
         return G.dead ? null : 'final kill did not conclude the engagement';
       } },
+    { tag: 'sim-clock: enemy cloak transition completes', fn: () => {
+        _smokeStartEngagement('defiant', 'tactical', 'ktinga', 'hard');
+        triggerEnemyCloak(ENEMY_CONFIGS['ktinga']);   // schedules setTimeout(1500) → G.enemyCloaked=true
+        if (G.enemyCloaked) return 'cloaked instantly (transition should take 1.5s)';
+        for (let i = 0; i < 120; i++) _smokeAdvance(20);   // advance 2.4s of sim time
+        if (!G.enemyCloaked) return 'cloak transition never completed under sim clock';
+        const ie = _smokeInvariants(); return ie.length ? ie.join(', ') : null;
+      } },
+    { tag: 'sim-clock: setTimeout fires at its delay, not instantly/never', fn: () => {
+        // Validates the deterministic clock itself (the mechanism behind tractor
+        // release, cloak transitions, decloak strikes). Non-tractor enemy so no
+        // AI re-triggers interfere.
+        _smokeStartEngagement('defiant', 'tactical', 'galor_class', 'hard');
+        let fired = false;
+        setTimeout(() => { fired = true; }, 8000);
+        for (let i = 0; i < 300; i++) _smokeAdvance(20);   // 6s — must NOT have fired
+        if (fired) return 'timer fired too early (<8s)';
+        for (let i = 0; i < 150; i++) _smokeAdvance(20);   // +3s → 9s — must have fired
+        return fired ? null : 'sim clock never fired an 8s timer';
+      } },
   ];
   scenarios.forEach(sc => {
     let detail = null;
@@ -244,6 +308,7 @@ function runSmokeTests(opts) {
   });
 
   // Clean up
+  _simClockRestore();   // restore real setTimeout/performance.now (also self-heals next tick)
   G.dead = false; G.running = false;
   try { if (typeof returnToSetup === 'function') returnToSetup(); } catch (e) {}
 
