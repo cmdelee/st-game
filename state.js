@@ -76,6 +76,8 @@ const G = {
 
   weaponsDisrupted:false, weaponsDisruptedTimer:0,
   enemyDecloakStrike:false,   // one-shot: next enemy volley is a shield-bypassing decloak ambush
+  campaignDmgMult:1.0,        // campaign per-level escalation (see _applyCampaignEscalation); 1.0 in single battles
+  campaignBypass:0,           // campaign per-level shield-bypass fraction (0–1); 0 in single battles
   enemyTractorActive:false,
   enemyAdaptiveHits:0,
   enemyAdaptiveResist:{ cannon_pu:0, cannon_pl:0, cannon_su:0, cannon_sl:0, nose_beam:0, torpedoes:0, photon:0 },

@@ -182,6 +182,7 @@ function _packEscortFire(m) {
   let targetSector = valid.reduce((w, s) => (G.player.shields[s] < G.player.shields[w] ? s : w), valid[0] || 'fore');
 
   let rawDmg = (Math.random() * (sys.dmgMax - sys.dmgMin) + sys.dmgMin) * (sys.health / 100) * diff.enemyDmgMult;
+  if (G.campaignDmgMult !== 1)         rawDmg *= G.campaignDmgMult;
   if (G.activePanel === 'engineering') rawDmg *= 0.85;
   if (G.attackPatternOmegaActive)      rawDmg *= 1.20;
   if (G.deflectorActive)               rawDmg *= 0.65;

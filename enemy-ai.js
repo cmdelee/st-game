@@ -598,6 +598,7 @@ function executeThreatCounterVolley() {
   if (G.deflectorActive)               rawDmg *= 0.65;   // antiproton deflector screen −35%
   if (G.packBerserk)                   rawDmg *= 1.25;   // last pack survivor hits harder
   if (_ambush)                         rawDmg *= 1.40;   // point-blank decloak alpha strike
+  if (G.campaignDmgMult !== 1)         rawDmg *= G.campaignDmgMult;   // campaign per-level escalation
 
   if (cfg.prefersCloseRange && G.enemyRangeBracket === 'close' && chosenSys.systemTargetKey === 'disruptors')
     rawDmg *= (cfg.closeRangeDmgBonus || 1.4);
@@ -636,6 +637,8 @@ function executeThreatCounterVolley() {
   // Decloak ambush bypasses ~40% of shields straight to hull (takes the stronger
   // of any existing polaron bypass) — sidesteps the player's shield/regen edge.
   if (_ambush) { shieldPenMult = Math.min(shieldPenMult, 0.60); hullPassthrough = Math.max(hullPassthrough, rawDmg * 0.40); }
+  // Campaign escalation bypass — a fraction of every shot ignores shields.
+  if (G.campaignBypass > 0) { shieldPenMult = Math.min(shieldPenMult, 1 - G.campaignBypass); hullPassthrough = Math.max(hullPassthrough, rawDmg * G.campaignBypass); }
 
   // An off-frequency surprise strike isn't on the rotated shield frequency.
   if (G.shieldFreqActive && !_ambush) {
@@ -787,6 +790,8 @@ function enemyResetForBattle(cfg, diff) {
   G.enemyTractorActive       = false;
   G.enemyCloaked             = false;
   G.enemyDecloakStrike       = false;
+  G.campaignDmgMult          = 1.0;   // overwritten by _applyCampaignEscalation in campaign mode
+  G.campaignBypass           = 0;
   G.enemyCloakCooldown       = 0;
   G.enemyCloakVulnTimer      = 0;
   G.enemyCloakPower          = 100;

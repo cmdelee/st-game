@@ -47,10 +47,35 @@ function _launchCampaignLevel() {
   G.campaignScore        = savedScore;
   G.campaignLevelResults = savedResults;
 
+  // Apply the per-level campaign escalation on top of the base diff multipliers
+  // (initiateVesselSimulation has just reset enemy stats via enemyResetForBattle).
+  _applyCampaignEscalation();
+
   // G.running and initEncounterPhases() are handled by startCombat() when the
   // player engages from the pre-battle briefing — do not force them here
 
   _updateCampaignHUD();
+}
+
+// Escalate the current campaign level's enemy beyond its base diff so each level
+// is a genuine step up: hull (longer fight), lockRate (more frequent torpedo
+// bursts), plus runtime damage/bypass mults read at fire time. Scales every
+// wolfpack member too. No-op when the level has no `scale` (or single battle).
+function _applyCampaignEscalation() {
+  const entry = CAMPAIGN_ORDER[G.campaignLevel];
+  const s = entry && entry.scale;
+  G.campaignDmgMult = (s && s.dmg)    || 1.0;
+  G.campaignBypass  = (s && s.bypass) || 0;
+  if (!s) return;
+  const hull = s.hull || 1, lock = s.lock || 1;
+  if (hull !== 1) {
+    G.threat.hull    = Math.round(G.threat.hull * hull);
+    G.threat.maxHull = Math.round(G.threat.maxHull * hull);
+    if (G.packActive && G.pack.length) {
+      G.pack.forEach(m => { m.hull = Math.round(m.hull * hull); m.maxHull = Math.round(m.maxHull * hull); });
+    }
+  }
+  if (lock !== 1) G.threat.lockRate *= lock;
 }
 
 function _updateCampaignHUD() {

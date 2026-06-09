@@ -391,16 +391,27 @@ const ENCOUNTER_PHASES = {
 };
 
 // ── Campaign level order (easiest → hardest, data-driven from fight analysis) ─
+// Campaign levels. `scale` is a campaign-only escalation applied on top of the
+// per-level `diff` multipliers (see _applyCampaignEscalation in campaign.js) so
+// each level is a genuine step up from the previous: hull = longer fight,
+// lock = more frequent torpedo bursts (those breach shields), dmg = harder hits,
+// bypass = fraction of every shot that ignores shields straight to hull (the
+// only thing that reliably costs a well-defended player hull). Single battles
+// ignore `scale` entirely. Tuned via scripted Defiant/tactical playthroughs.
 const CAMPAIGN_ORDER = [
-  { level:1, archetype:'cardassian_scout',     diff:'normal', label:"LEVEL 1",  title:"Cardassian Scout Vessel", subtitle:"Cardassian — Fast lock · Harassment fire" },
-  { level:2, archetype:'galor_class',          diff:'normal', label:"LEVEL 2",  title:"Galor-Class Warship",     subtitle:"Cardassian — Heavy disruptors · Photon torpedoes" },
-  { level:3, archetype:'romulan_bop',          diff:'normal', label:"LEVEL 3",  title:"Romulan Bird-of-Prey",    subtitle:"Romulan — Cloaking · Plasma torpedo · Sensor ghosts" },
-  { level:4, archetype:'ktinga',               diff:'hard',   label:"LEVEL 4",  title:"K'Tinga Battle Cruiser",  subtitle:"Klingon — Cloaking · Closes to brawl range [HARD]" },
-  { level:5, archetype:'vor_cha',              diff:'hard',   label:"LEVEL 5",  title:"Vor'Cha Attack Cruiser",  subtitle:"Klingon — Wing disruptors · Heavy torpedoes [HARD]" },
-  { level:6, archetype:'romulan_warbird',      diff:'hard',   label:"LEVEL 6",  title:"D'Deridex Warbird",       subtitle:"Romulan — Massive plasma · Emergency cloak [HARD]" },
-  { level:7, archetype:'jem_hadar_battleship', diff:'hard',   label:"LEVEL 7",  title:"Jem'Hadar Battle Cruiser",subtitle:"Dominion — Heavy polaron bypass · Ramming · Fury [HARD]" },
-  { level:8, archetype:'jem_hadar_fighter',    diff:'normal', label:"LEVEL 8",  title:"Jem'Hadar Attack Pack",   subtitle:"Dominion — Wolfpack of 3 · Polaron bypass · Ramming [SWARM]" },
-  { level:9, archetype:'borg_probe',           diff:'elite',  label:"LEVEL 9",  title:"Borg Probe",              subtitle:"Borg — Adaptive shielding · Tractor beam [ELITE]" },
+  // NB: `bypass` interacts multiplicatively with each enemy's burst profile, so
+  // intrinsically punchy ships (Vor'Cha close-range bonus, Warbird/BoP big plasma)
+  // need LESS scaling than their hull suggests — the scale compensates for base
+  // lethality to keep the measured curve monotonic, not the raw stat line.
+  { level:1, archetype:'cardassian_scout',     diff:'normal', label:"LEVEL 1",  title:"Cardassian Scout Vessel", subtitle:"Cardassian — Fast lock · Harassment fire",                          scale:{ hull:1.00, dmg:1.00, lock:1.00, bypass:0.00 } },
+  { level:2, archetype:'galor_class',          diff:'normal', label:"LEVEL 2",  title:"Galor-Class Warship",     subtitle:"Cardassian — Heavy disruptors · Photon torpedoes",                  scale:{ hull:1.08, dmg:1.20, lock:1.20, bypass:0.08 } },
+  { level:3, archetype:'romulan_bop',          diff:'normal', label:"LEVEL 3",  title:"Romulan Bird-of-Prey",    subtitle:"Romulan — Cloaking · Plasma torpedo · Sensor ghosts",               scale:{ hull:1.12, dmg:1.30, lock:1.30, bypass:0.12 } },
+  { level:4, archetype:'ktinga',               diff:'hard',   label:"LEVEL 4",  title:"K'Tinga Battle Cruiser",  subtitle:"Klingon — Cloaking · Closes to brawl range [HARD]",                 scale:{ hull:1.12, dmg:1.30, lock:1.30, bypass:0.14 } },
+  { level:5, archetype:'vor_cha',              diff:'hard',   label:"LEVEL 5",  title:"Vor'Cha Attack Cruiser",  subtitle:"Klingon — Wing disruptors · Heavy torpedoes [HARD]",                scale:{ hull:1.14, dmg:1.10, lock:1.15, bypass:0.075 } },
+  { level:6, archetype:'romulan_warbird',      diff:'hard',   label:"LEVEL 6",  title:"D'Deridex Warbird",       subtitle:"Romulan — Massive plasma · Emergency cloak [HARD]",                 scale:{ hull:1.18, dmg:1.35, lock:1.40, bypass:0.19 } },
+  { level:7, archetype:'jem_hadar_battleship', diff:'hard',   label:"LEVEL 7",  title:"Jem'Hadar Battle Cruiser",subtitle:"Dominion — Heavy polaron bypass · Ramming · Fury [HARD]",           scale:{ hull:1.10, dmg:1.12, lock:1.08, bypass:0.06 } },
+  { level:8, archetype:'jem_hadar_fighter',    diff:'normal', label:"LEVEL 8",  title:"Jem'Hadar Attack Pack",   subtitle:"Dominion — Wolfpack of 3 · Polaron bypass · Ramming [SWARM]",       scale:{ hull:1.00, dmg:1.05, lock:1.00, bypass:0.00 } },
+  { level:9, archetype:'borg_probe',           diff:'elite',  label:"LEVEL 9",  title:"Borg Probe",              subtitle:"Borg — Adaptive shielding · Tractor beam [ELITE]",                  scale:{ hull:1.00, dmg:1.00, lock:1.00, bypass:0.00 } },
 ];
 
 // ── Player ship configurations ────────────────────────────────

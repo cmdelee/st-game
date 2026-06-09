@@ -255,7 +255,7 @@ All three stations fully automated. Issue orders and override crew decisions. A 
 
 Pick your ship and station once, then fight all 9 enemies in order. Ship fully restored between every fight.
 
-The order is set by **measured threat** — gentle Alpha-quadrant patrol fights ease you in, then the Dominion and Borg are the real war. The genuine difficulty lands in the last three levels.
+Every level is a genuine step up from the last. Each carries a campaign-only escalation (more hull, faster targeting, harder hits, and a growing fraction of fire that bypasses your shields) tuned via scripted playthroughs so the difficulty climbs smoothly — gentle Alpha-quadrant patrols ease you in, the Klingon/Romulan hard tier ramps the pressure, and the Dominion/Borg endgame is the real war.
 
 | Level | Enemy | Key Challenge |
 |---|---|---|
@@ -303,6 +303,7 @@ The order is set by **measured threat** — gentle Alpha-quadrant patrol fights 
 
 ### Campaign difficulty brackets
 - Levels 1–3: Normal · Levels 4–7: Hard · Level 8 (Jem'Hadar pack): Normal multipliers but **3 ships** · Level 9 (Borg): Elite
+- On top of the base bracket, each level applies a **per-level escalation** (`scale` in `CAMPAIGN_ORDER`) so difficulty rises monotonically — measured ~0% hull lost at L1 climbing to a near-unwinnable Borg at L9. Single battles do **not** escalate.
 
 ---
 
