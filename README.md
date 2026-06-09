@@ -237,7 +237,7 @@ All three stations fully automated. Issue orders and override crew decisions. A 
 7. **Regenerative Shields (Enterprise-E)**: The ×1.4 regen bonus means even heavily damaged shield sectors recover quickly — play aggressively and let the shields do their job
 8. **Warp core cascades**: A tripped core spikes stress on engines (+35%), shields (+22%), sensors (+15%) — keep EPS stress low before a core risk
 9. **Last stand**: Below 20% hull the crew acts immediately — use the window for overload modes the auto-delegation won't think of
-10. **Borg**: Rotate through all weapon types — each builds resistance independently. The Enterprise's broad array roster makes rotation easier but you must still do it
+10. **Borg (the winning strategy)**: Don't try to out-shoot its shields — they regenerate faster the longer you fight (regen scales with the **Regenerative Matrix** subsystem *and* ramps as it adapts). **Target the Regenerative Matrix first** to gut its shield regen, *then* switch to the hull and burst it down with Overcharge + Maximum Pulse Burst while **rotating weapon types** (each builds resistance independently — never fire the same type twice running). Ride out the tractor beam (it releases after ~8s) and fire hard in the gaps. Done right the "unbeatable" Borg folds in about a minute; done wrong it out-regens everything you have
 11. **Klingons**: Stay at long range; their disruptors gain +40% at close quarters
 12. **Romulan ghosts**: False sensor contacts while cloaked — hold fire and await the real decloak window
 13. **Jem'Hadar ram**: Pump fore shields and activate Evasive when you see "RAMMING RUN"
@@ -267,7 +267,7 @@ Every level is a genuine step up from the last. Each carries a campaign-only esc
 | L6 | D'Deridex Warbird | Tankiest single ship — plasma reload windows are your opportunity |
 | L7 | Jem'Hadar Battle Cruiser | Polaron **bypass** ignores your shields; gets faster as it dies |
 | L8 | Jem'Hadar Attack Pack | **Three** fighters at once — sustained bypass + triple ramming threat |
-| **L9** | **Borg Probe** | Rotate all weapon types; never fire the same weapon consecutively |
+| **L9** | **Borg Probe** | Kill the **Regenerative Matrix** first to stop its shields healing, then burst the hull while rotating weapon types — never fire the same type twice running |
 
 ---
 
