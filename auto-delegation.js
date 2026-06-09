@@ -7,6 +7,68 @@
 //             helm.js, command.js (postCrewReport — runtime only)
 // ============================================================
 
+// ── Smart auto-tactical fire ──────────────────────────────────
+// A competent delegated tactical officer: focus-fires wolfpack swarms, and vs
+// Borg adaptive shielding it collapses the Regenerative Matrix first, rotates
+// weapon types to outpace adaptation, and spends overload/burst tools. Without
+// this the auto-crew just dumped every weapon at the hull — which can't solve
+// the Borg puzzle or the pack, leaving L8/L9 unwinnable from non-tactical stations.
+function _autoTacticalFire(ce, torpChance) {
+  const cfg = ENEMY_CONFIGS[G.enemyArchetype];
+
+  // Wolfpack: the active member is burned down then promotion advances to the
+  // next (in pack.js). We deliberately do NOT auto-swap targets here — each
+  // selectPackTarget resets the lock, which would starve the lock-gated torpedoes
+  // and lower DPS. Just keep firing the active member to death.
+
+  const isEnt = G.playerShipKey === 'enterprise_e';
+  // The delegated crew leverages ready overload power on every engagement (these
+  // self-guard on cooldown/ship and only run for non-tactical stations, so they
+  // never conflict with manual tactical play).
+  if (G.overchargeReady) (isEnt ? executeMaxPhaserOutput : executeCannonOvercharge)();
+
+  if (cfg && cfg.adaptiveShields) {
+    // Borg: collapse the regen matrix (its health drives shield regen), then hull,
+    // and rotate weapon types so no single one caps its adaptation resistance.
+    const sm   = G.enemySystems.shields_sys;
+    const want = (sm && sm.health > 35) ? 'shields_sys' : 'hull';
+    if (G.targetedSubsystemType !== want && typeof setEnemyTarget === 'function')
+      setEnemyTarget(want, want === 'hull' ? 'Hull' : 'Regenerative Matrix', 'All');
+    if (G.maxPulseBurstReady && !isEnt) executeMaximumPulseBurst();   // one-shot heavy burst
+    if (G.tricobalReady && isEnt)       executeTricobalWarhead();
+    _autoRotateFire();
+  } else {
+    // Conventional fight: salvo + burst (all cannons / concentrated arrays) + torps.
+    if (G.burstFireReady && G.lockProgress >= 20 && !G.cloaked && !G.enemyTractorActive)
+      (isEnt ? executeConcentratedPhaserFire : executeBurstFireSalvo)();
+    fireEnergyWeapons();
+    // Torpedoes are limited ordnance — only spend them with a real lock. Fire
+    // Coordination (engineering) commits them aggressively to speed kills.
+    const torpGate = G.fireCoordination ? 5 : 25;
+    if (G.lockProgress >= torpGate && Math.random() < torpChance * ce) fireTorpedoBanks();
+  }
+}
+
+// Fire the 3 lowest-adaptation-resistance in-arc weapons (vs adaptive shields)
+// so no single weapon type caps its resistance.
+function _autoRotateFire() {
+  const aw = G.activeWeaponArrays || ARRAYS_DICTIONARY;
+  const list = Object.keys(aw).map(k => ({ k, w: aw[k], adapt: aw[k].isPhoton ? 'photon' : aw[k].parentSystem }))
+    .filter(({ w }) => {
+      const ps = G.systems[w.parentSystem];
+      if (!ps || ps.tripped || ps.health < 10) return false;
+      const aft = w.arc.includes('aft') && !w.arc.includes('fore');
+      const cap = (aft && ps.aftCap !== undefined) ? ps.aftCap : ps.cap;
+      if (cap < w.cost) return false;
+      if (w.isQuantum && G.player.torpedoes <= 0) return false;
+      if (w.isPhoton && G.player.photonTorpedoes <= 0) return false;
+      if (!w.isPhoton && G.lockProgress < 5) return false;
+      return weaponInArc(w);
+    });
+  list.sort((a, b) => (G.enemyAdaptiveResist[a.adapt] || 0) - (G.enemyAdaptiveResist[b.adapt] || 0));
+  list.slice(0, 3).forEach(({ k }) => fireSelectedArray(k));
+}
+
 function processAutomatedDelegation(dt) {
   const isCaptain  = G.playerChosenStation === 'captain';
   const runAutoEng = G.playerChosenStation === 'tactical' || G.playerChosenStation === 'helm' || isCaptain;
@@ -25,6 +87,17 @@ function processAutomatedDelegation(dt) {
   // ── Auto-engineering: relay resets + repair dispatch ─────────
   if (runAutoEng) {
     const ce = getCrewEfficiency('engineering');
+    // Auto-O'Brien wields the engineering combat toolkit so Helm/Captain players
+    // get the same surge/forcefield support an engineer would provide.
+    const _enemyUp = G.threat.hull > 0 && !(G.enemyCloaked && G.enemyCloakVulnTimer <= 0);
+    // Coordinate fire (aggressive, torpedo-heavy) while engaged so the delegated
+    // crew can win DPS races (the wolfpack); only auto-set for non-engineering
+    // stations (runAutoEng is false when the player IS the engineer).
+    if (_enemyUp && !G.fireCoordination) G.fireCoordination = true;
+    if (_enemyUp && G.weaponSurgeCooldown <= 0 && !G.weaponSurgeActive && typeof divertPowerToWeapons === 'function')
+      divertPowerToWeapons();
+    if (G.player.hull / G.player.maxHull < 0.60 && G.forcefieldsCooldown <= 0 && !G.forcefieldsActive && typeof engageEmergencyForcefields === 'function')
+      engageEmergencyForcefields();
     const anyTripped = Object.values(G.systems).some(s => s.tripped);
     if (anyTripped) Object.keys(G.systems).forEach(key => {
       const sys = G.systems[key];
@@ -74,10 +147,12 @@ function processAutomatedDelegation(dt) {
   }
 
   // ── Auto-tactical: weapons + worf special abilities ──────────
-  // Fire at Will: lower interval, lower lock threshold, more torpedo use, auto deep scan
-  const _fireClock  = G.fireAtWill ? 1400 : 2400;
-  const _lockMin    = G.fireAtWill ? 0    : 8;
-  const _torpChance = G.fireAtWill ? 0.65 : 0.35;
+  // Fire at Will (captain) / Fire Coordination (engineering) both make the crew
+  // fire faster, at lower lock, with heavy torpedo use.
+  const _aggressive = G.fireAtWill || G.fireCoordination;
+  const _fireClock  = _aggressive ? 1400 : 2400;
+  const _lockMin    = _aggressive ? 0    : 8;
+  const _torpChance = _aggressive ? 0.85 : 0.35;
 
   if (runAutoTac && !G.holdFire) {
     G.autoTacticalFireClock += dt;
@@ -90,12 +165,7 @@ function processAutomatedDelegation(dt) {
         const ce = getCrewEfficiency('tactical');
         if (Math.random() < ce) {
           const warpOnline = !G.systems.warp_core.tripped || G.batteryActive;
-          if (warpOnline) {
-            fireEnergyWeapons();
-            // Torpedoes are limited ordnance — only spend them with a real lock,
-            // never blind-fired automatically.
-            if (G.lockProgress >= 25 && Math.random() < _torpChance * ce) fireTorpedoBanks();
-          }
+          if (warpOnline) _autoTacticalFire(ce, _torpChance);
         }
       }
     }

@@ -103,6 +103,11 @@ const G = {
   shieldFreqCooldown:0,
   shieldFreqWeaponType:null,
 
+  // Engineering combat toolkit — give the engineering station real combat agency
+  weaponSurgeActive:false, weaponSurgeTimer:0, weaponSurgeCooldown:0,   // +35% crew damage, faster caps, shields −50% (8s, 28s CD)
+  fireCoordination:false,                                               // toggle: crew fires aggressively + focus-fires
+  forcefieldsActive:false, forcefieldsTimer:0, forcefieldsCooldown:0,   // incoming −45% (5s, 30s CD)
+
   // EPS thermal buildup
   epsHeat:0,
   epsHeatCoolRate:8,

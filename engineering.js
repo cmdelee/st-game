@@ -156,6 +156,7 @@ function recalculateShieldRegenRate() {
   const regenBonus = (G.playerShipConfig || PLAYER_SHIP_CONFIGS.defiant).shieldRegenBonus || 1.0;
   // Defiant: 28MW → ~3.1/s, 60MW → ~6.7/s; Enterprise-E ×1.4 bonus (regenerative shielding)
   G.shieldRegenRate = Math.max(0.5, (sp / 9) * sh * regenBonus);
+  if (G.weaponSurgeActive) G.shieldRegenRate *= 0.5;   // Weapons Power Surge runs shields lean
   // Dirty flag: only touch the DOM when the displayed value actually changes.
   const _disp = G.shieldRegenRate.toFixed(1);
   if (_disp === G._lastRegenDisp) return;
@@ -691,7 +692,9 @@ function computeConduitConduction(dt) {
     // the antiproton tactical deflector is drawing EPS priority (Enterprise-E).
     if (sys.cap < 100 || (key === 'torpedoes' && sys.aftCap !== undefined && sys.aftCap < 100)) {
       const deflectorPenalty = G.deflectorActive ? 0.55 : 1.0;
-      const ls = (sys.allocatedPower * 0.6) * (sys.health / 100) * heatPenalty * deflectorPenalty;
+      // Weapons Power Surge dumps EPS into weapon capacitors → much faster recharge.
+      const surgeBoost = (G.weaponSurgeActive && sys.isWeapon) ? 1.8 : 1.0;
+      const ls = (sys.allocatedPower * 0.6) * (sys.health / 100) * heatPenalty * deflectorPenalty * surgeBoost;
       if (sys.cap < 100) sys.cap = Math.min(100, sys.cap + ls * sc);
       if (key === 'torpedoes' && sys.aftCap !== undefined && sys.aftCap < 100)
         sys.aftCap = Math.min(100, sys.aftCap + ls * sc);
@@ -779,6 +782,104 @@ function rebalanceShieldArrays() {
 // --- Battle reset (called by initiateVesselSimulation) ---
 // Owns player hull/shields/ordnance, all 11 systems, EPS/thermal, battery,
 // repair teams and ablative armour.
+// ============================================================
+// ENGINEERING COMBAT TOOLKIT — active combat agency for the engineering station
+// (offense surge, target coordination, defensive forcefields). All route their
+// effects through existing damage/cap/regen paths so they help the auto-crew the
+// engineer is supporting (and the player at any station).
+// ============================================================
+
+// ⚡ Weapons Power Surge — reroute EPS to weapons: +35% weapon damage and faster
+// capacitor recharge for 8s; shield regen halved while active. 28s cooldown.
+function divertPowerToWeapons() {
+  if (!G.running || G.dead) return;
+  if (G.weaponSurgeActive) { postLogEvent("Weapons power surge already active.", 'warn'); return; }
+  if (G.weaponSurgeCooldown > 0) { postLogEvent(`EPS surge capacitors recharging — ${Math.ceil(G.weaponSurgeCooldown/1000)}s.`, 'warn'); return; }
+  G.weaponSurgeActive = true; G.weaponSurgeTimer = 8000; G.weaponSurgeCooldown = 28000;
+  recalculateShieldRegenRate();
+  postLogEvent("⚡ WEAPONS POWER SURGE — rerouting EPS to weapons: +35% yield, rapid recharge. Shields running lean.", 'crit');
+  if (typeof postCrewReport === 'function') postCrewReport('obrien', "Rerouting power to the weapons grid, Captain — give 'em hell!", 'alert');
+  if (typeof _updateEngToolkitButtons === 'function') _updateEngToolkitButtons();
+}
+
+// 🎯 Fire Coordination — engineering takes target priority: the auto-crew fires
+// aggressively (always launches torpedoes, lower lock gate, focus-fires the
+// weakest pack member / Borg matrix). Toggle.
+function toggleFireCoordination() {
+  if (!G.running || G.dead) return;
+  G.fireCoordination = !G.fireCoordination;
+  postLogEvent(G.fireCoordination
+    ? "🎯 FIRE COORDINATION ENGAGED — directing concentrated, torpedo-heavy fire."
+    : "Fire coordination released — crew resumes standard fire discipline.", G.fireCoordination ? 'good' : 'info');
+  if (typeof postCrewReport === 'function') postCrewReport('obrien', G.fireCoordination ? "Coordinating fire solutions for the tactical grid, aye." : "Standing down fire coordination.", 'status');
+  if (typeof _updateEngToolkitButtons === 'function') _updateEngToolkitButtons();
+}
+
+// 🛡 Emergency Forcefields — divert power to structural integrity: incoming
+// damage −45% for 5s. 30s cooldown.
+function engageEmergencyForcefields() {
+  if (!G.running || G.dead) return;
+  if (G.forcefieldsActive) { postLogEvent("Emergency forcefields already active.", 'warn'); return; }
+  if (G.forcefieldsCooldown > 0) { postLogEvent(`Structural integrity field recharging — ${Math.ceil(G.forcefieldsCooldown/1000)}s.`, 'warn'); return; }
+  G.forcefieldsActive = true; G.forcefieldsTimer = 5000; G.forcefieldsCooldown = 30000;
+  postLogEvent("🛡 EMERGENCY FORCEFIELDS — structural integrity at maximum, incoming damage −45%.", 'good');
+  if (typeof postCrewReport === 'function') postCrewReport('obrien', "Emergency forcefields up — bracing the hull, Captain!", 'alert');
+  if (typeof _updateEngToolkitButtons === 'function') _updateEngToolkitButtons();
+}
+
+// Per-frame countdown for the toolkit (called from processNewMechanicsTimers so it
+// runs in both the real loop and the smoke harness).
+function tickEngineeringToolkit(dt) {
+  if (G.weaponSurgeActive) {
+    G.weaponSurgeTimer = Math.max(0, G.weaponSurgeTimer - dt);
+    if (G.weaponSurgeTimer <= 0) {
+      G.weaponSurgeActive = false;
+      recalculateShieldRegenRate();
+      postLogEvent("Weapons power surge expired — EPS returning to normal distribution.", 'info');
+      if (typeof _updateEngToolkitButtons === 'function') _updateEngToolkitButtons();
+    }
+  } else if (G.weaponSurgeCooldown > 0) {
+    G.weaponSurgeCooldown = Math.max(0, G.weaponSurgeCooldown - dt);
+    if (G.weaponSurgeCooldown <= 0 && typeof _updateEngToolkitButtons === 'function') _updateEngToolkitButtons();
+  }
+  if (G.forcefieldsActive) {
+    G.forcefieldsTimer = Math.max(0, G.forcefieldsTimer - dt);
+    if (G.forcefieldsTimer <= 0) {
+      G.forcefieldsActive = false;
+      postLogEvent("Emergency forcefields collapsed — structural field offline.", 'info');
+      if (typeof _updateEngToolkitButtons === 'function') _updateEngToolkitButtons();
+    }
+  } else if (G.forcefieldsCooldown > 0) {
+    G.forcefieldsCooldown = Math.max(0, G.forcefieldsCooldown - dt);
+    if (G.forcefieldsCooldown <= 0 && typeof _updateEngToolkitButtons === 'function') _updateEngToolkitButtons();
+  }
+}
+
+// Live state for the toolkit buttons (throttled via a per-state signature).
+function _updateEngToolkitButtons() {
+  const _set = (id, sig, txt, cls, dis, lit) => {
+    const btn = document.getElementById(id); if (!btn) return;
+    if (btn._sig === sig) return; btn._sig = sig;
+    const span = btn.querySelector('span');
+    // Keep the small descriptor span; update the leading label text node only.
+    if (span && btn.firstChild && btn.firstChild !== span) btn.firstChild.textContent = txt + ' ';
+    else btn.textContent = txt;
+    btn.className = 'pill-action-btn ' + cls;
+    btn.disabled = dis; btn.style.opacity = dis ? '0.4' : '1';
+    btn.style.boxShadow = lit ? '0 0 6px var(--warn)' : '';
+  };
+  // Weapons Surge
+  if (G.weaponSurgeActive)        _set('btn-eng-surge', 'a'+Math.ceil(G.weaponSurgeTimer/1000), '⚡ SURGING '+Math.ceil(G.weaponSurgeTimer/1000)+'s', 'red-btn', false, true);
+  else if (G.weaponSurgeCooldown>0) _set('btn-eng-surge', 'c'+Math.ceil(G.weaponSurgeCooldown/1000), '⚡ SURGE '+Math.ceil(G.weaponSurgeCooldown/1000)+'s', 'red-btn', true, false);
+  else                            _set('btn-eng-surge', 'r', '⚡ WEAPONS SURGE', 'red-btn', false, false);
+  // Fire Coordination (toggle)
+  _set('btn-eng-firecoord', G.fireCoordination?'on':'off', '🎯 FIRE COORD'+(G.fireCoordination?' ▶':''), G.fireCoordination?'green-btn':'warn-btn', false, G.fireCoordination);
+  // Forcefields
+  if (G.forcefieldsActive)        _set('btn-eng-forcefields', 'a'+Math.ceil(G.forcefieldsTimer/1000), '🛡 FIELDS UP '+Math.ceil(G.forcefieldsTimer/1000)+'s', 'green-btn', false, true);
+  else if (G.forcefieldsCooldown>0) _set('btn-eng-forcefields', 'c'+Math.ceil(G.forcefieldsCooldown/1000), '🛡 FIELDS '+Math.ceil(G.forcefieldsCooldown/1000)+'s', 'green-btn', true, false);
+  else                            _set('btn-eng-forcefields', 'r', '🛡 FORCEFIELDS', 'green-btn', false, false);
+}
+
 function engineeringResetForBattle(shipCfg, diff) {
   G.player.hull               = Math.round(shipCfg.hull * diff.playerHullMult);
   G.player.maxHull            = G.player.hull;
@@ -799,6 +900,11 @@ function engineeringResetForBattle(shipCfg, diff) {
   ];
   G.batteryCharge = 100;
   G.batteryActive = false;
+
+  // Engineering combat toolkit
+  G.weaponSurgeActive = false; G.weaponSurgeTimer = 0; G.weaponSurgeCooldown = 0;
+  G.fireCoordination  = false;
+  G.forcefieldsActive = false; G.forcefieldsTimer = 0; G.forcefieldsCooldown = 0;
 
   Object.keys(G.systems).forEach(k => {
     G.systems[k].health = 100;

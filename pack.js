@@ -96,7 +96,7 @@ function selectPackTarget(i) {
   if (!m || !m.alive || i === G.activePackIndex) return;
   _packSnapshotActive();
   _packLoadMember(i);
-  G.lockProgress = Math.max(0, G.lockProgress * 0.35);   // re-acquire on the new target
+  G.lockProgress = Math.max(0, G.lockProgress * 0.55);   // partial re-acquire on the new target
   G.targetedSubsystemType = 'hull';
   postLogEvent(`Target lock shifted to Attack Ship ${i + 1}.`, 'warn');
   if (typeof buildEnemySubsystemTargetGrid === 'function') buildEnemySubsystemTargetGrid();
@@ -115,7 +115,9 @@ function _resolveEnemyDestroyed(msg) {
     postLogEvent(`Attack Ship destroyed — ${remaining} ship${remaining > 1 ? 's' : ''} remaining.`, 'good');
     const next = G.pack.findIndex(m => m.alive);
     _packLoadMember(next);
-    G.lockProgress = Math.max(0, G.lockProgress * 0.4);
+    // Sensors already had a firing solution on the formation — retain most of the
+    // lock so the next target can be engaged immediately (keeps lock-gated torps firing).
+    G.lockProgress = Math.max(0, G.lockProgress * 0.7);
     G.targetedSubsystemType = 'hull';
     // Last survivor goes berserk — "Victory is life." Fires faster and hits harder.
     if (remaining === 1 && !G.packBerserk) {
@@ -181,11 +183,15 @@ function _packEscortFire(m) {
   // Target the player's weakest valid sector.
   let targetSector = valid.reduce((w, s) => (G.player.shields[s] < G.player.shields[w] ? s : w), valid[0] || 'fore');
 
-  let rawDmg = (Math.random() * (sys.dmgMax - sys.dmgMin) + sys.dmgMin) * (sys.health / 100) * diff.enemyDmgMult;
+  // Escorts are flanking SUPPORT fire (0.85×) — the active/locked target is the
+  // primary threat. (A small reduction; the real answer to delegated-station
+  // survivability is the Engineering combat toolkit, not nerfing the swarm.)
+  let rawDmg = (Math.random() * (sys.dmgMax - sys.dmgMin) + sys.dmgMin) * (sys.health / 100) * diff.enemyDmgMult * 0.78;
   if (G.campaignDmgMult !== 1)         rawDmg *= G.campaignDmgMult;
   if (G.activePanel === 'engineering') rawDmg *= 0.85;
   if (G.attackPatternOmegaActive)      rawDmg *= 1.20;
   if (G.deflectorActive)               rawDmg *= 0.65;
+  if (G.forcefieldsActive)             rawDmg *= 0.55;   // engineering Emergency Forcefields −45%
 
   // Polaron: partial shield bypass with hull passthrough.
   const shieldPenMult = sys.isPolaron ? 0.78 : 1.0;

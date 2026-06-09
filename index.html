@@ -692,6 +692,13 @@
         <button class="pill-action-btn green-btn" style="padding:6px; font-size:12px;" onclick="applyPowerPreset('evasive')">◈ EVASIVE <span style="font-size:10px; opacity:0.8;">Engines max · Shld +</span></button>
         <button class="pill-action-btn"          style="padding:6px; font-size:12px;" onclick="applyPowerPreset('damage_control')">🛡 DAMAGE CTRL <span style="font-size:10px; opacity:0.8;">Shld max · Sensors +</span></button>
       </div>
+      <!-- Engineering combat toolkit — active combat agency for the engineer -->
+      <div style="font-family:'Antonio'; font-size:9px; color:#6688aa; letter-spacing:2px; margin:2px 0 4px;">— COMBAT SYSTEMS —</div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:8px;">
+        <button class="pill-action-btn red-btn"  id="btn-eng-surge"       style="padding:6px; font-size:12px;" onclick="divertPowerToWeapons()">⚡ WEAPONS SURGE <span style="font-size:10px; opacity:0.8;">+35% dmg · Shld −</span></button>
+        <button class="pill-action-btn warn-btn" id="btn-eng-firecoord"   style="padding:6px; font-size:12px;" onclick="toggleFireCoordination()">🎯 FIRE COORD <span style="font-size:10px; opacity:0.8;">Torpedo-heavy focus</span></button>
+        <button class="pill-action-btn green-btn"id="btn-eng-forcefields" style="padding:6px; font-size:12px;" onclick="engageEmergencyForcefields()">🛡 FORCEFIELDS <span style="font-size:10px; opacity:0.8;">Incoming −45%</span></button>
+      </div>
       <div class="eng-layout-split">
         <div>
           <table class="eng-table-display">
@@ -1044,22 +1051,22 @@
                auto-delegation → command → canvas → ui → main
 ════════════════════════════════════════════════════════════ -->
 <script src="config.js?v=2ff55370"></script>
-<script src="state.js?v=55664646"></script>
-<script src="engineering.js?v=55ca4b3d"></script>
+<script src="state.js?v=59685dd3"></script>
+<script src="engineering.js?v=53eedef9"></script>
 <script src="crew.js?v=96eb5068"></script>
 <script src="sensors.js?v=e492eb8b"></script>
-<script src="tactical.js?v=6c421fe7"></script>
+<script src="tactical.js?v=254238b9"></script>
 <script src="helm.js?v=9bcb5e63"></script>
 <script src="encounter-phases.js?v=d34b4172"></script>
-<script src="enemy-ai.js?v=d90b23ec"></script>
-<script src="pack.js?v=25178d6e"></script>
-<script src="auto-delegation.js?v=dc49ec0d"></script>
+<script src="enemy-ai.js?v=78e32783"></script>
+<script src="pack.js?v=20592b6b"></script>
+<script src="auto-delegation.js?v=6a070b5f"></script>
 <script src="command.js?v=08b12b1a"></script>
 <script src="canvas-three.js?v=3d2dbda0"></script>
 <script src="canvas-three-geometry.js?v=faa58b86"></script>
 <script src="canvas-three-render.js?v=4527e9d7"></script>
 <script src="canvas-2d.js?v=020f751a"></script>
-<script src="ui.js?v=7c4830a6"></script>
+<script src="ui.js?v=fd8b2d92"></script>
 <script src="setup.js?v=6a2e1eb4"></script>
 <script src="campaign.js?v=8d9a00bb"></script>
 <script src="briefing.js?v=31071348"></script>

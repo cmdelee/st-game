@@ -202,6 +202,7 @@ function fireSelectedArray(weaponKey) {
   if (G._overchargeActive)   dmg *= (G._maxPhaserActive ? 1.60 : G._maxPulseBurstActive ? 1.80 : 1.50);
   if (G._unstableTorpActive) dmg *= 1.70;
   if (G.powerDumpActive)     dmg *= 1.40;
+  if (G.weaponSurgeActive)   dmg *= 1.35;   // engineering Weapons Power Surge
   // Stardrive power boost — EPS no longer split with saucer section
   if (G.saucerSepActive && !G.saucerSepReconnecting) dmg *= 1.20;
 

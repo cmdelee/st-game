@@ -192,6 +192,7 @@ const _SYS_ABBREV = {
 function synchronizeGlobalInterfaceDisplays() {
   const _g = id => _EL[id] || document.getElementById(id); // cache-first lookup
   _updateMobileStatusBar();
+  if (typeof _updateEngToolkitButtons === 'function') _updateEngToolkitButtons();
   const warpOut = getWarpOutput();
   const total   = getTotalAllocatedPower();
 

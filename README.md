@@ -170,6 +170,16 @@ Allocate power, manage repairs. Auto-tactical fires weapons on a 2.4s clock.
 | Ablative Armour | Status display (Defiant only) |
 | Tactical Deflector | Status + toggle (Enterprise-E only) |
 
+**Engineering combat toolkit** — active combat agency, not just power-watching:
+
+| Control | Effect |
+|---|---|
+| ⚡ Weapons Power Surge | Reroute EPS to weapons: crew weapon damage +35% and capacitors recharge fast for 8s; shield regen halved. 28s CD — wins DPS races like the wolfpack |
+| 🎯 Fire Coordination | Toggle — the crew fires aggressively and torpedo-heavy, concentrating on the priority target (the Borg matrix / the active pack ship) |
+| 🛡 Emergency Forcefields | Divert power to structural integrity: incoming damage −45% for 5s. 30s CD — ride out a ram, berserk, or alpha-strike window |
+
+These let an Engineering player *drive* the fight — surge to burn a target down, coordinate fire to focus, forcefield to survive a spike — rather than passively managing power while the crew fights. The auto-engineer (O'Brien/La Forge) wields the same toolkit when you command from Helm or the Captain's Chair.
+
 ### 🩷 Helm
 
 Navigate the ship and control the engagement. Both auto-tactical and auto-engineering run simultaneously.

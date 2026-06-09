@@ -205,6 +205,8 @@ function processNewMechanicsTimers(dt) {
     }
   }
 
+  if (typeof tickEngineeringToolkit === 'function') tickEngineeringToolkit(dt);
+
   processHelmTimers(dt);
 }
 
@@ -596,7 +598,8 @@ function executeThreatCounterVolley() {
   if (G.activePanel === 'engineering') rawDmg *= 0.85;
   if (G.attackPatternOmegaActive)      rawDmg *= 1.20;
   if (G.deflectorActive)               rawDmg *= 0.65;   // antiproton deflector screen −35%
-  if (G.packBerserk)                   rawDmg *= 1.25;   // last pack survivor hits harder
+  if (G.forcefieldsActive)             rawDmg *= 0.55;   // engineering Emergency Forcefields −45%
+  if (G.packBerserk)                   rawDmg *= 1.15;   // last pack survivor hits harder
   if (_ambush)                         rawDmg *= 1.40;   // point-blank decloak alpha strike
   if (G.campaignDmgMult !== 1)         rawDmg *= G.campaignDmgMult;   // campaign per-level escalation
 
