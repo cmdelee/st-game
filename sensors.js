@@ -97,7 +97,18 @@ function _commitDeepScan() {
   G.deepScanCooldown = isBorg ? 10000 : 60000;  // Borg: 10s (adapt fast); others: 60s
 
   postLogEvent(`DEEP SCAN COMPLETE — ${results.length} frequency lock${results.length>1?'s':''} established.`, 'good');
-  if (isBorg) postLogEvent("WARNING: Borg frequencies adapt — rescan every time they escalate (10s cooldown).", 'warn');
+  if (isBorg) {
+    postLogEvent("WARNING: Borg frequencies adapt — rescan every time they escalate (10s cooldown).", 'warn');
+    // One-time strategy hint — the Borg is a puzzle: its shields self-regenerate
+    // (faster the longer you fight), so out-shooting them fails. Point the player
+    // at the actual solution: kill the regen matrix, then burst the hull.
+    if (!G._borgHintGiven) {
+      G._borgHintGiven = true;
+      postLogEvent("ANALYSIS: Shield matrix self-regenerating — regen scales with the Regenerative Matrix. Target it to collapse their shields, then concentrate fire on the hull. Rotate weapon types to outpace adaptation.", 'crit');
+      if (typeof postTacticalAdvisory === 'function')
+        postTacticalAdvisory("Target the Regenerative Matrix to stop their shields healing — then hit the hull hard.");
+    }
+  }
 
   _updateDeepScanButton();
   _renderScanResults();
@@ -221,6 +232,7 @@ function sensorsResetForBattle() {
   G.deepScanProgress      = 0;
   G.deepScanCooldown      = 0;
   G.activeScanningProfile = false;
+  G._borgHintGiven        = false;
   if (typeof _updateDeepScanButton === 'function') _updateDeepScanButton();
   if (typeof _renderScanResults    === 'function') _renderScanResults();
 }
