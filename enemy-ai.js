@@ -67,7 +67,11 @@ function triggerEnemyDecloak(cfg, reason) {
     if (!G.dead && G.running && !G.enemyCloaked) {
       postLogEvent(_plasmaStrike
         ? "ROMULAN PLASMA TORPEDO — FIRED ON DECLOAK! BRACE!"
-        : `${cfg.label} decloaks and opens fire!`, 'crit');
+        : `${cfg.label} decloaks and opens fire — point-blank ambush!`, 'crit');
+      // Mark the next volley as a decloak ambush: it partially bypasses shields
+      // (off-frequency surprise strike at point-blank) and hits harder, so the
+      // player's shield/regen advantage doesn't fully neutralise a cloaker.
+      G.enemyDecloakStrike = true;
       // Set timer past threshold so the main loop fires on next tick;
       // do NOT call executeThreatCounterVolley() directly or it fires twice
       G.threatCycleTimer = getEffectiveFireInterval() + 1;
@@ -584,12 +588,16 @@ function executeThreatCounterVolley() {
       if (!G.comeAboutActive && arc.includes(_eff) && Math.random() < 0.65) targetSector = _eff; }
   }
 
+  // Decloak ambush — consume the one-shot flag set by triggerEnemyDecloak.
+  const _ambush = !!G.enemyDecloakStrike; G.enemyDecloakStrike = false;
+
   let rawDmg = (Math.random() * (dmgMax - dmgMin) + dmgMin) * (chosenSys.health / 100) * diff.enemyDmgMult;
   if (G.weaponsDisrupted)              rawDmg *= 0.5;
   if (G.activePanel === 'engineering') rawDmg *= 0.85;
   if (G.attackPatternOmegaActive)      rawDmg *= 1.20;
   if (G.deflectorActive)               rawDmg *= 0.65;   // antiproton deflector screen −35%
   if (G.packBerserk)                   rawDmg *= 1.25;   // last pack survivor hits harder
+  if (_ambush)                         rawDmg *= 1.40;   // point-blank decloak alpha strike
 
   if (cfg.prefersCloseRange && G.enemyRangeBracket === 'close' && chosenSys.systemTargetKey === 'disruptors')
     rawDmg *= (cfg.closeRangeDmgBonus || 1.4);
@@ -625,16 +633,20 @@ function executeThreatCounterVolley() {
 
   let shieldPenMult = 1.0; let hullPassthrough = 0;
   if (chosenSys.isPolaron) { shieldPenMult = 0.78; hullPassthrough = rawDmg * 0.22; }
+  // Decloak ambush bypasses ~40% of shields straight to hull (takes the stronger
+  // of any existing polaron bypass) — sidesteps the player's shield/regen edge.
+  if (_ambush) { shieldPenMult = Math.min(shieldPenMult, 0.60); hullPassthrough = Math.max(hullPassthrough, rawDmg * 0.40); }
 
-  if (G.shieldFreqActive) {
+  // An off-frequency surprise strike isn't on the rotated shield frequency.
+  if (G.shieldFreqActive && !_ambush) {
     const freqMatch = (G.shieldFreqWeaponType === 'disruptors' && chosenSys.systemTargetKey === 'disruptors') ||
                       (G.shieldFreqWeaponType === 'phasers'    && chosenSys.systemTargetKey === 'phasers')    ||
                       (G.shieldFreqWeaponType === 'polaron'    && chosenSys.isPolaron)                        ||
                       (G.shieldFreqWeaponType === 'plasma'     && chosenSys.isTorpedo && chosenSys.label.includes('Plasma'));
     if (freqMatch) rawDmg *= 0.75;
   }
-  // Permanent scan: shield frequency lock
-  if (G.permanentScanBonuses && G.permanentScanBonuses.shield_freq) {
+  // Permanent scan: shield frequency lock (also bypassed by a decloak ambush)
+  if (G.permanentScanBonuses && G.permanentScanBonuses.shield_freq && !_ambush) {
     const psf = G.permanentScanBonuses.shield_freq;
     const permFreqMatch = (psf.weaponType === 'disruptors' && chosenSys.systemTargetKey === 'disruptors') ||
                           (psf.weaponType === 'phasers'    && chosenSys.systemTargetKey === 'phasers')    ||
@@ -774,6 +786,7 @@ function enemyResetForBattle(cfg, diff) {
   G.sensorGhostTimer         = 0;
   G.enemyTractorActive       = false;
   G.enemyCloaked             = false;
+  G.enemyDecloakStrike       = false;
   G.enemyCloakCooldown       = 0;
   G.enemyCloakVulnTimer      = 0;
   G.enemyCloakPower          = 100;

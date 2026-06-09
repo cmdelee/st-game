@@ -75,6 +75,7 @@ const G = {
   pack:[], packActive:false, packCount:0, activePackIndex:0, disablePack:false, packBerserk:false,
 
   weaponsDisrupted:false, weaponsDisruptedTimer:0,
+  enemyDecloakStrike:false,   // one-shot: next enemy volley is a shield-bypassing decloak ambush
   enemyTractorActive:false,
   enemyAdaptiveHits:0,
   enemyAdaptiveResist:{ cannon_pu:0, cannon_pl:0, cannon_su:0, cannon_sl:0, nose_beam:0, torpedoes:0, photon:0 },
