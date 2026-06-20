@@ -8,6 +8,10 @@
 const G = {
   running:false, dead:false,
   playerChosenStation:'tactical', activePanel:'tactical',
+  // Per-station control source (multiplayer foundation — see docs/MULTIPLAYER_DESIGN.md).
+  // 'auto' = computer-delegated; 'local' = a human at this machine; 'remote' = a
+  // networked teammate. Single-player = exactly one 'local', the rest 'auto'.
+  stationControl:{ tactical:'auto', engineering:'auto', helm:'auto', captain:'auto' },
   lastFrameTimestamp:0,
   threatCycleTimer:0,
   lockProgress:0,
@@ -268,6 +272,18 @@ const G = {
   renderedBeamsVector:[],
   historicalLogTracks:[],
 };
+
+// ── Station control helpers ───────────────────────────────────
+const STATIONS = ['tactical','engineering','helm','captain'];
+// Is a station computer-delegated (no human at it)?
+function _stationAuto(s)   { return (G.stationControl[s] || 'auto') === 'auto'; }
+// Is a station controlled by a human (this machine or a networked teammate)?
+function _stationManned(s)  { const c = G.stationControl[s]; return c === 'local' || c === 'remote'; }
+// Set which stations a human controls locally; the rest revert to auto.
+// (Single-player passes one station; local co-op / host-assignment pass several.)
+function setMannedStations(list) {
+  STATIONS.forEach(s => { if (G.stationControl[s] !== 'remote') G.stationControl[s] = list.includes(s) ? 'local' : 'auto'; });
+}
 
 // ── Shield sector helpers ─────────────────────────────────────
 const SHIELD_SECTORS = ['fore','port','starboard','aft'];

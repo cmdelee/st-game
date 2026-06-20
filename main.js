@@ -52,6 +52,14 @@ function masterSimulationCoreLoop(ts) {
   if (G.lastFrameTimestamp === 0) G.lastFrameTimestamp = ts;
   const dt = Math.min(ts - G.lastFrameTimestamp, 100);
   G.lastFrameTimestamp = ts;
+  _simStep(dt);     // advance authoritative game state (host-only in networked play)
+  _renderStep();    // sync DOM + canvases from state (runs on host AND terminals)
+  requestAnimationFrame(masterSimulationCoreLoop);
+}
+
+// Advance the authoritative game state by dt. In networked play only the host
+// runs this; terminals render from snapshots instead. See docs/MULTIPLAYER_DESIGN.md.
+function _simStep(dt) {
   G.score.timeSurvived += dt / 1000;
 
   // Shield hit flash timers — must decrement or flash persists forever
@@ -160,9 +168,21 @@ function masterSimulationCoreLoop(ts) {
   const fi = getEffectiveFireInterval() * (G.enemyPhaseFireMult || 1.0) * (G.weaponsDisrupted ? 2 : 1) * _jemFury * _packBerserkFire;
   if (G.threatCycleTimer > fi) { G.threatCycleTimer = 0; executeThreatCounterVolley(); }
 
-
   updateWarpAvailability();
   checkLastStandCondition();
+
+  // Low hull advisory for captain (game event — host-authoritative)
+  if (_stationManned('captain') && !G._captainLowHullReported &&
+      G.player.hull / G.player.maxHull <= 0.35) {
+    G._captainLowHullReported = true;
+    crewReportLowHull();
+  }
+  if (G.player.hull / G.player.maxHull > 0.40) G._captainLowHullReported = false;
+}
+
+// Render the current state to the DOM + canvases. No authoritative state change —
+// safe to run on networked terminals off the latest snapshot.
+function _renderStep() {
   if (typeof _updatePackRoster === 'function') _updatePackRoster();
   synchronizeGlobalInterfaceDisplays();
 
@@ -174,16 +194,6 @@ function masterSimulationCoreLoop(ts) {
     renderHullSchematicCanvas();
     renderPowerDistributionCanvas();
   }
-
-  // Low hull advisory for captain
-  if (G.playerChosenStation === 'captain' && !G._captainLowHullReported &&
-      G.player.hull / G.player.maxHull <= 0.35) {
-    G._captainLowHullReported = true;
-    crewReportLowHull();
-  }
-  if (G.player.hull / G.player.maxHull > 0.40) G._captainLowHullReported = false;
-
-  requestAnimationFrame(masterSimulationCoreLoop);
 }
 
 // ============================================================
@@ -191,6 +201,7 @@ function masterSimulationCoreLoop(ts) {
 // ============================================================
 function initiateVesselSimulation(station) {
   G.playerChosenStation = station;
+  setMannedStations([station]);   // single-player default: one human station, rest auto
   const diff = DIFFICULTY[currentDifficulty];
 
   // Campaign mode: archetype was set by _launchCampaignLevel before this call — preserve it

@@ -70,14 +70,17 @@ function _autoRotateFire() {
 }
 
 function processAutomatedDelegation(dt) {
-  const isCaptain  = G.playerChosenStation === 'captain';
-  const runAutoEng = G.playerChosenStation === 'tactical' || G.playerChosenStation === 'helm' || isCaptain;
-  const runAutoTac = G.playerChosenStation === 'engineering' || G.playerChosenStation === 'helm' || isCaptain;
+  // Drive each station from its control source (multiplayer foundation): run the
+  // computer only where no human is assigned. Identical to the old behaviour in
+  // single-player (one 'local' station, the rest 'auto').
+  const isCaptain  = _stationManned('captain');   // captain's autonomous crew behaviours
+  const runAutoEng = _stationAuto('engineering');
+  const runAutoTac = _stationAuto('tactical');
 
-  // Auto-helm — when the player isn't flying the ship, the computer counters the
+  // Auto-helm — when no human is flying the ship, the computer counters the
   // enemy's 3D positioning so the auto-tactical guns keep bearing: match its
   // vertical plane (climb/dive) and turn to face its lateral flank.
-  if (G.playerChosenStation !== 'helm') {
+  if (_stationAuto('helm')) {
     const e = G.enemyElevation || 'level';
     G.helmPitch = e === 'above' ? 'climb' : e === 'below' ? 'dive' : 'level';
     // Face the enemy: setting the bow to its bearing makes effectiveEnemySector → fore
