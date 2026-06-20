@@ -54,6 +54,7 @@ function masterSimulationCoreLoop(ts) {
   G.lastFrameTimestamp = ts;
   _simStep(dt);     // advance authoritative game state (host-only in networked play)
   _renderStep();    // sync DOM + canvases from state (runs on host AND terminals)
+  if (typeof netHostBroadcastSnapshot === 'function') netHostBroadcastSnapshot(ts); // push state to teammates
   requestAnimationFrame(masterSimulationCoreLoop);
 }
 

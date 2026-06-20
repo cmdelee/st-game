@@ -47,7 +47,7 @@ function handleWarpCoreTrip() {
 // ============================================================
 function activateEmergencyBattery() {
   _invalidatePowerCache();
-  if (G.playerChosenStation !== 'engineering' && G.playerChosenStation !== 'captain') { postLogEvent("Battery control requires Engineering station.", 'warn'); return; }
+  { const op = _opStation(); if (op !== 'engineering' && op !== 'captain') { postLogEvent("Battery control requires Engineering station.", 'warn'); return; } }
   if (G.batteryCharge < 10) { postLogEvent("Emergency battery depleted.", 'crit'); return; }
   if (!G.systems.warp_core.tripped && G.systems.warp_core.health > 20) {
     postLogEvent("Battery reserve not needed — warp core is online.", 'info'); return;
@@ -172,7 +172,7 @@ function recalculateShieldRegenRate() {
 // O'Brien dispatches specific teams to specific locations, per DS9 canon
 // ============================================================
 function assignRepairTeam(sysKey, teamIdx) {
-  if (G.playerChosenStation !== 'engineering') { postLogEvent("Repair requires Engineering station.", 'warn'); return; }
+  if (_opStation() !== 'engineering') { postLogEvent("Repair requires Engineering station.", 'warn'); return; }
   const sys = G.systems[sysKey]; if (!sys) return;
   if (sys.health >= 100 && !sys.tripped) { postLogEvent(`${sys.label} at full integrity.`, 'info'); return; }
 
@@ -197,7 +197,7 @@ function assignRepairTeam(sysKey, teamIdx) {
 }
 
 function recallRepairTeam(teamIdx) {
-  if (G.playerChosenStation !== 'engineering') { postLogEvent("Repair requires Engineering station.", 'warn'); return; }
+  if (_opStation() !== 'engineering') { postLogEvent("Repair requires Engineering station.", 'warn'); return; }
   const team = G.repairTeams[teamIdx];
   if (!team.sysKey) { postLogEvent(`${teamIdx === 0 ? 'Alpha' : 'Beta'} Team already on standby.`, 'info'); return; }
   const teamName = teamIdx === 0 ? 'Alpha' : 'Beta';
@@ -429,7 +429,7 @@ function refreshEngineeringPanelGraphics() {
 // POWER ALLOCATION
 // ============================================================
 function tuneBusAllocation(key, amount) {
-  if (G.playerChosenStation === 'tactical') { postLogEvent("Power locked to automation.", 'warn'); return; }
+  if (_opStation() === 'tactical') { postLogEvent("Power locked to automation.", 'warn'); return; }
   _invalidatePowerCache();
   const sys = G.systems[key]; if (!sys) return;
   const projected     = sys.allocatedPower + amount;
@@ -468,7 +468,7 @@ const POWER_PRESETS = {
 };
 
 function applyPowerPreset(name) {
-  if (G.playerChosenStation === 'tactical') { postLogEvent('Power locked to automation.', 'warn'); return; }
+  if (_opStation() === 'tactical') { postLogEvent('Power locked to automation.', 'warn'); return; }
   _invalidatePowerCache();
   const preset = POWER_PRESETS[name]; if (!preset) return;
   const warpOut = getWarpOutput();

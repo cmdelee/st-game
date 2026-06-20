@@ -29,7 +29,7 @@ function postCrewReport(crew, text, type) {
   if (!G.running && type !== 'system') return;
   G.crewReports.unshift({ crew, text, type, ts: Date.now() });
   if (G.crewReports.length > 50) G.crewReports.pop();
-  if (G.playerChosenStation === 'captain') _renderCrewComms();
+  if (_opStation() === 'captain') _renderCrewComms();
 }
 
 function _renderCrewComms() {
@@ -49,7 +49,7 @@ function _renderCrewComms() {
 // ── Captain Overview Mini-Panels ──────────────────────────────
 
 function updateCaptainOverview() {
-  if (G.playerChosenStation !== 'captain') return;
+  if (_opStation() !== 'captain') return;
 
   // Hull
   const hullPct = Math.round((G.player.hull / G.player.maxHull) * 100);
@@ -664,7 +664,7 @@ const _NOG_REPORTS = [
 let _worfIdx = 0, _obrienIdx = 0, _nogIdx = 0;
 
 function tickCaptainPeriodicReports(dt) {
-  if (G.playerChosenStation !== 'captain' || !G.running) return;
+  if (_opStation() !== 'captain' || !G.running) return;
   G.captainPeriodicTimer -= dt;
   if (G.captainPeriodicTimer > 0) return;
   G.captainPeriodicTimer = 10000 + Math.random() * 10000; // 10–20s
@@ -690,7 +690,7 @@ function tickCaptainPeriodicReports(dt) {
 // ── Event-Driven Reports (called from other files) ────────────
 
 function crewReportShieldHit(sector, damage) {
-  if (G.playerChosenStation !== 'captain' || !G.running) return;
+  if (_opStation() !== 'captain' || !G.running) return;
   if (damage < 15) return; // ignore minor grazes
   const pool = [
     `${sector.toUpperCase()} shields taking fire — ${Math.round(damage)} damage absorbed.`,
@@ -701,83 +701,83 @@ function crewReportShieldHit(sector, damage) {
 }
 
 function crewReportHullBreach(damage) {
-  if (G.playerChosenStation !== 'captain' || !G.running) return;
+  if (_opStation() !== 'captain' || !G.running) return;
   postCrewReport('obrien',
     `Hull breach! ${Math.round(damage)} structural damage. Integrity at ${Math.round((G.player.hull / G.player.maxHull) * 100)}%.`,
     'alert');
 }
 
 function crewReportEnemyCloak() {
-  if (G.playerChosenStation !== 'captain') return;
+  if (_opStation() !== 'captain') return;
   postCrewReport('worf', "Captain — enemy has cloaked. Switching to passive sensor sweep.", 'alert');
 }
 
 function crewReportEnemyDecloak() {
-  if (G.playerChosenStation !== 'captain') return;
+  if (_opStation() !== 'captain') return;
   postCrewReport('worf', "Enemy decloaking — vulnerability window open. Fire at will, Captain?", 'good');
 }
 
 function crewReportSystemTripped(systemLabel) {
-  if (G.playerChosenStation !== 'captain' || !G.running) return;
+  if (_opStation() !== 'captain' || !G.running) return;
   postCrewReport('obrien', `${systemLabel} breaker tripped, Captain. Rerouting through secondary conduit.`, 'alert');
 }
 
 function crewReportRepairComplete(systemLabel) {
-  if (G.playerChosenStation !== 'captain' || !G.running) return;
+  if (_opStation() !== 'captain' || !G.running) return;
   postCrewReport('obrien', `${systemLabel} repaired and back online, Captain.`, 'good');
 }
 
 function crewReportWarpCoreTrip() {
-  if (G.playerChosenStation !== 'captain') return;
+  if (_opStation() !== 'captain') return;
   postCrewReport('obrien', "Warp core offline! Switching to impulse power. Emergency battery available on your order.", 'alert');
 }
 
 function crewReportLowHull() {
-  if (G.playerChosenStation !== 'captain' || !G.running) return;
+  if (_opStation() !== 'captain' || !G.running) return;
   postCrewReport('obrien',
     `Hull integrity at ${Math.round((G.player.hull / G.player.maxHull) * 100)}%, Captain. Emergency warp available on your order.`,
     'alert');
 }
 
 function crewReportEnemyRamming() {
-  if (G.playerChosenStation !== 'captain') return;
+  if (_opStation() !== 'captain') return;
   postCrewReport('nog', "Captain — enemy on a ramming trajectory! Evasive action recommended NOW!", 'alert');
 }
 
 function crewReportRammingEvaded() {
-  if (G.playerChosenStation !== 'captain') return;
+  if (_opStation() !== 'captain') return;
   postCrewReport('nog', "We slipped them, Captain — they overshot and are coming about!", 'good');
 }
 
 function crewReportKlingonClosing() {
-  if (G.playerChosenStation !== 'captain') return;
+  if (_opStation() !== 'captain') return;
   postCrewReport('worf', "Captain, enemy closing to combat range. Disruptor damage will increase significantly.", 'alert');
 }
 
 function crewReportAttackRunComplete() {
-  if (G.playerChosenStation !== 'captain') return;
+  if (_opStation() !== 'captain') return;
   postCrewReport('nog', "Attack run complete, Captain. Returning to medium-range approach.", 'status');
 }
 
 function crewReportComeAboutComplete(sector) {
-  if (G.playerChosenStation !== 'captain') return;
+  if (_opStation() !== 'captain') return;
   postCrewReport('nog',
     `Come about complete. Presenting ${sector.toUpperCase()} shields to the enemy — ${Math.round(G.player.shields[sector] || 0)}SP.`,
     'good');
 }
 
 function crewReportWeaponsDisrupted() {
-  if (G.playerChosenStation !== 'captain' || !G.running) return;
+  if (_opStation() !== 'captain' || !G.running) return;
   postCrewReport('worf', "Captain, enemy scan has disrupted our weapons. Reduced fire rate.", 'alert');
 }
 
 function crewReportWeaponsOnline() {
-  if (G.playerChosenStation !== 'captain' || !G.running) return;
+  if (_opStation() !== 'captain' || !G.running) return;
   postCrewReport('worf', "Weapons disruption cleared, Captain. Full fire rate restored.", 'good');
 }
 
 function crewReportScanCommitted(type) {
-  if (G.playerChosenStation !== 'captain' || !G.running) return;
+  if (_opStation() !== 'captain' || !G.running) return;
   const msgs = {
     shields: "Scan committed — weapons calibrated against enemy shield frequencies.",
     hull:    "Hull fissures mapped — all weapons yielding increased damage, Captain.",

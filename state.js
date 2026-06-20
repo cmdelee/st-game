@@ -285,6 +285,11 @@ function _stationManned(s)  { const c = G.stationControl[s]; return c === 'local
 function setMannedStations(list) {
   STATIONS.forEach(s => { if (G.stationControl[s] !== 'remote') G.stationControl[s] = list.includes(s) ? 'local' : 'auto'; });
 }
+// The station whose context an action is running in: a remote teammate's station
+// while the host applies their input (G._actingStation), else the active deck.
+// Station-permission gates use this so single-player, local co-op (active deck)
+// and networked remote inputs all resolve correctly.
+function _opStation() { return G._actingStation || G.activePanel; }
 
 // ── Shield sector helpers ─────────────────────────────────────
 const SHIELD_SECTORS = ['fore','port','starboard','aft'];
