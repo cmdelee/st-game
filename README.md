@@ -313,7 +313,7 @@ Every level is a genuine step up from the last. Each carries a campaign-only esc
 
 ### Campaign difficulty brackets
 - Levels 1–3: Normal · Levels 4–7: Hard · Level 8 (Jem'Hadar pack): Normal multipliers but **3 ships** · Level 9 (Borg): Elite
-- On top of the base bracket, each level applies a **per-level escalation** (`scale` in `CAMPAIGN_ORDER`) so difficulty rises monotonically — measured ~0% hull lost at L1 climbing to a near-unwinnable Borg at L9. Single battles do **not** escalate.
+- On top of the base bracket, each level applies a **per-level escalation** (`scale` in `CAMPAIGN_ORDER`) so difficulty rises monotonically — measured ~0% hull lost at L1 climbing to a near-unwinnable Borg at L9. The same per-enemy escalation is applied to **single engagements** too, so any given enemy fights at identical difficulty in both modes — the only difference is the difficulty tier you pick in a single battle vs. the fixed tier each campaign level uses.
 
 ---
 

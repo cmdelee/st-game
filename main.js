@@ -213,6 +213,10 @@ function initiateVesselSimulation(station) {
   // ~180-line monolith; see CLAUDE.md "initForBattle module reset pattern").
   enemyResetForBattle(cfg, diff);
   packResetForBattle(diff);        // wolfpack: jem_hadar_fighter spawns 3–4 ships
+  // Single engagements apply the same per-enemy escalation as the campaign so a
+  // given enemy fights at identical difficulty in both modes. (Campaign mode
+  // applies it via _launchCampaignLevel after init — guarded here to avoid double.)
+  if (!G.campaignMode && typeof _applyCampaignEscalation === 'function') _applyCampaignEscalation();
   engineeringResetForBattle(shipCfg, diff);
   tacticalResetForBattle();
   helmResetForBattle();

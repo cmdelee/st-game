@@ -57,12 +57,13 @@ function _launchCampaignLevel() {
   _updateCampaignHUD();
 }
 
-// Escalate the current campaign level's enemy beyond its base diff so each level
-// is a genuine step up: hull (longer fight), lockRate (more frequent torpedo
-// bursts), plus runtime damage/bypass mults read at fire time. Scales every
-// wolfpack member too. No-op when the level has no `scale` (or single battle).
+// Apply the per-enemy escalation scale (hull, lockRate, runtime damage/bypass
+// mults). Defined per CAMPAIGN_ORDER entry so each campaign level is a step up —
+// and applied to SINGLE engagements too (looked up by archetype) so a given
+// enemy fights at identical difficulty in both modes. Scales wolfpack members.
 function _applyCampaignEscalation() {
-  const entry = CAMPAIGN_ORDER[G.campaignLevel];
+  const entry = G.campaignMode ? CAMPAIGN_ORDER[G.campaignLevel]
+                               : CAMPAIGN_ORDER.find(e => e.archetype === G.enemyArchetype);
   const s = entry && entry.scale;
   G.campaignDmgMult = (s && s.dmg)    || 1.0;
   G.campaignBypass  = (s && s.bypass) || 0;
