@@ -12,6 +12,7 @@ const G = {
   // 'auto' = computer-delegated; 'local' = a human at this machine; 'remote' = a
   // networked teammate. Single-player = exactly one 'local', the rest 'auto'.
   stationControl:{ tactical:'auto', engineering:'auto', helm:'auto', captain:'auto' },
+  coopMode:false,   // local hot-seat co-op: ≥2 'local' stations, switch decks to operate each
   lastFrameTimestamp:0,
   threatCycleTimer:0,
   lockProgress:0,

@@ -313,6 +313,21 @@
           <button class="pill-action-btn" style="width:155px;padding:10px;background:var(--t);"             onclick="_setupPickStation('helm')">FLY HELM</button>
           <button class="pill-action-btn" style="width:155px;padding:10px;background:var(--warn);color:#000;" onclick="_setupPickStation('captain')">⭐ CAPTAIN'S CHAIR</button>
         </div>
+
+        <!-- Local co-op: assemble a bridge crew (man 2+ stations; hot-seat between them) -->
+        <div style="margin-top:10px;border-top:1px solid var(--dim2);padding-top:8px;">
+          <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:6px;">— OR ASSEMBLE A BRIDGE CREW · LOCAL CO-OP —</div>
+          <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:6px;">
+            <button class="pill-action-btn" style="opacity:0.45;padding:6px 10px;font-size:11px;background:var(--o);"             onclick="_coopToggle('tactical',this)">⚡ Tactical</button>
+            <button class="pill-action-btn" style="opacity:0.45;padding:6px 10px;font-size:11px;background:var(--p);"             onclick="_coopToggle('engineering',this)">⚙ Engineering</button>
+            <button class="pill-action-btn" style="opacity:0.45;padding:6px 10px;font-size:11px;background:var(--t);"             onclick="_coopToggle('helm',this)">🚀 Helm</button>
+            <button class="pill-action-btn" style="opacity:0.45;padding:6px 10px;font-size:11px;background:var(--warn);color:#000;" onclick="_coopToggle('captain',this)">⭐ Captain</button>
+          </div>
+          <div style="text-align:center;">
+            <button id="coop-go" class="pill-action-btn green-btn" disabled style="opacity:0.4;padding:6px 18px;font-size:11px;" onclick="_coopAssemble()">⚔ ASSEMBLE CREW → (pick 2+)</button>
+          </div>
+          <div style="font-size:9px;color:#557799;text-align:center;margin-top:4px;">Manned stations are crewed by you; switch between them with the left-panel nav. Unmanned stations stay on auto.</div>
+        </div>
       </div>
     </div>
 
@@ -334,7 +349,7 @@
       </div>
 
       <button class="pill-action-btn red-btn" id="btn-engage-now" style="width:100%;padding:14px;font-size:15px;font-family:'Antonio';letter-spacing:2px;"
-        onclick="initiateVesselSimulation(window._wizardStation)">
+        onclick="initiateVesselSimulation(window._wizardStation, window._wizardCrew)">
         ⚡ BATTLE STATIONS — ENGAGE
       </button>
     </div>
@@ -363,7 +378,7 @@
       </div>
 
       <button class="pill-action-btn" style="width:100%;padding:14px;font-size:15px;font-family:'Antonio';letter-spacing:2px;background:var(--o);color:#000;"
-        onclick="startCampaign(window._wizardStation)">
+        onclick="startCampaign(window._wizardStation, window._wizardCrew)">
         ⭐ BEGIN CAMPAIGN
       </button>
     </div>
@@ -1053,7 +1068,7 @@
                auto-delegation → command → canvas → ui → main
 ════════════════════════════════════════════════════════════ -->
 <script src="config.js?v=2ff55370"></script>
-<script src="state.js?v=36414936"></script>
+<script src="state.js?v=2253eee9"></script>
 <script src="engineering.js?v=53eedef9"></script>
 <script src="crew.js?v=96eb5068"></script>
 <script src="sensors.js?v=e492eb8b"></script>
@@ -1069,10 +1084,10 @@
 <script src="canvas-three-render.js?v=4527e9d7"></script>
 <script src="canvas-2d.js?v=020f751a"></script>
 <script src="ui.js?v=e52ca4ac"></script>
-<script src="setup.js?v=6a2e1eb4"></script>
-<script src="campaign.js?v=3dc8d668"></script>
+<script src="setup.js?v=7d565482"></script>
+<script src="campaign.js?v=51edbfc1"></script>
 <script src="briefing.js?v=31071348"></script>
-<script src="main.js?v=9fada1b8"></script>
+<script src="main.js?v=0445c85f"></script>
 <script src="smoketest.js?v=68b061f8"></script>
 
 </body>

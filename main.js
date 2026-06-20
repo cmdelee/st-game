@@ -199,9 +199,12 @@ function _renderStep() {
 // ============================================================
 // SIMULATION INIT
 // ============================================================
-function initiateVesselSimulation(station) {
+function initiateVesselSimulation(station, crew) {
   G.playerChosenStation = station;
-  setMannedStations([station]);   // single-player default: one human station, rest auto
+  // Optional `crew` = stations a local human mans (local hot-seat co-op). One
+  // station (or none) = classic single-player. Campaign/smoke call with one arg.
+  G.coopMode = !!(crew && crew.length > 1);
+  setMannedStations(crew && crew.length ? crew : [station]);
   const diff = DIFFICULTY[currentDifficulty];
 
   // Campaign mode: archetype was set by _launchCampaignLevel before this call — preserve it

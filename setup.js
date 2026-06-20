@@ -38,15 +38,43 @@ function _setupGoMode(mode) {
 
 function _setupPickStation(station) {
   window._wizardStation = station;
+  window._wizardCrew = [station];   // single-player: one manned station
+  _proceedFromConfigure(station);
+}
+
+// ── Local co-op crew selection ───────────────────────────────
+// Toggle a station in/out of the local bridge crew. Hot-seat: you switch decks
+// (nav pills) to operate each manned station; the rest run on auto-delegation.
+function _coopToggle(station, btn) {
+  window._coopCrew = window._coopCrew || [];
+  const i = window._coopCrew.indexOf(station);
+  if (i >= 0) window._coopCrew.splice(i, 1); else window._coopCrew.push(station);
+  if (btn) { const on = window._coopCrew.includes(station); btn.style.opacity = on ? '1' : '0.45'; btn.style.outline = on ? '2px solid #fff' : 'none'; }
+  const go = document.getElementById('coop-go');
+  if (go) { go.disabled = window._coopCrew.length < 2; go.style.opacity = window._coopCrew.length < 2 ? '0.4' : '1'; }
+}
+
+function _coopAssemble() {
+  const crew = window._coopCrew || [];
+  if (crew.length < 2) return;
+  window._wizardCrew = STATIONS.filter(s => crew.includes(s));   // canonical order; primary first
+  window._wizardStation = window._wizardCrew[0];
+  _proceedFromConfigure(window._wizardStation);
+}
+
+// Shared: advance from the configure step to the single/campaign step.
+function _proceedFromConfigure(station) {
   document.getElementById('setup-step-configure').style.display = 'none';
+  const crewN = (window._wizardCrew && window._wizardCrew.length) || 1;
+  const crewTag = crewN > 1 ? ` · CREW ×${crewN}` : '';
   if (window._wizardMode === 'campaign') {
     document.getElementById('setup-step-campaign').style.display = '';
     const badge = document.getElementById('setup-campaign-badge');
-    if (badge) badge.textContent = `${_STATION_LABELS[station]} · ${(G.playerShipConfig||PLAYER_SHIP_CONFIGS.defiant).label}`;
+    if (badge) badge.textContent = `${_STATION_LABELS[station]} · ${(G.playerShipConfig||PLAYER_SHIP_CONFIGS.defiant).label}${crewTag}`;
   } else {
     document.getElementById('setup-step-single').style.display = '';
     const badge = document.getElementById('setup-single-badge');
-    if (badge) badge.textContent = `${_STATION_LABELS[station]} · ${(G.playerShipConfig||PLAYER_SHIP_CONFIGS.defiant).label}`;
+    if (badge) badge.textContent = `${_STATION_LABELS[station]} · ${(G.playerShipConfig||PLAYER_SHIP_CONFIGS.defiant).label}${crewTag}`;
     setDifficulty(currentDifficulty); // refresh diff buttons
   }
 }
@@ -69,6 +97,10 @@ function _setupReset() {
   // wizard's ship/station/difficulty controls are invisible on the next run.
   ['ship-select-section','setup-controls-anchor','campaign-diff-section','campaign-run-section']
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
+  // Clear any co-op crew selection + reset the chip visuals.
+  window._coopCrew = [];
+  document.querySelectorAll('#coop-crew-chips button, [onclick^="_coopToggle"]').forEach(b => { b.style.opacity = '0.45'; b.style.outline = 'none'; });
+  const go = document.getElementById('coop-go'); if (go) { go.disabled = true; go.style.opacity = '0.4'; }
 }
 
 // ============================================================

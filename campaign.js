@@ -9,9 +9,10 @@
 // this file load before main.js calls startCampaign().
 // ============================================================
 
-function startCampaign(station) {
+function startCampaign(station, crew) {
   G.campaignMode         = true;
   G.campaignStation      = station;
+  G.campaignCrew         = (crew && crew.length) ? crew.slice() : [station];  // local co-op crew, persists all 9 levels
   G.campaignShipKey      = G.playerShipKey;   // persist ship across all 9 levels
   G.campaignLevel        = 0;
   G.campaignScore        = 0;
@@ -25,6 +26,7 @@ function _launchCampaignLevel() {
   // Save campaign state — initiateVesselSimulation will reset many G fields
   const savedMode    = G.campaignMode;
   const savedStation = G.campaignStation;
+  const savedCrew    = (G.campaignCrew && G.campaignCrew.length) ? G.campaignCrew.slice() : [savedStation];
   const savedShipKey = G.campaignShipKey || G.playerShipKey;
   const savedLevel   = G.campaignLevel;
   const savedScore   = G.campaignScore;
@@ -37,11 +39,12 @@ function _launchCampaignLevel() {
   setDifficulty(entry.diff);
 
   // Init vessel — uses G.enemyArchetype correctly; ends by showing pre-battle briefing
-  initiateVesselSimulation(savedStation);
+  initiateVesselSimulation(savedStation, savedCrew);   // pass local co-op crew through
 
   // Restore campaign state (initiateVesselSimulation resets score/dead/etc)
   G.campaignMode         = savedMode;
   G.campaignStation      = savedStation;
+  G.campaignCrew         = savedCrew;
   G.campaignShipKey      = savedShipKey;
   G.campaignLevel        = savedLevel;
   G.campaignScore        = savedScore;
@@ -173,7 +176,8 @@ function _nextCampaignLevel() {
 
 function _restartCampaign() {
   const station = G.campaignStation;
+  const crew    = G.campaignCrew;
   const campDiv = document.getElementById('campaign-level-summary'); if (campDiv) campDiv.style.display = 'none';
   const actDiv  = document.getElementById('campaign-action-btns');   if (actDiv)  actDiv.style.display  = 'none';
-  startCampaign(station);
+  startCampaign(station, crew);
 }
