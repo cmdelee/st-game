@@ -126,7 +126,7 @@
         <div style="background:#060c18;border:1px solid var(--o);border-radius:6px;padding:10px;">
           <div style="font-family:'Antonio';color:var(--o);font-size:12px;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid rgba(255,153,0,0.2);padding-bottom:4px;">OVERVIEW</div>
           <div style="font-size:10px;color:#aabbcc;line-height:1.7;">
-            Real-time 1v1 starship combat. Choose a vessel, pick one station to command — the computer auto-runs the rest. Fight until the enemy is destroyed, you escape via emergency warp, or your hull reaches zero.
+            Real-time starship combat — most fights are one-on-one, but the Jem'Hadar attack in <span style="color:#ff9966;">packs of 3–4</span>. Choose a vessel, pick one station to command — the computer auto-runs the rest, and the game is winnable from <span style="color:var(--green);">any</span> station. Fight until all enemies are destroyed, you escape via emergency warp, or your hull reaches zero.
             <br><br>
             <span style="color:var(--green);">Victory</span> = enemy hull → 0 &nbsp;|&nbsp; <span style="color:var(--warn);">Escape</span> = emergency warp at ≤35% hull &nbsp;|&nbsp; <span style="color:var(--red);">Defeat</span> = your hull → 0
           </div>
@@ -157,8 +157,8 @@
             <span style="color:var(--o);font-family:'Antonio';">TACTICAL</span> — You fire weapons &amp; manage shields. Engineering auto-runs.<br>
             Best for: action-focused play, precise targeting, cloak timing.<br><br>
 
-            <span style="color:var(--p);font-family:'Antonio';">ENGINEERING</span> — You route power &amp; dispatch repairs. Tactical auto-fires every 2.4s.<br>
-            Best for: resource management, keeping systems alive under sustained fire.<br><br>
+            <span style="color:var(--p);font-family:'Antonio';">ENGINEERING</span> — You route power, dispatch repairs &amp; wield the combat toolkit while tactical auto-fires. Combat tools: <span style="color:var(--red);">⚡ Weapons Surge</span> (+35% crew damage), <span style="color:var(--warn);">🎯 Fire Coordination</span> (aggressive focus fire), <span style="color:var(--green);">🛡 Emergency Forcefields</span> (incoming −45%).<br>
+            Best for: resource management + actively driving the fight with power — surge to burn a target down, forcefield to survive a spike.<br><br>
 
             <span style="color:var(--t);font-family:'Antonio';">HELM</span> — You control speed, attack vector, range &amp; manoeuvres. Both tactical &amp; engineering run on auto.<br>
             Best for: strategic positioning, evasive play, setting up manoeuvre combos.<br><br>
@@ -208,7 +208,8 @@
             <span style="color:var(--p);">Cloaking (Defiant)</span> — 1200ms vulnerability window on engage/disengage. Shields accumulate regen credit while cloaked — decloak restores them. 25s cooldown, 4%/s power drain.<br><br>
             <span style="color:var(--green);">Antiproton Deflector (Enterprise)</span> — toggle: charge the main deflector as a defensive screen. Incoming fire −35%, enemy targeting lock −50%. Weapon capacitors recharge ~45% slower while engaged (deflector draws EPS priority). Pairs with regenerative shields for a Borg-survival tank posture.<br><br>
             <span style="color:var(--warn);">EPS Heat</span> — sustained rapid fire heats conduits. Above 70% reduces capacitor recharge up to 30%. Cools passively at 8/s.<br><br>
-            <span style="color:var(--green);">Ablative Armour (Defiant)</span> — 6 layers, each absorbs 60% of a hull hit. Auto-regenerates after 45s per layer.
+            <span style="color:var(--green);">Ablative Armour (Defiant)</span> — 6 layers, each absorbs 60% of a hull hit. Auto-regenerates after 45s per layer.<br><br>
+            <span style="color:var(--p);">Engineering Combat Toolkit</span> — at Engineering you actively shape the fight: <span style="color:var(--red);">⚡ Weapons Surge</span> reroutes EPS for +35% crew damage &amp; fast recharge (shields run lean, 28s CD); <span style="color:var(--warn);">🎯 Fire Coordination</span> makes the crew fire aggressively and focus the priority target; <span style="color:var(--green);">🛡 Emergency Forcefields</span> cut incoming −45% for 5s. The auto-engineer uses these for you when you command from Helm or the Captain's Chair.
           </div>
         </div>
 
@@ -216,11 +217,11 @@
         <div style="background:#060c18;border:1px solid var(--red);border-radius:6px;padding:10px;">
           <div style="font-family:'Antonio';color:var(--red);font-size:12px;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid rgba(255,51,51,0.2);padding-bottom:4px;">ENEMY ROSTER</div>
           <div style="font-size:10px;color:#aabbcc;line-height:1.6;">
-            <span style="color:#ff9966;">Jem'Hadar</span> — Polaron bypass (30% of damage skips shields). Gets <em>faster</em> as it takes damage. Rams at &lt;20% hull (4s warning).<br>
+            <span style="color:#ff9966;">Jem'Hadar</span> — Attack in a <em>pack of 3–4</em>. Polaron bypass (30% of damage skips shields). Get <em>faster</em> as they take damage; the last survivor goes berserk. Ram at &lt;20% hull (4s warning). Switch targets via the pack roster; focus-fire one at a time.<br>
             <span style="color:#aabbcc;">Cardassian</span> — Fast lock rate, constant harassment fire.<br>
             <span style="color:#99cc99;">Romulan BoP/Warbird</span> — Cloak + sensor ghosts. Fires plasma torpedo <em>immediately</em> on decloak. Cloaks again at 25% hull.<br>
             <span style="color:#cc9966;">Klingon K'Tinga/Vor'Cha</span> — Closes to brawl range (+40% disruptor damage close). Death salvo at 10% hull.<br>
-            <span style="color:var(--red);font-weight:bold;">Borg Probe</span> — Adapts per weapon type (+2.4%/hit, cap 65%). Rotate weapons constantly. Use Tricobalt (no adaptation). Tractor beam.<br>
+            <span style="color:var(--red);font-weight:bold;">Borg Probe</span> — Shields self-regenerate (faster the longer you fight) and adapt per weapon type (+2.4%/hit, cap 65%). <span style="color:var(--green);">Strategy:</span> target the <span style="color:#fff;">Regenerative Matrix</span> first to collapse the shields, then burst the hull while rotating weapon types. Tractor beam locks weapons (~8s). Tricobalt ignores adaptation.<br>
           </div>
         </div>
 
@@ -234,7 +235,8 @@
             📍 <span style="color:var(--green);">Klingons</span> — stay long range. Their disruptors gain +40% at close quarters.<br>
             👻 <span style="color:var(--green);">Romulan ghosts</span> — hold fire when ghosts appear. Wait for the real decloak, then punish the 1.5s vulnerability window.<br>
             🔴 <span style="color:var(--green);">Jem'Hadar ram</span> — pump fore shields and activate Evasive Pattern when you see the ramming countdown.<br>
-            🤖 <span style="color:var(--green);">Borg</span> — never fire the same weapon twice in a row. Rotate: cannons → nose → torpedoes → cannons. Save Tricobalt — it ignores adaptation.<br>
+            🐺 <span style="color:var(--green);">Wolfpack</span> — fight the Jem'Hadar pack one ship at a time (use the pack roster to switch lock). At Engineering/Helm/Captain, let the crew burn them down — surge weapons, coordinate fire, forcefield the bursts.<br>
+            🤖 <span style="color:var(--green);">Borg</span> — target the <span style="color:#fff;">Regenerative Matrix</span> first to stop its shields healing, <em>then</em> rotate weapon types on the hull (never the same weapon twice in a row). Save Tricobalt — it ignores adaptation.<br>
             ⚡ <span style="color:var(--green);">Last Stand</span> — below 20% hull, the crew acts automatically: full impulse, shield boost. Use this window for overloads.
           </div>
         </div>
