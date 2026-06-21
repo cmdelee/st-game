@@ -38,16 +38,22 @@ function PeerJsTransport(opts) {
       // Host may claim a short, human-friendly id (the room code); terminals use a random id.
       peer = (isHost && opts.id) ? new Peer(opts.id, popts) : new Peer(undefined, popts);
       status(isHost ? 'Registering room…' : 'Connecting to signalling…');
+      // Stage 1 watchdog — couldn't even reach the signalling server.
+      let openTimer = setTimeout(() => status('Could not reach the signalling server (your network may block it).'), 8000);
       peer.on('open', (id) => {
+        clearTimeout(openTimer);
         if (isHost) { status('Room ready — share the code, waiting for crew.'); onReady && onReady(id); }
         else {
           status('Dialling host…');
           const c = peer.connect(hostId, { reliable: true });
           conns['host'] = c;
-          c.on('open', () => { status('Connected to host.'); onReady && onReady(id); });
+          // Stage 2 watchdog — reached signalling but the P2P data channel never opened.
+          let connTimer = setTimeout(() => status('No P2P channel to host — NAT/firewall blocking (a TURN relay is needed), or wrong code.'), 13000);
+          c.on('open', () => { clearTimeout(connTimer); status('Connected to host.'); onReady && onReady(id); });
           c.on('data', m => ctrl.onMessage('host', m));
           c.on('close', () => { status('Host link closed.'); if (ctrl.onLeave) ctrl.onLeave('host'); });
-          c.on('error', (e) => { status('Link error: ' + (e && e.type)); if (ctrl.onLeave) ctrl.onLeave('host'); });
+          c.on('error', (e) => { clearTimeout(connTimer); status('Link error: ' + (e && e.type)); if (ctrl.onLeave) ctrl.onLeave('host'); });
+          setTimeout(() => { try { const pc = c.peerConnection; if (pc) { pc.oniceconnectionstatechange = () => console.log('[netplay] ICE → ' + pc.iceConnectionState); console.log('[netplay] ICE → ' + pc.iceConnectionState); } } catch (e) {} }, 800);
         }
       });
       if (isHost) peer.on('connection', (conn) => { status('Crew member connecting…'); _bindHostConn(conn); });
