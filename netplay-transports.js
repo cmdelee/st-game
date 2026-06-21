@@ -30,7 +30,8 @@ function PeerJsTransport(opts) {
     start(controller, onReady) {
       ctrl = controller;
       if (typeof Peer === 'undefined') { alert('PeerJS not loaded — multiplayer unavailable.'); return; }
-      peer = new Peer();
+      // Host may claim a short, human-friendly id (the room code); terminals use a random id.
+      peer = (isHost && opts.id) ? new Peer(opts.id) : new Peer();
       peer.on('open', (id) => {
         if (isHost) { onReady && onReady(id); }
         else {
@@ -43,7 +44,7 @@ function PeerJsTransport(opts) {
         }
       });
       if (isHost) peer.on('connection', _bindHostConn);
-      peer.on('error', (e) => console.warn('PeerJS error', e && e.type));
+      peer.on('error', (e) => { if (opts.onError) opts.onError(e); else console.warn('PeerJS error', e && e.type); });
     },
     send(peerId, msg) { const c = conns[peerId]; if (c && c.open) c.send(msg); },
     broadcast(msg) { Object.values(conns).forEach(c => { if (c.open) c.send(msg); }); },

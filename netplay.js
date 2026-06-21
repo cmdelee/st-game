@@ -265,10 +265,20 @@ function netLeave() {
 // (_canAct/_opStation live in state.js so early-loading modules can use them.)
 
 // ── Lobby UI (host/join buttons in the setup overlay) ────────
+// Short, human-friendly room code (no ambiguous chars). Namespaced into the peer
+// id so it stays unique on the shared PeerJS server while the player types ~4 chars.
+function _genRoomCode(n) { const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < (n || 4); i++) s += A[Math.floor(Math.random() * A.length)]; return s; }
+function _roomPeerId(code) { return 'stg-' + String(code).trim().toLowerCase(); }
+
 function netHostGame() {
   if (typeof Peer === 'undefined') { alert('PeerJS failed to load — online crew unavailable.'); return; }
   const name = (prompt('Your name (host / captain):', 'Captain') || 'Captain').slice(0, 16);
-  netHost(name, PeerJsTransport({ host: true }));
+  const code = _genRoomCode(4);
+  G.net.roomCode = code;   // short display code (the full peer id is "stg-<code>")
+  netHost(name, PeerJsTransport({ host: true, id: _roomPeerId(code), onError: (e) => {
+    if (e && e.type === 'unavailable-id') { alert('Room code already in use — please click HOST CREW again.'); netLeave(); }
+    else console.warn('PeerJS error', e && e.type);
+  } }));
   // Host then proceeds through normal setup; teammates join while it sets up.
 }
 
@@ -279,7 +289,10 @@ function netJoinPrompt() {
   const station = (prompt('Station to man — tactical / engineering / helm / captain:', 'tactical') || '').trim().toLowerCase();
   if (!STATIONS.includes(station)) { alert('Unknown station: ' + station); return; }
   const name = (prompt('Your name:', station) || station).slice(0, 16);
-  netJoin(name, station, PeerJsTransport({ hostId: code }));
+  netJoin(name, station, PeerJsTransport({ hostId: _roomPeerId(code), onError: (e) => {
+    if (e && (e.type === 'peer-unavailable')) { alert('No room with code "' + code.toUpperCase() + '" — check the code with your host.'); netLeave(); }
+    else console.warn('PeerJS error', e && e.type);
+  } }));
 }
 
 function renderNetLobby() {
@@ -294,7 +307,7 @@ function renderNetLobby() {
     return `<div>${s.toUpperCase().padEnd(12).replace(/ /g,'&nbsp;')} ${who}${mine}</div>`;
   }).join('');
   const head = G.net.role === 'host'
-    ? `<div style="color:var(--green);">HOSTING — room code: <b style="color:#fff;">${G.net.roomId || '…'}</b></div>`
+    ? `<div style="color:var(--green);">HOSTING — room code: <b style="color:#fff;font-size:15px;letter-spacing:2px;">${G.net.roomCode || (G.net.roomId ? '…' : '…')}</b></div>`
     : `<div style="color:var(--t);">TERMINAL — ${G.net.you.station ? 'manning ' + G.net.you.station.toUpperCase() : 'connecting…'}</div>`;
   box.innerHTML = head + `<div style="margin-top:4px;color:#7799aa;">CREW:</div>` + roster +
     `<div style="margin-top:6px;"><button class="pill-action-btn" style="padding:4px 10px;font-size:10px;background:var(--dim2);color:#aabbcc;" onclick="netLeave()">Disconnect</button></div>`;
