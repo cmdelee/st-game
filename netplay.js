@@ -303,7 +303,7 @@ function _terminalHostLost() {
     try { if (G.net.transport && G.net.transport.stop) G.net.transport.stop(); } catch (e) {}
     G.net._booted = false;   // re-bootstrap UI from the next snapshot
     const realST = window.setTimeout;   // sim-clock shim may be active during play
-    realST(() => { netJoin(rj.name, rj.station, PeerJsTransport({ hostId: _roomPeerId(rj.code) })); }, 1500 + G.net._reattempts * 1000);
+    realST(async () => { netJoin(rj.name, rj.station, PeerJsTransport({ hostId: _roomPeerId(rj.code), config: { iceServers: await _fetchIce() }, onStatus: _netStatus })); }, 1500 + G.net._reattempts * 1000);
     return;
   }
   alert('Lost connection to host.');
@@ -346,24 +346,48 @@ function netClearTurn() { localStorage.removeItem('stg_turn'); return 'Custom TU
 
 function _netStatus(msg) { G.net.status = msg; renderNetLobby(); }
 
+// Fetch fresh (time-limited) STUN+TURN credentials from metered.live so online
+// play works through VPNs and strict/mobile NATs (TURN relays the traffic when a
+// direct path is blocked). Falls back to the static _iceServers() set on failure.
+const METERED_TURN_URL = 'https://st-game.metered.live/api/v1/turn/credentials?apiKey=cfdd5653742f8b5081e98b0c1be8be5327c2';
+async function _fetchIce() {
+  try {
+    const ctl = new AbortController();
+    const to = setTimeout(() => ctl.abort(), 4000);
+    const resp = await fetch(METERED_TURN_URL, { signal: ctl.signal });
+    clearTimeout(to);
+    if (resp.ok) {
+      const servers = await resp.json();
+      if (Array.isArray(servers) && servers.length) {
+        console.log('[netplay] metered.live TURN loaded (' + servers.length + ' ICE servers)');
+        let extra = [];   // also honour a console-supplied custom TURN
+        try { const c = localStorage.getItem('stg_turn'); if (c) { const j = JSON.parse(c); extra = Array.isArray(j) ? j : [j]; } } catch (e) {}
+        return servers.concat(extra);
+      }
+    }
+  } catch (e) { console.warn('[netplay] metered.live TURN fetch failed — using fallback', e && e.name); }
+  return _iceServers().iceServers;
+}
+
 // Short, human-friendly room code (no ambiguous chars). Namespaced into the peer
 // id so it stays unique on the shared PeerJS server while the player types ~4 chars.
 function _genRoomCode(n) { const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < (n || 4); i++) s += A[Math.floor(Math.random() * A.length)]; return s; }
 function _roomPeerId(code) { return 'stg-' + String(code).trim().toLowerCase(); }
 
-function netHostGame() {
+async function netHostGame() {
   if (typeof Peer === 'undefined') { alert('PeerJS failed to load — online crew unavailable.'); return; }
   const name = (prompt('Your name (host / captain):', 'Captain') || 'Captain').slice(0, 16);
   const code = _genRoomCode(4);
   G.net.roomCode = code;   // short display code (the full peer id is "stg-<code>")
-  netHost(name, PeerJsTransport({ host: true, id: _roomPeerId(code), config: _iceServers(), onStatus: _netStatus, onError: (e) => {
+  const iceServers = await _fetchIce();
+  netHost(name, PeerJsTransport({ host: true, id: _roomPeerId(code), config: { iceServers }, onStatus: _netStatus, onError: (e) => {
     if (e && e.type === 'unavailable-id') { alert('Room code already in use — please click HOST CREW again.'); netLeave(); }
     else console.warn('PeerJS error', e && e.type);
   } }));
   // Host then proceeds through normal setup; teammates join while it sets up.
 }
 
-function netJoinPrompt() {
+async function netJoinPrompt() {
   if (typeof Peer === 'undefined') { alert('PeerJS failed to load — online crew unavailable.'); return; }
   const code = (prompt('Room code from the host:', (window._inviteCode || '')) || '').trim();
   if (!code) return;
@@ -372,7 +396,8 @@ function netJoinPrompt() {
   const name = (prompt('Your name:', station) || station).slice(0, 16);
   G.net._rejoin = { code, station, name };   // for auto-reconnect on a dropped link
   G.net._reattempts = 0;
-  netJoin(name, station, PeerJsTransport({ hostId: _roomPeerId(code), config: _iceServers(), onStatus: _netStatus, onError: (e) => {
+  const iceServers = await _fetchIce();
+  netJoin(name, station, PeerJsTransport({ hostId: _roomPeerId(code), config: { iceServers }, onStatus: _netStatus, onError: (e) => {
     if (e && (e.type === 'peer-unavailable')) { alert('No room with code "' + code.toUpperCase() + '" — check the code, and make sure the host clicked HOST CREW.'); netLeave(); }
     else console.warn('PeerJS error', e && e.type);
   } }));
