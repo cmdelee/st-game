@@ -22,7 +22,15 @@ G.net = {
   snapHz: 15,
   _lastSnap: 0,
   _inputSeq: 0,
+  _evq: [],          // host: queued one-shot events (log lines, …) flushed with each snapshot
+  _beamSeq: 0,       // host: unique id per weapon-beam so terminals spawn each once
+  _seenBeams: {},    // terminal: beam id -> arrival time (dedupe + prune)
+  _rejoin: null,     // terminal: {code,station,name} for auto-reconnect
+  _reattempts: 0,
 };
+
+// Host queues a one-shot event for terminals (no-op off-host). Bounded.
+function netEmit(ev) { if (G.net.role === 'host') { G.net._evq.push(ev); if (G.net._evq.length > 100) G.net._evq.shift(); } }
 
 function netRole() { return G.net.role; }
 function netActive() { return G.net.role !== 'off'; }
@@ -167,7 +175,11 @@ function netHostBroadcastSnapshot(nowMs) {
   const iv = 1000 / G.net.snapHz;
   if (nowMs - G.net._lastSnap < iv) return;
   G.net._lastSnap = nowMs;
-  _broadcast({ t: 'snapshot', g: serializeG() });
+  // Weapon beams ride alongside the snapshot (skipped by serializeG): tag each
+  // with a stable id so terminals spawn it exactly once on their own clock.
+  const beams = (G.renderedBeamsVector || []).map(b => { if (!b._bid) b._bid = ++G.net._beamSeq; return b; });
+  const evs = G.net._evq; G.net._evq = [];
+  _broadcast({ t: 'snapshot', g: serializeG(), beams: JSON.parse(JSON.stringify(beams)), evs });
 }
 
 function _broadcast(msg) { if (G.net.transport) G.net.transport.broadcast(msg); }
@@ -200,12 +212,44 @@ function _terminalHandle(msg) {
     case 'crew_update': G.net.crew = msg.crew || G.net.crew; _updateLobbyUI(); break;
     case 'snapshot':
       applySnapshot(msg.g);
+      if (msg.beams) _terminalMergeBeams(msg.beams);
+      if (msg.evs && msg.evs.length) _applyEvents(msg.evs);
+      G.net._reattempts = 0;  // a snapshot = healthy link
       _terminalBootstrap();   // build this terminal's station UI once (after first snapshot)
       if (!G.net._loopOn) _startTerminalLoop();
       break;
     case 'pong': G.net._ping = performance.now() - msg.t0; break;
   }
 }
+
+// Terminal: spawn each new beam once, re-based to the local clock (the host's
+// trackingStartTime is on a different epoch and would be filtered out instantly).
+function _terminalMergeBeams(beams) {
+  const now = performance.now();
+  beams.forEach(b => {
+    if (G.net._seenBeams[b._bid]) return;
+    G.net._seenBeams[b._bid] = now;
+    b.trackingStartTime = now;     // rebase onto this client's clock
+    b._three_spawned = false;      // let the render loop spawn it
+    G.renderedBeamsVector.push(b);
+  });
+  // Prune old ids (beams are short-lived; the render loop drops them by duration).
+  for (const id in G.net._seenBeams) if (now - G.net._seenBeams[id] > 5000) delete G.net._seenBeams[id];
+}
+
+// Terminal: apply host one-shot events (battle log, etc.).
+function _applyEvents(evs) {
+  evs.forEach(ev => { if (ev.k === 'log' && typeof postLogEvent === 'function') postLogEvent(ev.msg, ev.tier); });
+}
+
+// Mirror the host's battle log to terminals: wrap postLogEvent once so host logs
+// queue an event. Harmless off-host (the netIsHost gate skips the queue).
+(function _wrapPostLog() {
+  if (typeof postLogEvent !== 'function' || postLogEvent._netWrapped) return;
+  const orig = postLogEvent;
+  window.postLogEvent = function (msg, tier) { orig(msg, tier); if (G.net.role === 'host') netEmit({ k: 'log', msg, tier }); };
+  window.postLogEvent._netWrapped = true;
+})();
 
 function netSendInput(action, args) {
   if (!netIsTerminal() || !G.net.transport) return;
@@ -251,6 +295,16 @@ function _terminalBootstrap() {
 
 function _terminalHostLost() {
   G.net._loopOn = false;
+  const rj = G.net._rejoin;
+  if (rj && G.net._reattempts < 4) {
+    G.net._reattempts++;
+    if (typeof postLogEvent === 'function') postLogEvent(`Link to host lost — reconnecting (${G.net._reattempts}/4)…`, 'warn');
+    try { if (G.net.transport && G.net.transport.stop) G.net.transport.stop(); } catch (e) {}
+    G.net._booted = false;   // re-bootstrap UI from the next snapshot
+    const realST = window.setTimeout;   // sim-clock shim may be active during play
+    realST(() => { netJoin(rj.name, rj.station, PeerJsTransport({ hostId: _roomPeerId(rj.code) })); }, 1500 + G.net._reattempts * 1000);
+    return;
+  }
   alert('Lost connection to host.');
   netLeave();
 }
@@ -284,15 +338,32 @@ function netHostGame() {
 
 function netJoinPrompt() {
   if (typeof Peer === 'undefined') { alert('PeerJS failed to load — online crew unavailable.'); return; }
-  const code = (prompt('Room code from the host:') || '').trim();
+  const code = (prompt('Room code from the host:', (window._inviteCode || '')) || '').trim();
   if (!code) return;
   const station = (prompt('Station to man — tactical / engineering / helm / captain:', 'tactical') || '').trim().toLowerCase();
   if (!STATIONS.includes(station)) { alert('Unknown station: ' + station); return; }
   const name = (prompt('Your name:', station) || station).slice(0, 16);
+  G.net._rejoin = { code, station, name };   // for auto-reconnect on a dropped link
+  G.net._reattempts = 0;
   netJoin(name, station, PeerJsTransport({ hostId: _roomPeerId(code), onError: (e) => {
     if (e && (e.type === 'peer-unavailable')) { alert('No room with code "' + code.toUpperCase() + '" — check the code with your host.'); netLeave(); }
     else console.warn('PeerJS error', e && e.type);
   } }));
+}
+
+// Share an invite — a link with the code prefilled (?join=CODE) so a teammate
+// taps it and only picks a station. Uses the native share sheet on mobile,
+// clipboard otherwise.
+function netShareInvite() {
+  const code = G.net.roomCode; if (!code) return;
+  const url = location.origin + location.pathname + '?join=' + code;
+  const text = `Join my Starship bridge crew — room code ${code}`;
+  if (navigator.share) { navigator.share({ title: 'Starship Bridge Crew', text, url }).catch(() => {}); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(
+      () => { const b = document.getElementById('net-share-btn'); if (b) { const t = b.textContent; b.textContent = '✓ Link copied!'; setTimeout(() => b.textContent = t, 1800); } },
+      () => prompt('Copy this invite link:', url));
+  } else prompt('Copy this invite link:', url);
 }
 
 function renderNetLobby() {
@@ -307,7 +378,8 @@ function renderNetLobby() {
     return `<div>${s.toUpperCase().padEnd(12).replace(/ /g,'&nbsp;')} ${who}${mine}</div>`;
   }).join('');
   const head = G.net.role === 'host'
-    ? `<div style="color:var(--green);">HOSTING — room code: <b style="color:#fff;font-size:15px;letter-spacing:2px;">${G.net.roomCode || (G.net.roomId ? '…' : '…')}</b></div>`
+    ? `<div style="color:var(--green);">HOSTING — room code: <b style="color:#fff;font-size:15px;letter-spacing:2px;">${G.net.roomCode || '…'}</b>
+        <button id="net-share-btn" class="pill-action-btn" style="padding:3px 10px;font-size:10px;background:var(--t);margin-left:8px;" onclick="netShareInvite()">📤 Share invite</button></div>`
     : `<div style="color:var(--t);">TERMINAL — ${G.net.you.station ? 'manning ' + G.net.you.station.toUpperCase() : 'connecting…'}</div>`;
   box.innerHTML = head + `<div style="margin-top:4px;color:#7799aa;">CREW:</div>` + roster +
     `<div style="margin-top:6px;"><button class="pill-action-btn" style="padding:4px 10px;font-size:10px;background:var(--dim2);color:#aabbcc;" onclick="netLeave()">Disconnect</button></div>`;

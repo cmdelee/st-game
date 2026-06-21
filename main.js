@@ -368,6 +368,16 @@ function runMasterBootSequence() {
     STARS.push({ x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight, d: Math.random() * 1.5 + 0.5, o: Math.random() });
   }
 
+  // Deep-link join: ?join=CODE prefills the join flow + relabels the button.
+  try {
+    const _jp = new URLSearchParams(location.search).get('join');
+    if (_jp) {
+      window._inviteCode = _jp.trim().toUpperCase();
+      const jb = document.getElementById('btn-net-join');
+      if (jb) jb.textContent = '🔗 JOIN ROOM ' + window._inviteCode;
+    }
+  } catch (e) {}
+
   // Initialize ship selection (Defiant default)
   selectPlayerShip('defiant');
   setDifficulty('normal');

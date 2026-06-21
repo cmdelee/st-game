@@ -287,7 +287,7 @@
         <div style="font-family:'Antonio';font-size:10px;color:#6688aa;letter-spacing:2px;text-align:center;margin-bottom:6px;">— ONLINE BRIDGE CREW · BETA —</div>
         <div id="net-lobby-buttons" style="display:flex;gap:8px;justify-content:center;">
           <button class="pill-action-btn" style="padding:8px 14px;font-size:11px;background:var(--t);" onclick="netHostGame()">🛰 HOST CREW</button>
-          <button class="pill-action-btn" style="padding:8px 14px;font-size:11px;background:var(--p);" onclick="netJoinPrompt()">🔗 JOIN CREW</button>
+          <button id="btn-net-join" class="pill-action-btn" style="padding:8px 14px;font-size:11px;background:var(--p);" onclick="netJoinPrompt()">🔗 JOIN CREW</button>
         </div>
         <div id="net-lobby-status" style="display:none;font-size:10px;color:#aabbcc;background:#070d1a;border:1px solid var(--dim2);border-radius:4px;padding:8px;margin-top:8px;line-height:1.6;"></div>
         <div style="font-size:8px;color:#334455;text-align:center;margin-top:4px;">Host shares the room code; teammates join &amp; pick an open station. Host then sets up the battle as normal.</div>
@@ -1098,11 +1098,11 @@
 <script src="setup.js?v=7d565482"></script>
 <script src="campaign.js?v=51edbfc1"></script>
 <script src="briefing.js?v=31071348"></script>
-<script src="main.js?v=972384dd"></script>
+<script src="main.js?v=686c85bc"></script>
 <!-- Networked multiplayer (Phase 1). PeerJS from CDN; transports + controller. -->
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="netplay-transports.js?v=5f7bfce9"></script>
-<script src="netplay.js?v=3b89d8a1"></script>
+<script src="netplay.js?v=4be825fb"></script>
 <script src="smoketest.js?v=68b061f8"></script>
 
 </body>
