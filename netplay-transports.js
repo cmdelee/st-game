@@ -30,21 +30,29 @@ function PeerJsTransport(opts) {
     start(controller, onReady) {
       ctrl = controller;
       if (typeof Peer === 'undefined') { alert('PeerJS not loaded — multiplayer unavailable.'); return; }
+      const status = (m) => { try { console.log('[netplay] ' + m); } catch (e) {} if (opts.onStatus) opts.onStatus(m); };
+      // ICE servers: STUN to discover public IPs + a free TURN relay so devices on
+      // different/restrictive networks (mobile, symmetric NAT) can still connect.
+      const popts = { debug: 1 };
+      if (opts.config) popts.config = opts.config;
       // Host may claim a short, human-friendly id (the room code); terminals use a random id.
-      peer = (isHost && opts.id) ? new Peer(opts.id) : new Peer();
+      peer = (isHost && opts.id) ? new Peer(opts.id, popts) : new Peer(undefined, popts);
+      status(isHost ? 'Registering room…' : 'Connecting to signalling…');
       peer.on('open', (id) => {
-        if (isHost) { onReady && onReady(id); }
+        if (isHost) { status('Room ready — share the code, waiting for crew.'); onReady && onReady(id); }
         else {
+          status('Dialling host…');
           const c = peer.connect(hostId, { reliable: true });
           conns['host'] = c;
-          c.on('open', () => { onReady && onReady(id); });
+          c.on('open', () => { status('Connected to host.'); onReady && onReady(id); });
           c.on('data', m => ctrl.onMessage('host', m));
-          c.on('close', () => { if (ctrl.onLeave) ctrl.onLeave('host'); });
-          c.on('error', () => { if (ctrl.onLeave) ctrl.onLeave('host'); });
+          c.on('close', () => { status('Host link closed.'); if (ctrl.onLeave) ctrl.onLeave('host'); });
+          c.on('error', (e) => { status('Link error: ' + (e && e.type)); if (ctrl.onLeave) ctrl.onLeave('host'); });
         }
       });
-      if (isHost) peer.on('connection', _bindHostConn);
-      peer.on('error', (e) => { if (opts.onError) opts.onError(e); else console.warn('PeerJS error', e && e.type); });
+      if (isHost) peer.on('connection', (conn) => { status('Crew member connecting…'); _bindHostConn(conn); });
+      peer.on('disconnected', () => { status('Signalling dropped — retrying…'); try { peer.reconnect(); } catch (e) {} });
+      peer.on('error', (e) => { status('Error: ' + (e && e.type)); if (opts.onError) opts.onError(e); else console.warn('PeerJS error', e && e.type); });
     },
     send(peerId, msg) { const c = conns[peerId]; if (c && c.open) c.send(msg); },
     broadcast(msg) { Object.values(conns).forEach(c => { if (c.open) c.send(msg); }); },

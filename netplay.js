@@ -199,6 +199,7 @@ function netJoin(name, station, transport) {
 function _terminalHandle(msg) {
   switch (msg.t) {
     case 'welcome':
+      G.net._welcomed = true; clearTimeout(G.net._joinWatch); G.net.status = 'In crew — manning ' + msg.youAre.toUpperCase();
       G.net.you.station = msg.youAre;
       G.net.crew = msg.crew || G.net.crew;
       G.activePanel = msg.youAre; G.playerChosenStation = msg.youAre;
@@ -319,6 +320,18 @@ function netLeave() {
 // (_canAct/_opStation live in state.js so early-loading modules can use them.)
 
 // ── Lobby UI (host/join buttons in the setup overlay) ────────
+// ICE servers — STUN (public-IP discovery) + a free TURN relay so peers on
+// different / restrictive networks (mobile data, symmetric NAT) can connect when
+// direct P2P fails. TURN is the Open Relay Project (free, best-effort).
+const NET_ICE = { iceServers: [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:global.stun.twilio.com:3478' },
+  { urls: 'turn:openrelay.metered.ca:80',  username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+] };
+function _netStatus(msg) { G.net.status = msg; renderNetLobby(); }
+
 // Short, human-friendly room code (no ambiguous chars). Namespaced into the peer
 // id so it stays unique on the shared PeerJS server while the player types ~4 chars.
 function _genRoomCode(n) { const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < (n || 4); i++) s += A[Math.floor(Math.random() * A.length)]; return s; }
@@ -329,7 +342,7 @@ function netHostGame() {
   const name = (prompt('Your name (host / captain):', 'Captain') || 'Captain').slice(0, 16);
   const code = _genRoomCode(4);
   G.net.roomCode = code;   // short display code (the full peer id is "stg-<code>")
-  netHost(name, PeerJsTransport({ host: true, id: _roomPeerId(code), onError: (e) => {
+  netHost(name, PeerJsTransport({ host: true, id: _roomPeerId(code), config: NET_ICE, onStatus: _netStatus, onError: (e) => {
     if (e && e.type === 'unavailable-id') { alert('Room code already in use — please click HOST CREW again.'); netLeave(); }
     else console.warn('PeerJS error', e && e.type);
   } }));
@@ -345,10 +358,15 @@ function netJoinPrompt() {
   const name = (prompt('Your name:', station) || station).slice(0, 16);
   G.net._rejoin = { code, station, name };   // for auto-reconnect on a dropped link
   G.net._reattempts = 0;
-  netJoin(name, station, PeerJsTransport({ hostId: _roomPeerId(code), onError: (e) => {
-    if (e && (e.type === 'peer-unavailable')) { alert('No room with code "' + code.toUpperCase() + '" — check the code with your host.'); netLeave(); }
+  netJoin(name, station, PeerJsTransport({ hostId: _roomPeerId(code), config: NET_ICE, onStatus: _netStatus, onError: (e) => {
+    if (e && (e.type === 'peer-unavailable')) { alert('No room with code "' + code.toUpperCase() + '" — check the code, and make sure the host clicked HOST CREW.'); netLeave(); }
     else console.warn('PeerJS error', e && e.type);
   } }));
+  // Join watchdog: if no welcome lands in time, surface a hint.
+  clearTimeout(G.net._joinWatch);
+  G.net._joinWatch = setTimeout(() => {
+    if (netIsTerminal() && !G.net._welcomed) _netStatus('No response from host yet — check the code, and that the host clicked HOST CREW & is online.');
+  }, 12000);
 }
 
 // Share an invite — a link with the code prefilled (?join=CODE) so a teammate
@@ -381,7 +399,8 @@ function renderNetLobby() {
     ? `<div style="color:var(--green);">HOSTING — room code: <b style="color:#fff;font-size:15px;letter-spacing:2px;">${G.net.roomCode || '…'}</b>
         <button id="net-share-btn" class="pill-action-btn" style="padding:3px 10px;font-size:10px;background:var(--t);margin-left:8px;" onclick="netShareInvite()">📤 Share invite</button></div>`
     : `<div style="color:var(--t);">TERMINAL — ${G.net.you.station ? 'manning ' + G.net.you.station.toUpperCase() : 'connecting…'}</div>`;
-  box.innerHTML = head + `<div style="margin-top:4px;color:#7799aa;">CREW:</div>` + roster +
+  const status = G.net.status ? `<div style="margin-top:4px;color:var(--warn);font-size:9px;">${G.net.status}</div>` : '';
+  box.innerHTML = head + status + `<div style="margin-top:4px;color:#7799aa;">CREW:</div>` + roster +
     `<div style="margin-top:6px;"><button class="pill-action-btn" style="padding:4px 10px;font-size:10px;background:var(--dim2);color:#aabbcc;" onclick="netLeave()">Disconnect</button></div>`;
 }
 
