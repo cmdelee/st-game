@@ -323,13 +323,27 @@ function netLeave() {
 // ICE servers — STUN (public-IP discovery) + a free TURN relay so peers on
 // different / restrictive networks (mobile data, symmetric NAT) can connect when
 // direct P2P fails. TURN is the Open Relay Project (free, best-effort).
-const NET_ICE = { iceServers: [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:global.stun.twilio.com:3478' },
-  { urls: 'turn:openrelay.metered.ca:80',  username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-] };
+// Build the ICE server list: STUN + best-effort free TURN, PLUS any custom TURN
+// the user has supplied (localStorage 'stg_turn') — e.g. a free metered.ca key.
+// TURN over TCP:443 relays through VPNs / strict NATs when direct P2P fails.
+function _iceServers() {
+  const base = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:global.stun.twilio.com:3478' },
+    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+  ];
+  try {
+    const c = localStorage.getItem('stg_turn');
+    if (c) { const j = JSON.parse(c); return { iceServers: base.concat(Array.isArray(j) ? j : [j]) }; }
+  } catch (e) {}
+  return { iceServers: base };
+}
+// Console helpers: paste your own TURN (e.g. metered.ca) without editing code.
+//   netSetTurn('{"urls":"turn:…:443?transport=tcp","username":"u","credential":"p"}')
+function netSetTurn(json) { try { JSON.parse(json); localStorage.setItem('stg_turn', json); return 'TURN saved — re-host / re-join to use it.'; } catch (e) { return 'Invalid JSON: ' + e.message; } }
+function netClearTurn() { localStorage.removeItem('stg_turn'); return 'Custom TURN cleared.'; }
+
 function _netStatus(msg) { G.net.status = msg; renderNetLobby(); }
 
 // Short, human-friendly room code (no ambiguous chars). Namespaced into the peer
@@ -342,7 +356,7 @@ function netHostGame() {
   const name = (prompt('Your name (host / captain):', 'Captain') || 'Captain').slice(0, 16);
   const code = _genRoomCode(4);
   G.net.roomCode = code;   // short display code (the full peer id is "stg-<code>")
-  netHost(name, PeerJsTransport({ host: true, id: _roomPeerId(code), config: NET_ICE, onStatus: _netStatus, onError: (e) => {
+  netHost(name, PeerJsTransport({ host: true, id: _roomPeerId(code), config: _iceServers(), onStatus: _netStatus, onError: (e) => {
     if (e && e.type === 'unavailable-id') { alert('Room code already in use — please click HOST CREW again.'); netLeave(); }
     else console.warn('PeerJS error', e && e.type);
   } }));
@@ -358,7 +372,7 @@ function netJoinPrompt() {
   const name = (prompt('Your name:', station) || station).slice(0, 16);
   G.net._rejoin = { code, station, name };   // for auto-reconnect on a dropped link
   G.net._reattempts = 0;
-  netJoin(name, station, PeerJsTransport({ hostId: _roomPeerId(code), config: NET_ICE, onStatus: _netStatus, onError: (e) => {
+  netJoin(name, station, PeerJsTransport({ hostId: _roomPeerId(code), config: _iceServers(), onStatus: _netStatus, onError: (e) => {
     if (e && (e.type === 'peer-unavailable')) { alert('No room with code "' + code.toUpperCase() + '" — check the code, and make sure the host clicked HOST CREW.'); netLeave(); }
     else console.warn('PeerJS error', e && e.type);
   } }));
