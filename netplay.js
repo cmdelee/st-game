@@ -114,6 +114,7 @@ function netHost(name, transport) {
   G.net.transport = transport;
   G.net.you = { name: name || 'Captain', station: null };
   G.net.crew = { tactical: null, engineering: null, helm: null, captain: null };
+  G.net._snapCache = {}; G.net._snapFrame = 0; G.net._needKeyframe = true;  // fresh delta baseline
   transport.start(_net, (roomId) => { G.net.roomId = roomId; _updateLobbyUI(); });
   _updateLobbyUI();
 }
@@ -128,6 +129,7 @@ function _hostHandle(fromId, msg) {
       }
       G.net.crew[s] = { id: fromId, name: msg.name || s };
       G.stationControl[s] = 'remote';
+      G.net._needKeyframe = true;   // next broadcast is full so the new joiner gets complete state
       G.net.transport.send(fromId, { t: 'welcome', youAre: s, crew: _crewSummary(), running: G.running });
       _broadcast({ t: 'crew_update', crew: _crewSummary() });
       postLogEvent(`${msg.name || 'A teammate'} took ${s.toUpperCase()} station.`, 'good');
@@ -170,16 +172,34 @@ function _hostPeerLeft(id) {
 }
 
 // Called from the game loop on the host; throttled to snapHz.
+// DELTA snapshots: only top-level G fields whose serialized value changed since
+// the last send are transmitted (most fields are static frame-to-frame, so this
+// cuts bandwidth/TURN data ~80–90%). A FULL keyframe is sent periodically (~every
+// 2 s), when a new crew member joins, and at the start of each battle, so late
+// joiners and any drift self-correct. Terminals ignore deltas until their first
+// full keyframe.
 function netHostBroadcastSnapshot(nowMs) {
   if (!netIsHost()) return;
   const iv = 1000 / G.net.snapHz;
   if (nowMs - G.net._lastSnap < iv) return;
   G.net._lastSnap = nowMs;
-  // Weapon beams ride alongside the snapshot (skipped by serializeG): tag each
-  // with a stable id so terminals spawn it exactly once on their own clock.
+
+  if (G.net._snapSession !== G.gameSessionId) { G.net._snapSession = G.gameSessionId; G.net._needKeyframe = true; }
+  const full = G.net._needKeyframe || ((G.net._snapFrame = (G.net._snapFrame || 0) + 1) % 30 === 0);
+  G.net._needKeyframe = false;
+  if (full) G.net._snapCache = {};
+
+  const d = {};
+  for (const k in G) {
+    if (_SNAP_SKIP.has(k) || typeof G[k] === 'function') continue;
+    const js = JSON.stringify(G[k]);
+    if (G.net._snapCache[k] !== js) { d[k] = G[k]; G.net._snapCache[k] = js; }
+  }
+  // Weapon beams ride alongside (skipped by the field loop): tag each with a
+  // stable id so terminals spawn it exactly once on their own clock.
   const beams = (G.renderedBeamsVector || []).map(b => { if (!b._bid) b._bid = ++G.net._beamSeq; return b; });
   const evs = G.net._evq; G.net._evq = [];
-  _broadcast({ t: 'snapshot', g: serializeG(), beams: JSON.parse(JSON.stringify(beams)), evs });
+  _broadcast({ t: 'snapshot', full, d: JSON.parse(JSON.stringify(d)), beams: JSON.parse(JSON.stringify(beams)), evs });
 }
 
 function _broadcast(msg) { if (G.net.transport) G.net.transport.broadcast(msg); }
@@ -190,6 +210,7 @@ function netJoin(name, station, transport) {
   G.net.role = 'terminal';
   G.net.transport = transport;
   G.net.you = { name: name || 'Crew', station };
+  G.net._haveKeyframe = false;   // ignore deltas until the first full keyframe arrives
   _installTerminalForwarders();
   transport.start(_net, () => {
     transport.send('host', { t: 'join', name: G.net.you.name, station });
@@ -212,7 +233,9 @@ function _terminalHandle(msg) {
       break;
     case 'crew_update': G.net.crew = msg.crew || G.net.crew; _updateLobbyUI(); break;
     case 'snapshot':
-      applySnapshot(msg.g);
+      if (msg.full) G.net._haveKeyframe = true;
+      if (!G.net._haveKeyframe) break;           // wait for the first full keyframe
+      applySnapshot(msg.d);                       // merge changed fields (or all, if full)
       if (msg.beams) _terminalMergeBeams(msg.beams);
       if (msg.evs && msg.evs.length) _applyEvents(msg.evs);
       G.net._reattempts = 0;  // a snapshot = healthy link
