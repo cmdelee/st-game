@@ -152,7 +152,9 @@ function toggleActiveDeck(key) {
   // Single-player / hot-seat: switching to a deck takes control of that station
   // (the others revert to auto). Co-op host-assignment will set control up front
   // and pass coop=true to keep control fixed while only the view changes.
-  if (!G.coopMode) setMannedStations([key]);
+  // Terminals never reassign control (it comes from the host's snapshots); local
+  // co-op keeps the crew fixed too. Only single-player remaps to the viewed deck.
+  if (!G.coopMode && !(typeof netIsTerminal === 'function' && netIsTerminal())) setMannedStations([key]);
   document.querySelectorAll('.nav-pill-btn').forEach(b => b.classList.remove('active'));
   const tab = document.getElementById(`tab-${key}`); if (tab) tab.classList.add('active');
   document.querySelectorAll('.control-deck-plate').forEach(p => p.classList.remove('active-deck'));

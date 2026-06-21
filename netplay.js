@@ -200,6 +200,7 @@ function _terminalHandle(msg) {
     case 'crew_update': G.net.crew = msg.crew || G.net.crew; _updateLobbyUI(); break;
     case 'snapshot':
       applySnapshot(msg.g);
+      _terminalBootstrap();   // build this terminal's station UI once (after first snapshot)
       if (!G.net._loopOn) _startTerminalLoop();
       break;
     case 'pong': G.net._ping = performance.now() - msg.t0; break;
@@ -221,6 +222,31 @@ function _startTerminalLoop() {
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
+}
+
+// Build this terminal's station UI once, from the first snapshot's state (the
+// terminal never ran initiateVesselSimulation, so its DOM/meshes are unbuilt).
+function _terminalBootstrap() {
+  if (G.net._booted || !G.net.you.station) return;
+  G.net._booted = true;
+  const st = G.net.you.station;
+  try {
+    if (typeof selectPlayerShip === 'function')      selectPlayerShip(G.playerShipKey || 'defiant');
+    if (typeof rebuildEnemyMesh === 'function')      rebuildEnemyMesh();
+    if (typeof rebuildPlayerMesh === 'function')     rebuildPlayerMesh();
+    if (typeof rebuildPackMeshes === 'function')     rebuildPackMeshes();
+    if (typeof rebuildWeaponFireMatrix === 'function') rebuildWeaponFireMatrix();
+    if (typeof _buildELCache === 'function')         _buildELCache();
+    if (typeof _rebuildCapBarCache === 'function')   _rebuildCapBarCache();
+    if (typeof _updateSpecialAbilityButtons === 'function') _updateSpecialAbilityButtons();
+    if (typeof buildCaptainSignaturePanel === 'function')   buildCaptainSignaturePanel();
+    if (typeof buildEnemySubsystemTargetGrid === 'function') buildEnemySubsystemTargetGrid();
+    if (st === 'captain' && typeof initCaptainStation === 'function') initCaptainStation();
+    const ov = document.getElementById('overlay');             if (ov) ov.style.display = 'none';
+    const pb = document.getElementById('pre-battle-overlay');  if (pb) pb.style.display = 'none';
+    toggleActiveDeck(st);   // show this terminal's deck (control stays host-driven)
+    postLogEvent(`Connected — manning ${st.toUpperCase()}. Receiving telemetry from the host.`, 'good');
+  } catch (e) { console.warn('terminal bootstrap error', e); }
 }
 
 function _terminalHostLost() {
